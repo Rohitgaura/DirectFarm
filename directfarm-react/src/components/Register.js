@@ -1,0 +1,435 @@
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './Auth.css';
+
+const Register = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    userType: 'farmer',
+    password: '',
+    confirmPassword: ''
+  });
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.firstName) {
+      newErrors.firstName = 'First name is required';
+    }
+    
+    if (!formData.lastName) {
+      newErrors.lastName = 'Last name is required';
+    }
+    
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    
+    if (!formData.phone) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+      newErrors.phone = 'Phone number must be 10 digits';
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+    
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    setErrors(newErrors);
+    
+    // Show validation errors as toasts
+    if (Object.keys(newErrors).length > 0) {
+      const errorMessages = Object.values(newErrors).join(', ');
+      toast.error(`Please fix the following errors: ${errorMessages}`, {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    }
+    
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      // Simulate API call - replace with actual API call
+      console.log('Registration attempt:', formData);
+      
+      // Simulate API response
+      await new Promise((resolve, reject) => {
+        setTimeout(() => {
+          // Simulate success for demo (replace with actual API call)
+          if (formData.email && formData.password) {
+            resolve({
+              success: true,
+              message: 'Registration successful',
+              data: {
+                user: {
+                  name: `${formData.firstName} ${formData.lastName}`,
+                  email: formData.email,
+                  role: formData.userType
+                },
+                token: 'demo-token-123'
+              }
+            });
+          } else {
+            reject(new Error('Registration failed. Please try again.'));
+          }
+        }, 1500);
+      });
+
+      // Success handling
+      toast.success('Registration successful! Welcome to DirectFarm!', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
+      console.log('✅ Registration successful:', formData.email);
+      
+      // Navigate to home page after successful registration
+      setTimeout(() => {
+        navigate('/');
+      }, 1000);
+      
+    } catch (error) {
+      // Error handling
+      const errorMessage = error.message || 'Registration failed. Please try again.';
+      
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      
+      console.error('❌ Registration failed:', errorMessage);
+      
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-background">
+        <div className="auth-overlay"></div>
+      </div>
+      
+      <div className="auth-container">
+        <motion.div 
+          className="auth-card register-card"
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="auth-header">
+            <motion.div 
+              className="auth-logo"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <i className="fas fa-seedling"></i>
+              <span>DirectFarm</span>
+            </motion.div>
+            <h1>Join DirectFarm</h1>
+            <p>Create your account and start your journey</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-row">
+              <motion.div 
+                className="form-group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <label htmlFor="firstName">
+                  <i className="fas fa-user"></i>
+                  First Name
+                </label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className={errors.firstName ? 'error' : ''}
+                  placeholder="Enter your first name"
+                />
+                {errors.firstName && <span className="error-message">{errors.firstName}</span>}
+              </motion.div>
+
+              <motion.div 
+                className="form-group"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+              >
+                <label htmlFor="lastName">
+                  <i className="fas fa-user"></i>
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className={errors.lastName ? 'error' : ''}
+                  placeholder="Enter your last name"
+                />
+                {errors.lastName && <span className="error-message">{errors.lastName}</span>}
+              </motion.div>
+            </div>
+
+            <motion.div 
+              className="form-group"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <label htmlFor="email">
+                <i className="fas fa-envelope"></i>
+                Email Address
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={errors.email ? 'error' : ''}
+                placeholder="Enter your email"
+              />
+              {errors.email && <span className="error-message">{errors.email}</span>}
+            </motion.div>
+
+            <motion.div 
+              className="form-group"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+            >
+              <label htmlFor="phone">
+                <i className="fas fa-phone"></i>
+                Phone Number
+              </label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                className={errors.phone ? 'error' : ''}
+                placeholder="Enter your phone number"
+              />
+              {errors.phone && <span className="error-message">{errors.phone}</span>}
+            </motion.div>
+
+            <motion.div 
+              className="form-group"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <label htmlFor="userType">
+                <i className="fas fa-users"></i>
+                I am a
+              </label>
+              <select
+                id="userType"
+                name="userType"
+                value={formData.userType}
+                onChange={handleChange}
+              >
+                <option value="farmer">Farmer</option>
+                <option value="buyer">Buyer/Retailer</option>
+                <option value="wholesaler">Wholesaler</option>
+                <option value="logistics">Logistics Partner</option>
+              </select>
+            </motion.div>
+
+            <motion.div 
+              className="form-group"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 }}
+            >
+              <label htmlFor="password">
+                <i className="fas fa-lock"></i>
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={errors.password ? 'error' : ''}
+                placeholder="Create a strong password"
+              />
+              {errors.password && <span className="error-message">{errors.password}</span>}
+            </motion.div>
+
+            <motion.div 
+              className="form-group"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8 }}
+            >
+              <label htmlFor="confirmPassword">
+                <i className="fas fa-lock"></i>
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                className={errors.confirmPassword ? 'error' : ''}
+                placeholder="Confirm your password"
+              />
+              {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
+            </motion.div>
+
+            <motion.div 
+              className="form-options"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.9 }}
+            >
+              <label className="checkbox-container">
+                <input type="checkbox" required />
+                <span className="checkmark"></span>
+                I agree to the{' '}
+                <Link to="/terms" className="terms-link">Terms of Service</Link> and{' '}
+                <Link to="/privacy" className="terms-link">Privacy Policy</Link>
+              </label>
+            </motion.div>
+
+            <motion.button
+              type="submit"
+              className="auth-submit"
+              disabled={isLoading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.0 }}
+            >
+              {isLoading ? (
+                <motion.div
+                  className="loading-spinner"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <i className="fas fa-spinner"></i>
+                </motion.div>
+              ) : (
+                <>
+                  <i className="fas fa-user-plus"></i>
+                  Create Account
+                </>
+              )}
+            </motion.button>
+          </form>
+
+          <motion.div 
+            className="auth-footer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.1 }}
+          >
+            <p>
+              Already have an account?{' '}
+              <Link to="/login" className="auth-link">
+                Sign in here
+              </Link>
+            </p>
+          </motion.div>
+
+          <motion.div 
+            className="social-login"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2 }}
+          >
+            <p>Or sign up with</p>
+            <div className="social-buttons">
+              <motion.button
+                className="social-btn google"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <i className="fab fa-google"></i>
+                Google
+              </motion.button>
+              <motion.button
+                className="social-btn facebook"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <i className="fab fa-facebook-f"></i>
+                Facebook
+              </motion.button>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </div>
+  );
+};
+
+export default Register;
