@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import apiService from '../services/api';
 import './Auth.css';
 
 const Login = () => {
@@ -75,28 +76,10 @@ const Login = () => {
       // Simulate API call - replace with actual API call
       console.log('Login attempt:', formData);
       
-      // Simulate API response
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Simulate success for demo (replace with actual API call)
-          if (formData.email && formData.password) {
-            resolve({
-              success: true,
-              message: 'Login successful',
-              data: {
-                user: {
-                  name: 'Demo User',
-                  email: formData.email,
-                  role: 'farmer'
-                },
-                token: 'demo-token-123'
-              }
-            });
-          } else {
-            reject(new Error('Invalid credentials'));
-          }
-        }, 1500);
-      });
+      // Call actual API for login
+      const response = await apiService.login(formData);
+      
+      console.log('✅ Login successful:', response);
 
       // Success handling
       toast.success('Login successful! Welcome back!', {
@@ -116,8 +99,22 @@ const Login = () => {
       }, 1000);
       
     } catch (error) {
-      // Error handling
-      const errorMessage = error.message || 'Login failed. Please try again.';
+      console.error('❌ Login failed:', error);
+      
+      // Handle different types of errors
+      let errorMessage = 'Login failed. Please try again.';
+      
+      if (error.response) {
+        // Server responded with error
+        const serverError = error.response.data;
+        if (serverError.message) {
+          errorMessage = serverError.message;
+        } else if (serverError.error) {
+          errorMessage = serverError.error;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       
       toast.error(errorMessage, {
         position: "top-right",
@@ -127,8 +124,6 @@ const Login = () => {
         pauseOnHover: true,
         draggable: true,
       });
-      
-      console.error('❌ Login failed:', errorMessage);
       
     } finally {
       setIsLoading(false);

@@ -134,11 +134,11 @@ class ApiService {
     });
   }
 
-  async getFarmerProducts(farmerId, params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    const endpoint = `/products/farmer/${farmerId}${queryString ? `?${queryString}` : ''}`;
-    return this.request(endpoint);
-  }
+  // async getFarmerProducts(farmerId, params = {}) {
+  //   const queryString = new URLSearchParams(params).toString();
+  //   const endpoint = `/products/farmer/${farmerId}${queryString ? `?${queryString}` : ''}`;
+  //   return this.request(endpoint);
+  // }
 
   // Order Methods
   async getOrders(params = {}) {

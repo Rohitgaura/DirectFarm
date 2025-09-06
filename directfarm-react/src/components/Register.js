@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import apiService from '../services/api';
 import './Auth.css';
 
 const Register = () => {
@@ -33,6 +34,8 @@ const Register = () => {
       }));
     }
   };
+  
+
 
   const validateForm = () => {
     const newErrors = {};
@@ -50,6 +53,7 @@ const Register = () => {
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Email is invalid';
     }
+
     
     if (!formData.phone) {
       newErrors.phone = 'Phone number is required';
@@ -97,33 +101,25 @@ const Register = () => {
     setIsLoading(true);
     
     try {
-      // Simulate API call - replace with actual API call
       console.log('Registration attempt:', formData);
       
-      // Simulate API response
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          // Simulate success for demo (replace with actual API call)
-          if (formData.email && formData.password) {
-            resolve({
-              success: true,
-              message: 'Registration successful',
-              data: {
-                user: {
-                  name: `${formData.firstName} ${formData.lastName}`,
-                  email: formData.email,
-                  role: formData.userType
-                },
-                token: 'demo-token-123'
-              }
-            });
-          } else {
-            reject(new Error('Registration failed. Please try again.'));
-          }
-        }, 1500);
-      });
-
-      // Success handling
+      const userData = {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        password: formData.password,
+        phone: formData.phone,
+        role: formData.userType,
+        address: {
+          street: '',
+          city: '',
+          state: '',
+          pincode: ''
+        }
+      };
+      
+      const response = await apiService.register(userData);
+      console.log('✅ Registration successful:', response);
+      
       toast.success('Registration successful! Welcome to DirectFarm!', {
         position: "top-right",
         autoClose: 3000,
@@ -133,28 +129,49 @@ const Register = () => {
         draggable: true,
       });
       
-      console.log('✅ Registration successful:', formData.email);
-      
-      // Navigate to home page after successful registration
       setTimeout(() => {
-        navigate('/');
+        navigate('/login');
       }, 1000);
       
     } catch (error) {
-      // Error handling
-      const errorMessage = error.message || 'Registration failed. Please try again.';
+      console.error('❌ Registration failed:', error);
+      let errorMessage = 'Registration failed. Please try again.';
       
-      toast.error(errorMessage, {
-        position: "top-right",
-        autoClose: 4000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      if (error.response) {
+        const serverError = error.response.data;
+        if (serverError.message) {
+          errorMessage = serverError.message;
+        } else if (serverError.error) {
+          errorMessage = serverError.error;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       
-      console.error('❌ Registration failed:', errorMessage);
-      
+      if (errorMessage.includes('already exists') || errorMessage.includes('duplicate')) {
+        toast.error('Email already registered. Please use a different email or try logging in.', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        
+        setFormData(prev => ({
+          ...prev,
+          email: ''
+        }));
+      } else {
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 4000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -243,16 +260,29 @@ const Register = () => {
                 <i className="fas fa-envelope"></i>
                 Email Address
               </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={errors.email ? 'error' : ''}
-                placeholder="Enter your email"
-              />
+              <div className="email-input-container">
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`${errors.email ? 'error' : ''} ${formData.email && !errors.email ? 'valid' : ''}`}
+                  placeholder="Enter your email"
+                />
+                {formData.email && !errors.email && (
+                  <i className="fas fa-check-circle email-valid-icon"></i>
+                )}
+                {errors.email && errors.email.includes('already registered') && (
+                  <i className="fas fa-exclamation-circle email-error-icon"></i>
+                )}
+              </div>
               {errors.email && <span className="error-message">{errors.email}</span>}
+              {formData.email && !errors.email && (
+                <span className="success-message">
+                  <i className="fas fa-check"></i> Email is available
+                </span>
+              )}
             </motion.div>
 
             <motion.div 

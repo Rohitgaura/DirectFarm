@@ -500,3 +500,54 @@
 .auth-card {
   animation: fadeInUp 0.8s ease-out;
 }
+
+/* Email validation styles */
+.email-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.email-input-container input {
+  padding-right: 40px;
+}
+
+.email-valid-icon {
+  position: absolute;
+  right: 12px;
+  color: #4CAF50;
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.email-error-icon {
+  position: absolute;
+  right: 12px;
+  color: #f44336;
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.success-message {
+  color: #4CAF50;
+  font-size: 12px;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.success-message i {
+  font-size: 10px;
+}
+
+/* Input validation states */
+.form-group input.valid {
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+.form-group input.error {
+  border-color: #f44336;
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.2);
+}

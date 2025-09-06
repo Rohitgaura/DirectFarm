@@ -1,38 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import './Home.css';
 
 const Home = () => {
-  // Demo function to test toast notifications
-  const testToasts = () => {
-    toast.success('This is a success message!', {
-      position: "top-right",
-      autoClose: 3000,
-    });
-    
-    setTimeout(() => {
-      toast.error('This is an error message!', {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }, 1000);
-    
-    setTimeout(() => {
-      toast.info('This is an info message!', {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }, 2000);
-    
-    setTimeout(() => {
-      toast.warning('This is a warning message!', {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }, 3000);
-  };
   const highlights = [
     {
       icon: 'fas fa-coins',
@@ -156,15 +127,7 @@ const Home = () => {
                   Join as Buyer
                 </Link>
               </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <button onClick={testToasts} className="btn btn-secondary" style={{ background: '#FF9800' }}>
-                  <i className="fas fa-bell"></i>
-                  Test Toasts
-                </button>
-              </motion.div>
+
             </motion.div>
           </div>
         </motion.div>
