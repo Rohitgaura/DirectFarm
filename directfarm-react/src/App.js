@@ -13,6 +13,7 @@ import Implementation from './components/Implementation';
 import SocialImpact from './components/SocialImpact';
 import Login from './components/Login';
 import Register from './components/Register';
+import FarmerDashboard from './components/FarmerDashboard';
 import Footer from './components/Footer';
 import './App.css';
 
@@ -32,6 +33,7 @@ function App() {
           <Route path="/social-impact" element={<SocialImpact />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/farmer-dashboard" element={<FarmerDashboard />} />
         </Routes>
         <Footer />
         <ToastContainer />

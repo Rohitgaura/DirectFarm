@@ -80,6 +80,13 @@ const Login = () => {
       const response = await apiService.login(formData);
       
       console.log('✅ Login successful:', response);
+      localStorage.setItem('token', response.data.token);
+
+      // Save user info
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+
+      // Dispatch custom event to notify Navbar
+      window.dispatchEvent(new Event('userChanged'));
 
       // Success handling
       toast.success('Login successful! Welcome back!', {
@@ -93,9 +100,13 @@ const Login = () => {
       
       console.log('✅ Login successful:', formData.email);
       
-      // Navigate to home page after successful login
+      // Navigate based on user role after successful login
       setTimeout(() => {
-        navigate('/');
+        if (response.data.user.role === 'farmer') {
+          navigate('/farmer-dashboard');
+        } else {
+          navigate('/');
+        }
       }, 1000);
       
     } catch (error) {

@@ -1,9 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import './Home.css';
 
 const Home = () => {
+  const [user, setUser] = useState(null);
+
+  // Load user from localStorage and listen for changes
+  useEffect(() => {
+    const loadUser = () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    // Load user immediately
+    loadUser();
+
+    // Listen for storage changes
+    const handleStorageChange = () => {
+      loadUser();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('userChanged', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('userChanged', handleStorageChange);
+    };
+  }, []);
+
   const highlights = [
     {
       icon: 'fas fa-coins',
@@ -109,25 +144,63 @@ const Home = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.8, delay: 1 }}
             >
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/about" className="btn btn-primary">
-                  <i className="fas fa-user-farmer"></i>
-                  Join as Farmer
-                </Link>
-              </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Link to="/features" className="btn btn-secondary">
-                  <i className="fas fa-store"></i>
-                  Join as Buyer
-                </Link>
-              </motion.div>
-
+              {user ? (
+                // Show personalized content for logged-in users
+                <div className="welcome-message">
+                  <motion.div
+                    initial={{ scale: 0.9 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="welcome-card"
+                  >
+                    <h3>Welcome back, {user.name}!</h3>
+                    <p>You're logged in as a <strong>{user.role}</strong></p>
+                    {user.role === 'farmer' ? (
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Link to="/farmer-dashboard" className="btn btn-primary">
+                          <i className="fas fa-tachometer-alt"></i>
+                          Go to Dashboard
+                        </Link>
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Link to="/about" className="btn btn-primary">
+                          <i className="fas fa-shopping-cart"></i>
+                          Browse Products
+                        </Link>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                </div>
+              ) : (
+                // Show join buttons for non-logged-in users
+                <>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Link to="/register" className="btn btn-primary">
+                      <i className="fas fa-user-farmer"></i>
+                      Join as Farmer
+                    </Link>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Link to="/register" className="btn btn-secondary">
+                      <i className="fas fa-store"></i>
+                      Join as Buyer
+                    </Link>
+                  </motion.div>
+                </>
+              )}
             </motion.div>
           </div>
         </motion.div>
