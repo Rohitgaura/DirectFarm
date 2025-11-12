@@ -15,7 +15,8 @@ const Register = () => {
     phone: '',
     userType: 'farmer',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    experienceYears: ''
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -73,6 +74,15 @@ const Register = () => {
       newErrors.confirmPassword = 'Passwords do not match';
     }
     
+    // Validate experience years for farmers
+    if (formData.userType === 'farmer') {
+      if (!formData.experienceYears) {
+        newErrors.experienceYears = 'Experience years is required for farmers';
+      } else if (parseInt(formData.experienceYears) < 0 || parseInt(formData.experienceYears) > 50) {
+        newErrors.experienceYears = 'Experience years must be between 0 and 50';
+      }
+    }
+    
     setErrors(newErrors);
     
     // Show validation errors as toasts
@@ -109,6 +119,7 @@ const Register = () => {
         password: formData.password,
         phone: formData.phone,
         role: formData.userType,
+        experienceYears: formData.userType === 'farmer' ? parseInt(formData.experienceYears) : undefined,
         address: {
           street: '',
           city: '',
@@ -329,6 +340,33 @@ const Register = () => {
                 <option value="logistics">Logistics Partner</option>
               </select>
             </motion.div>
+
+            {/* Experience Years Field - Only for Farmers */}
+            {formData.userType === 'farmer' && (
+              <motion.div 
+                className="form-group"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.65 }}
+              >
+                <label htmlFor="experienceYears">
+                  <i className="fas fa-calendar-alt"></i>
+                  Years of Farming Experience
+                </label>
+                <input
+                  type="number"
+                  id="experienceYears"
+                  name="experienceYears"
+                  value={formData.experienceYears}
+                  onChange={handleChange}
+                  className={errors.experienceYears ? 'error' : ''}
+                  placeholder="Enter years of farming experience"
+                  min="0"
+                  max="50"
+                />
+                {errors.experienceYears && <span className="error-message">{errors.experienceYears}</span>}
+              </motion.div>
+            )}
 
             <motion.div 
               className="form-group"

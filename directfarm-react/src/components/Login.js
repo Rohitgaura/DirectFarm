@@ -79,14 +79,60 @@ const Login = () => {
       // Call actual API for login
       const response = await apiService.login(formData);
       
-      console.log('✅ Login successful:', response);
-      localStorage.setItem('token', response.data.token);
-
-      // Save user info
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-
-      // Dispatch custom event to notify Navbar
+      console.log('✅ Login successful - Full response:', response);
+      
+      // Extract token and user from response
+      // Backend returns: { success: true, data: { user: {...}, token: "..." } }
+      const token = response.data?.token || response.token;
+      let userData = response.data?.user || response.user;
+      
+      if (!token) {
+        console.error('❌ No token in response:', response);
+        throw new Error('No token received from server');
+      }
+      
+      if (!userData) {
+        console.error('❌ No user data in response:', response);
+        throw new Error('No user data received from server');
+      }
+      
+      // Clean user data - remove sensitive fields and MongoDB internals
+      const cleanUserData = {
+        id: userData._id || userData.id,
+        name: userData.name,
+        email: userData.email,
+        phone: userData.phone,
+        role: userData.role,
+        address: userData.address,
+        isActive: userData.isActive,
+        createdAt: userData.createdAt,
+        lastLogin: userData.lastLogin
+      };
+      
+      // Save token and user to localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(cleanUserData));
+      
+      console.log('✅ Token saved:', token ? 'Yes' : 'No');
+      console.log('✅ User saved to localStorage:', cleanUserData);
+      console.log('✅ localStorage.user:', localStorage.getItem('user'));
+      
+      // Verify data was saved
+      const verifyUser = localStorage.getItem('user');
+      const verifyToken = localStorage.getItem('token');
+      console.log('✅ Verification - User in localStorage:', verifyUser ? 'Yes' : 'No');
+      console.log('✅ Verification - Token in localStorage:', verifyToken ? 'Yes' : 'No');
+      
+      // Dispatch custom event to notify Navbar immediately (localStorage is synchronous)
+      console.log('📢 Dispatching userChanged event');
       window.dispatchEvent(new Event('userChanged'));
+      console.log('✅ userChanged event dispatched');
+      
+      // Force a re-render by dispatching multiple events
+      // This ensures the Navbar picks up the change even if there's a timing issue
+      setTimeout(() => {
+        window.dispatchEvent(new Event('userChanged'));
+      }, 10);
 
       // Success handling
       toast.success('Login successful! Welcome back!', {
@@ -98,12 +144,13 @@ const Login = () => {
         draggable: true,
       });
       
-      console.log('✅ Login successful:', formData.email);
-      
       // Navigate based on user role after successful login
+      const userRole = cleanUserData.role;
       setTimeout(() => {
-        if (response.data.user.role === 'farmer') {
+        if (userRole === 'farmer') {
           navigate('/farmer-dashboard');
+        } else if (userRole === 'buyer') {
+          navigate('/buyer-dashboard');
         } else {
           navigate('/');
         }

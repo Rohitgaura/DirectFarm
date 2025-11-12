@@ -1,20 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import apiService from '../services/api'; // ✅ import apiService
 import './Home.css';
 
 const Home = () => {
   const [user, setUser] = useState(null);
 
-  // Load user from localStorage and listen for changes
+  // ✅ Load and validate user from localStorage
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
       const storedUser = localStorage.getItem('user');
-      if (storedUser) {
+      const token = localStorage.getItem('token');
+
+      if (storedUser && token) {
         try {
-          setUser(JSON.parse(storedUser));
+          const result = await apiService.verifyToken();
+          if (result.valid) {
+            setUser(JSON.parse(storedUser));
+          } else {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            setUser(null);
+          }
         } catch (error) {
-          console.error('Error parsing user data:', error);
+          console.error('Error verifying token:', error);
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
           setUser(null);
         }
       } else {
@@ -22,14 +34,11 @@ const Home = () => {
       }
     };
 
-    // Load user immediately
+    // Run on mount
     loadUser();
 
-    // Listen for storage changes
-    const handleStorageChange = () => {
-      loadUser();
-    };
-
+    // ✅ Re-run when login/logout occurs
+    const handleStorageChange = () => loadUser();
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('userChanged', handleStorageChange);
 
@@ -39,6 +48,7 @@ const Home = () => {
     };
   }, []);
 
+  // ✅ Highlights & Impact data
   const highlights = [
     {
       icon: 'fas fa-coins',
@@ -84,9 +94,7 @@ const Home = () => {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.3
-      }
+      transition: { staggerChildren: 0.3 }
     }
   };
 
@@ -95,10 +103,7 @@ const Home = () => {
     visible: {
       y: 0,
       opacity: 1,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut"
-      }
+      transition: { duration: 0.6, ease: "easeOut" }
     }
   };
 
@@ -115,6 +120,7 @@ const Home = () => {
         <div className="hero-background">
           <div className="hero-overlay"></div>
         </div>
+
         <motion.div 
           className="hero-content"
           initial={{ y: 100, opacity: 0 }}
@@ -130,6 +136,7 @@ const Home = () => {
             >
               Empowering Farmers, Connecting Retailers
             </motion.h1>
+            
             <motion.p 
               className="hero-subtitle"
               initial={{ opacity: 0 }}
@@ -138,6 +145,7 @@ const Home = () => {
             >
               A digital platform that connects farmers directly to retailers, wholesalers, and bulk buyers, ensuring fair trade, transparency, and improved farmer income.
             </motion.p>
+
             <motion.div 
               className="hero-buttons"
               initial={{ y: 50, opacity: 0 }}
@@ -145,7 +153,7 @@ const Home = () => {
               transition={{ duration: 0.8, delay: 1 }}
             >
               {user ? (
-                // Show personalized content for logged-in users
+                // ✅ Logged-in view
                 <div className="welcome-message">
                   <motion.div
                     initial={{ scale: 0.9 }}
@@ -155,22 +163,17 @@ const Home = () => {
                   >
                     <h3>Welcome back, {user.name}!</h3>
                     <p>You're logged in as a <strong>{user.role}</strong></p>
+
                     {user.role === 'farmer' ? (
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Link to="/farmer-dashboard" className="btn btn-primary">
                           <i className="fas fa-tachometer-alt"></i>
                           Go to Dashboard
                         </Link>
                       </motion.div>
                     ) : (
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Link to="/about" className="btn btn-primary">
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Link to="/buyer-dashboard" className="btn btn-primary">
                           <i className="fas fa-shopping-cart"></i>
                           Browse Products
                         </Link>
@@ -179,21 +182,16 @@ const Home = () => {
                   </motion.div>
                 </div>
               ) : (
-                // Show join buttons for non-logged-in users
+                // ✅ Guest view
                 <>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Link to="/register" className="btn btn-primary">
                       <i className="fas fa-user-farmer"></i>
                       Join as Farmer
                     </Link>
                   </motion.div>
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
+
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Link to="/register" className="btn btn-secondary">
                       <i className="fas fa-store"></i>
                       Join as Buyer
@@ -216,10 +214,7 @@ const Home = () => {
         viewport={{ once: true }}
       >
         <div className="container">
-          <motion.h2 
-            className="section-title"
-            variants={itemVariants}
-          >
+          <motion.h2 className="section-title" variants={itemVariants}>
             Why Choose DirectFarm?
           </motion.h2>
           <div className="highlights-grid">
@@ -228,11 +223,7 @@ const Home = () => {
                 key={index}
                 className="highlight-card"
                 variants={itemVariants}
-                whileHover={{ 
-                  y: -10, 
-                  scale: 1.02,
-                  transition: { duration: 0.3 }
-                }}
+                whileHover={{ y: -10, scale: 1.02, transition: { duration: 0.3 } }}
               >
                 <div className="highlight-icon">
                   <i className={highlight.icon}></i>
@@ -256,10 +247,7 @@ const Home = () => {
       >
         <div className="container">
           <div className="about-content">
-            <motion.div 
-              className="about-text"
-              variants={itemVariants}
-            >
+            <motion.div className="about-text" variants={itemVariants}>
               <h2>About DirectFarm</h2>
               <p>
                 Farmers in Bihar face significant challenges including low income due to middlemen exploitation, 
@@ -271,17 +259,12 @@ const Home = () => {
                 Our platform eliminates intermediaries, provides fair pricing, and ensures faster sales cycles, 
                 resulting in increased farmer income and reduced food wastage.
               </p>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Link to="/about" className="btn btn-outline">Learn More</Link>
               </motion.div>
             </motion.div>
-            <motion.div 
-              className="about-image"
-              variants={itemVariants}
-            >
+
+            <motion.div className="about-image" variants={itemVariants}>
               <div className="image-placeholder">
                 <i className="fas fa-users"></i>
                 <p>Farmers & Technology</p>
@@ -301,10 +284,7 @@ const Home = () => {
         viewport={{ once: true }}
       >
         <div className="container">
-          <motion.h2 
-            className="section-title"
-            variants={itemVariants}
-          >
+          <motion.h2 className="section-title" variants={itemVariants}>
             Our Impact
           </motion.h2>
           <div className="impact-grid">
@@ -313,11 +293,7 @@ const Home = () => {
                 key={index}
                 className="impact-card"
                 variants={itemVariants}
-                whileHover={{ 
-                  y: -8, 
-                  scale: 1.03,
-                  transition: { duration: 0.3 }
-                }}
+                whileHover={{ y: -8, scale: 1.03, transition: { duration: 0.3 } }}
               >
                 <div className="impact-number">{metric.number}</div>
                 <h3>{metric.title}</h3>
