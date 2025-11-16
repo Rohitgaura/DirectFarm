@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import apiService from '../services/api';
 import './BuyerDashboard.css';
 
 const BuyerDashboard = () => {
@@ -30,6 +31,8 @@ const BuyerDashboard = () => {
   const [crops, setCrops] = useState([]);
   const [filteredCrops, setFilteredCrops] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [user, setUser] = useState(null);
+  const [orderQuantity, setOrderQuantity] = useState({});
 
   // Location data structure (same as farmer dashboard)
   const indianStates = [
@@ -193,11 +196,65 @@ const BuyerDashboard = () => {
     }
   ];
 
-  // Load crops on component mount
+  // Load user and products on component mount
   useEffect(() => {
-    setCrops(mockCrops);
-    setFilteredCrops(mockCrops);
+    const loadUserAndProducts = async () => {
+      try {
+        // Get user from localStorage
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+        }
+        
+        // Fetch all products from API
+        await loadProducts();
+      } catch (error) {
+        console.error('Error loading user or products:', error);
+      }
+    };
+
+    loadUserAndProducts();
   }, []);
+
+  // Load products from API
+  const loadProducts = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiService.getProducts();
+      if (response.success && response.data) {
+        // Transform products to match the display format
+        const transformedProducts = response.data.map(product => ({
+          id: product._id,
+          productId: product._id,
+          farmerId: product.farmerId?._id || product.farmerId,
+          farmerName: product.farmerId?.name || product.farmer?.name || 'Unknown Farmer',
+          vegetableType: product.name,
+          quantity: product.quantity,
+          ratePerKg: product.price,
+          totalRate: (product.quantity * product.price).toFixed(2),
+          harvestingDate: product.harvestingDate,
+          description: product.description || '',
+          images: product.images || [],
+          uploadDate: product.createdAt,
+          location: product.location || null
+        }));
+        setCrops(transformedProducts);
+        setFilteredCrops(transformedProducts);
+      } else {
+        // Fallback to mock data if API fails
+        setCrops(mockCrops);
+        setFilteredCrops(mockCrops);
+      }
+    } catch (error) {
+      console.error('Error loading products:', error);
+      // Fallback to mock data on error
+      setCrops(mockCrops);
+      setFilteredCrops(mockCrops);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter crops based on current filters
   useEffect(() => {
@@ -210,21 +267,27 @@ const BuyerDashboard = () => {
       );
     }
 
-    // Filter by harvesting date
-    if (filters.harvestingDate) {
+    // Filter by harvesting date (if available)
+    if (filters.harvestingDate && filters.harvestingDate !== '') {
       const filterDate = new Date(filters.harvestingDate);
       filtered = filtered.filter(crop => {
-        const harvestDate = new Date(crop.harvestingDate);
-        return harvestDate.toDateString() === filterDate.toDateString();
+        if (crop.harvestingDate) {
+          const harvestDate = new Date(crop.harvestingDate);
+          return harvestDate.toDateString() === filterDate.toDateString();
+        }
+        return false;
       });
     }
 
     // Filter by uploaded date
-    if (filters.uploadedDate) {
+    if (filters.uploadedDate && filters.uploadedDate !== '') {
       const filterDate = new Date(filters.uploadedDate);
       filtered = filtered.filter(crop => {
-        const uploadDate = new Date(crop.uploadDate);
-        return uploadDate.toDateString() === filterDate.toDateString();
+        if (crop.uploadDate) {
+          const uploadDate = new Date(crop.uploadDate);
+          return uploadDate.toDateString() === filterDate.toDateString();
+        }
+        return false;
       });
     }
 
@@ -239,9 +302,9 @@ const BuyerDashboard = () => {
     // Filter by search query
     if (filters.searchQuery) {
       filtered = filtered.filter(crop => 
-        crop.vegetableType.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
-        crop.description.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
-        crop.farmerName.toLowerCase().includes(filters.searchQuery.toLowerCase())
+        crop.vegetableType?.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
+        crop.description?.toLowerCase().includes(filters.searchQuery.toLowerCase()) ||
+        crop.farmerName?.toLowerCase().includes(filters.searchQuery.toLowerCase())
       );
     }
 
@@ -390,10 +453,75 @@ const BuyerDashboard = () => {
   };
 
   const handleContactFarmer = (crop) => {
-    toast.success(`Contacting ${crop.farmerName} at ${crop.contact}`, {
+    toast.success(`Contacting ${crop.farmerName}`, {
       position: "top-right",
       autoClose: 3000,
     });
+  };
+
+  // Handle order/buy product
+  const handleOrder = async (crop) => {
+    if (!user || !user._id) {
+      toast.error('Please login to place an order');
+      return;
+    }
+
+    const quantity = parseFloat(orderQuantity[crop.id]) || 1;
+    
+    if (quantity <= 0) {
+      toast.error('Please enter a valid quantity');
+      return;
+    }
+
+    if (quantity > crop.quantity) {
+      toast.error(`Only ${crop.quantity} kg available`);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Prepare order data according to new schema
+      const orderData = {
+        buyerId: user._id,
+        items: [
+          {
+            productId: crop.productId || crop.id,
+            quantity: quantity,
+            price: crop.ratePerKg,
+            farmerId: crop.farmerId
+          }
+        ],
+        totalAmount: quantity * crop.ratePerKg,
+        status: 'pending'
+      };
+
+      // Call API to create order
+      const response = await apiService.createOrder(orderData);
+
+      if (response.success) {
+        toast.success('Order placed successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        
+        // Clear order quantity for this product
+        setOrderQuantity(prev => {
+          const newState = { ...prev };
+          delete newState[crop.id];
+          return newState;
+        });
+
+        // Reload products to update quantities
+        await loadProducts();
+      } else {
+        throw new Error(response.message || 'Failed to place order');
+      }
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast.error(error.message || 'Failed to place order. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -721,34 +849,72 @@ const BuyerDashboard = () => {
                       <p className="crop-description">{crop.description}</p>
                     )}
 
-                    <div className="crop-location">
-                      <i className="fas fa-map-marker-alt"></i>
-                      <span>
-                        {crop.location.village}, {crop.location.subdistrict}, {crop.location.district}, {crop.location.state}
-                      </span>
-                    </div>
+                    {crop.location && (
+                      <div className="crop-location">
+                        <i className="fas fa-map-marker-alt"></i>
+                        <span>
+                          {crop.location.village && `${crop.location.village}, `}
+                          {crop.location.subdistrict && `${crop.location.subdistrict}, `}
+                          {crop.location.district && `${crop.location.district}, `}
+                          {crop.location.state || 'Location not specified'}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="crop-dates">
-                      <div className="date-item">
-                        <i className="fas fa-calendar-alt"></i>
-                        <span>Harvested: {formatDate(crop.harvestingDate)}</span>
-                      </div>
-                      <div className="date-item">
-                        <i className="fas fa-upload"></i>
-                        <span>Uploaded: {formatDate(crop.uploadDate)}</span>
-                      </div>
+                      {crop.harvestingDate && (
+                        <div className="date-item">
+                          <i className="fas fa-calendar-alt"></i>
+                          <span>Harvested: {formatDate(crop.harvestingDate)}</span>
+                        </div>
+                      )}
+                      {crop.uploadDate && (
+                        <div className="date-item">
+                          <i className="fas fa-upload"></i>
+                          <span>Uploaded: {formatDate(crop.uploadDate)}</span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="crop-actions">
+                      <div className="order-quantity">
+                        <label>
+                          <i className="fas fa-shopping-cart"></i>
+                          Quantity (kg):
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max={crop.quantity}
+                          value={orderQuantity[crop.id] || ''}
+                          onChange={(e) => setOrderQuantity(prev => ({
+                            ...prev,
+                            [crop.id]: e.target.value
+                          }))}
+                          placeholder="Qty"
+                          style={{
+                            width: '80px',
+                            padding: '8px',
+                            margin: '0 10px',
+                            borderRadius: '4px',
+                            border: '1px solid #ddd'
+                          }}
+                        />
+                        <button
+                          onClick={() => handleOrder(crop)}
+                          className="order-btn"
+                          disabled={isLoading || !orderQuantity[crop.id] || parseFloat(orderQuantity[crop.id]) <= 0}
+                        >
+                          <i className="fas fa-shopping-bag"></i>
+                          Order Now
+                        </button>
+                      </div>
                       <button
                         onClick={() => handleContactFarmer(crop)}
                         className="contact-btn"
                       >
                         <i className="fas fa-phone"></i>
-                        Contact Farmer
-                      </button>
-                      <button className="favorite-btn">
-                        <i className="fas fa-heart"></i>
+                        Contact
                       </button>
                     </div>
                   </div>

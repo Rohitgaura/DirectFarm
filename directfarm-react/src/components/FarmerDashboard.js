@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import apiService from '../services/api';
 import './FarmerDashboard.css';
 
 const FarmerDashboard = () => {
@@ -30,6 +31,7 @@ const FarmerDashboard = () => {
     villages: []
   });
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [user, setUser] = useState(null);
 
   // Vegetable types dropdown options
   const vegetableTypes = [
@@ -80,12 +82,46 @@ const FarmerDashboard = () => {
     return villageMap[subdistrict] || [];
   };
 
-  // Load uploaded crops from localStorage on component mount
+  // Load user and products on component mount
   useEffect(() => {
-    const savedCrops = localStorage.getItem('farmerCrops');
-    if (savedCrops) {
-      setUploadedCrops(JSON.parse(savedCrops));
-    }
+    const loadUserAndProducts = async () => {
+      try {
+        // Get user from localStorage
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          setUser(userData);
+          
+          // Fetch products for this farmer - use either _id or id
+          const userId = userData._id || userData.id;
+          if (userId) {
+            try {
+              const productsResponse = await apiService.getProducts({ farmerId: userId });
+              if (productsResponse.success && productsResponse.data) {
+                // Transform products to match the display format
+                const transformedProducts = productsResponse.data.map(product => ({
+                  id: product._id,
+                  vegetableType: product.name,
+                  quantity: product.quantity,
+                  ratePerKg: product.price,
+                  totalRate: (product.quantity * product.price).toFixed(2),
+                  description: product.description || '',
+                  images: product.images || [],
+                  uploadingDate: product.createdAt
+                }));
+                setUploadedCrops(transformedProducts);
+              }
+            } catch (error) {
+              console.error('Error loading products:', error);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user:', error);
+      }
+    };
+
+    loadUserAndProducts();
   }, []);
 
   // Calculate total rate automatically
@@ -232,28 +268,63 @@ const FarmerDashboard = () => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files);
-    const imageFiles = files.filter(file => file.type.startsWith('image/'));
+    
+    // Accept only image types: JPG, JPEG, PNG, GIF, WebP
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB per image
+    
+    const imageFiles = files.filter(file => {
+      // Check file type
+      const isImage = allowedTypes.includes(file.type.toLowerCase()) || file.type.startsWith('image/');
+      if (!isImage) {
+        toast.error(`${file.name} is not a valid image format. Please use JPG, JPEG, PNG, GIF, or WebP.`);
+        return false;
+      }
+      
+      // Check file size
+      if (file.size > maxSize) {
+        toast.error(`${file.name} is too large. Maximum size is 5MB.`);
+        return false;
+      }
+      
+      return true;
+    });
     
     if (imageFiles.length === 0) {
-      toast.error('Please select valid image files');
       return;
     }
 
     // Convert images to base64 for storage
     const imagePromises = imageFiles.map(file => {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
+        reader.onload = (e) => {
+          // Optional: Compress image if needed (can add image compression library later)
+          resolve(e.target.result);
+        };
+        reader.onerror = (error) => {
+          console.error('Error reading file:', error);
+          reject(error);
+        };
         reader.readAsDataURL(file);
       });
     });
 
-    Promise.all(imagePromises).then(base64Images => {
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...base64Images]
-      }));
-    });
+    Promise.all(imagePromises)
+      .then(base64Images => {
+        setFormData(prev => ({
+          ...prev,
+          images: [...prev.images, ...base64Images]
+        }));
+        toast.success(`${imageFiles.length} image(s) added successfully!`, {
+          position: "top-right",
+          autoClose: 2000,
+        });
+      })
+      .catch(error => {
+        console.error('Error processing images:', error);
+        toast.error('Error processing images. Please try again.');
+      });
   };
 
   const removeImage = (index) => {
@@ -310,63 +381,122 @@ const FarmerDashboard = () => {
       toast.error('Please fix the form errors before submitting');
       return;
     }
+
+    // Check if user is logged in - get from localStorage if state is not set
+    let currentUser = user;
+    if (!currentUser || (!currentUser._id && !currentUser.id)) {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          currentUser = JSON.parse(storedUser);
+          setUser(currentUser); // Update state for next time
+        } catch (error) {
+          console.error('Error parsing user from localStorage:', error);
+        }
+      }
+    }
+
+    // Final check - use either _id or id
+    const userId = currentUser?._id || currentUser?.id;
+    if (!userId) {
+      toast.error('Please login to upload products');
+      return;
+    }
     
     setIsLoading(true);
     
     try {
-      const cropData = {
-        id: Date.now().toString(),
-        ...formData,
-        totalRate: calculateTotalRate(),
-        uploadDate: new Date().toISOString(),
-        status: 'Available'
-      };
-      
-      // Add to uploaded crops
-      const updatedCrops = [cropData, ...uploadedCrops];
-      setUploadedCrops(updatedCrops);
-      
-      // Save to localStorage
-      localStorage.setItem('farmerCrops', JSON.stringify(updatedCrops));
-      
-      // Reset form
-      setFormData({
-        vegetableType: '',
-        quantity: '',
-        ratePerKg: '',
-        description: '',
-        images: [],
+      // Prepare product data according to new schema - matching all form fields
+      const productData = {
+        farmerId: userId,
+        name: formData.vegetableType,
+        quantity: parseFloat(formData.quantity),
+        price: parseFloat(formData.ratePerKg),
+        harvestingDate: formData.harvestingDate ? new Date(formData.harvestingDate).toISOString() : undefined,
+        description: formData.description || '',
+        images: formData.images || [],
         location: {
-          state: '',
-          district: '',
-          subdistrict: '',
-          village: '',
-          coordinates: null
+          state: formData.location.state || '',
+          district: formData.location.district || '',
+          subdistrict: formData.location.subdistrict || '',
+          village: formData.location.village || '',
+          coordinates: formData.location.coordinates ? {
+            latitude: formData.location.coordinates.latitude,
+            longitude: formData.location.coordinates.longitude
+          } : undefined
         }
-      });
-      
-      toast.success('Crop uploaded successfully!', {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      };
+
+      // Call API to create product
+      const response = await apiService.createProduct(productData);
+
+      if (response.success) {
+        // Add to uploaded crops list
+        const newProduct = {
+          id: response.data._id || response.data.product?._id,
+          vegetableType: response.data.name || response.data.product?.name,
+          quantity: response.data.quantity || response.data.product?.quantity,
+          ratePerKg: response.data.price || response.data.product?.price,
+          totalRate: calculateTotalRate(),
+          description: response.data.description || response.data.product?.description || '',
+          images: response.data.images || response.data.product?.images || [],
+          uploadingDate: response.data.createdAt || response.data.product?.createdAt
+        };
+
+        const updatedCrops = [newProduct, ...uploadedCrops];
+        setUploadedCrops(updatedCrops);
+        
+        // Reset form
+        setFormData({
+          vegetableType: '',
+          quantity: '',
+          ratePerKg: '',
+          harvestingDate: '',
+          description: '',
+          images: [],
+          location: {
+            state: '',
+            district: '',
+            subdistrict: '',
+            village: '',
+            coordinates: null
+          }
+        });
+        
+        toast.success('Product uploaded successfully!', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+      } else {
+        throw new Error(response.message || 'Failed to upload product');
+      }
       
     } catch (error) {
-      console.error('Error uploading crop:', error);
-      toast.error('Failed to upload crop. Please try again.');
+      console.error('Error uploading product:', error);
+      toast.error(error.message || 'Failed to upload product. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const deleteCrop = (cropId) => {
-    const updatedCrops = uploadedCrops.filter(crop => crop.id !== cropId);
-    setUploadedCrops(updatedCrops);
-    localStorage.setItem('farmerCrops', JSON.stringify(updatedCrops));
-    toast.success('Crop deleted successfully!');
+  const deleteCrop = async (cropId) => {
+    try {
+      const response = await apiService.deleteProduct(cropId);
+      if (response.success) {
+        const updatedCrops = uploadedCrops.filter(crop => crop.id !== cropId);
+        setUploadedCrops(updatedCrops);
+        toast.success('Product deleted successfully!');
+      } else {
+        throw new Error(response.message || 'Failed to delete product');
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error(error.message || 'Failed to delete product. Please try again.');
+    }
   };
 
   const formatDate = (dateString) => {
@@ -642,7 +772,7 @@ const FarmerDashboard = () => {
                   name="images"
                   onChange={handleImageUpload}
                   multiple
-                  accept="image/*"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
                   className="file-input"
                 />
                 <div className="image-preview">

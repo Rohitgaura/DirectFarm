@@ -9,40 +9,71 @@ const Home = () => {
 
   // ✅ Load and validate user from localStorage
   useEffect(() => {
+    let isMounted = true;
+    let verifyTimeout = null;
+
     const loadUser = async () => {
       const storedUser = localStorage.getItem('user');
       const token = localStorage.getItem('token');
 
       if (storedUser && token) {
         try {
-          const result = await apiService.verifyToken();
-          if (result.valid) {
+          // Set user immediately from localStorage (optimistic update)
+          if (isMounted) {
             setUser(JSON.parse(storedUser));
-          } else {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
+          }
+
+          // Verify token in background (debounced)
+          clearTimeout(verifyTimeout);
+          verifyTimeout = setTimeout(async () => {
+            try {
+              const result = await apiService.verifyToken();
+              if (!isMounted) return;
+              
+              if (result && result.valid === false) {
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                setUser(null);
+              }
+            } catch (error) {
+              // Only clear on auth errors (401, 403), not on network errors
+              if (error.status === 401 || error.status === 403) {
+                if (isMounted) {
+                  localStorage.removeItem('user');
+                  localStorage.removeItem('token');
+                  setUser(null);
+                }
+              }
+            }
+          }, 500); // Debounce verification by 500ms
+        } catch (error) {
+          console.error('Error loading user:', error);
+          if (isMounted) {
             setUser(null);
           }
-        } catch (error) {
-          console.error('Error verifying token:', error);
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-          setUser(null);
         }
       } else {
-        setUser(null);
+        if (isMounted) {
+          setUser(null);
+        }
       }
     };
 
-    // Run on mount
+    // Run on mount only
     loadUser();
 
-    // ✅ Re-run when login/logout occurs
-    const handleStorageChange = () => loadUser();
+    // ✅ Re-run when login/logout occurs (debounced)
+    const handleStorageChange = () => {
+      clearTimeout(verifyTimeout);
+      verifyTimeout = setTimeout(loadUser, 300);
+    };
+
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('userChanged', handleStorageChange);
 
     return () => {
+      isMounted = false;
+      clearTimeout(verifyTimeout);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('userChanged', handleStorageChange);
     };

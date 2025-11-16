@@ -21,44 +21,24 @@ const userSchema = new mongoose.Schema({
     minlength: [6, 'Password must be at least 6 characters'],
     select: false
   },
+  role: {
+    type: String,
+    enum: ['farmer', 'buyer'],
+    required: [true, 'Role is required']
+  },
   phone: {
     type: String,
     required: [true, 'Phone number is required'],
     match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
   },
-  role: {
-    type: String,
-    enum: ['farmer', 'buyer', 'admin'],
-    default: 'farmer'
-  },
-  profileImage: {
-    type: String,
-    default: ''
-  },
   address: {
-    street: String,
-    city: String,
-    state: String,
-    pincode: String,
-    country: {
-      type: String,
-      default: 'India'
-    }
-  },
-  isVerified: {
-    type: Boolean,
-    default: false
-  },
-  isActive: {
-    type: Boolean,
-    default: true
-  },
-  lastLogin: {
-    type: Date,
-    default: Date.now
+    type: String,
+    trim: true
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  createdAt: 'createdAt',
+  updatedAt: false // Only createdAt, no updatedAt
 });
 
 // Hash password before saving

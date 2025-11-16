@@ -113,19 +113,25 @@ const Register = () => {
     try {
       console.log('Registration attempt:', formData);
       
+      // Build address string from address fields if available
+      let addressString = '';
+      if (formData.address) {
+        const addressParts = [
+          formData.address.street,
+          formData.address.city,
+          formData.address.state,
+          formData.address.pincode
+        ].filter(part => part && part.trim() !== '');
+        addressString = addressParts.join(', ');
+      }
+
       const userData = {
         name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
         password: formData.password,
         phone: formData.phone,
         role: formData.userType,
-        experienceYears: formData.userType === 'farmer' ? parseInt(formData.experienceYears) : undefined,
-        address: {
-          street: '',
-          city: '',
-          state: '',
-          pincode: ''
-        }
+        address: addressString || ''
       };
       
       const response = await apiService.register(userData);

@@ -1,6 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const Farmer = require('../models/Farmer');
+const Buyer = require('../models/Buyer');
 const { protect, generateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -56,10 +58,29 @@ router.post('/register', [
       password,
       phone,
       role,
-      address
+      address: address || ''
     });
 
     await user.save();
+
+    // Create Farmer or Buyer record based on role
+    if (role === 'farmer') {
+      const farmer = new Farmer({
+        userId: user._id,
+        farmName: `${name}'s Farm`,
+        farmLocation: address || '',
+        verificationStatus: false
+      });
+      await farmer.save();
+    } else if (role === 'buyer') {
+      const buyer = new Buyer({
+        userId: user._id,
+        buyerName: name,
+        buyerLocation: address || '',
+        verificationStatus: false
+      });
+      await buyer.save();
+    }
 
     // Generate token
     const token = generateToken(user._id);
@@ -118,14 +139,6 @@ router.post('/login', [
       });
     }
 
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated'
-      });
-    }
-
     // Check password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
@@ -134,10 +147,6 @@ router.post('/login', [
         message: 'Invalid credentials'
       });
     }
-
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
 
     // Generate token
     const token = generateToken(user._id);
@@ -205,15 +214,14 @@ router.put('/profile', protect, [
       });
     }
 
-    const { name, phone, address, profileImage } = req.body;
+    const { name, phone, address } = req.body;
 
     // Find and update user
     const user = await User.findById(req.user._id);
     
     if (name) user.name = name;
     if (phone) user.phone = phone;
-    if (address) user.address = address;
-    if (profileImage) user.profileImage = profileImage;
+    if (address !== undefined) user.address = address;
 
     await user.save();
 
@@ -227,6 +235,28 @@ router.put('/profile', protect, [
     res.status(500).json({
       success: false,
       message: 'Server error during profile update'
+    });
+  }
+});
+
+// @route   GET /api/auth/verify-token
+// @desc    Verify token validity
+// @access  Private
+router.get('/verify-token', protect, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      valid: true,
+      message: 'Token is valid',
+      data: {
+        user: req.user
+      }
+    });
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      valid: false,
+      message: 'Token is invalid'
     });
   }
 });

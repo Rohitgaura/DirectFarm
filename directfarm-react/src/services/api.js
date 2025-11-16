@@ -5,6 +5,16 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
+    
+    // Cache for token verification to prevent duplicate requests
+    this.tokenVerificationCache = {
+      result: null,
+      timestamp: null,
+      pendingRequest: null
+    };
+    
+    // Cache TTL (Time To Live) - 30 seconds
+    this.VERIFY_TOKEN_CACHE_TTL = 30 * 1000; // 30 seconds in milliseconds
   }
 
   // Helper method to get auth token
@@ -105,6 +115,8 @@ class ApiService {
 
     if (response.success && response.data.token) {
       this.setAuthToken(response.data.token);
+      // Clear token cache after login to force fresh verification
+      this.clearTokenCache();
     }
 
     return response;
@@ -119,6 +131,8 @@ class ApiService {
       console.error('Logout error:', error);
     } finally {
       this.removeAuthToken();
+      // Clear token cache after logout
+      this.clearTokenCache();
     }
   }
 
@@ -266,12 +280,52 @@ class ApiService {
 
 
   // Verify token validity (optional - if endpoint exists)
+  // Uses caching and request deduplication to prevent continuous requests
   async verifyToken() {
     const token = this.getAuthToken();
     if (!token) {
+      // Clear cache if no token
+      this.tokenVerificationCache = {
+        result: null,
+        timestamp: null,
+        pendingRequest: null
+      };
       return { valid: false, message: 'No token found' };
     }
 
+    const now = Date.now();
+    const cache = this.tokenVerificationCache;
+
+    // Check if there's a cached result that's still valid
+    if (cache.result && cache.timestamp && (now - cache.timestamp) < this.VERIFY_TOKEN_CACHE_TTL) {
+      // Return cached result
+      return cache.result;
+    }
+
+    // Check if there's already a pending request - reuse it instead of making a new one
+    if (cache.pendingRequest) {
+      return cache.pendingRequest;
+    }
+
+    // Create a new request and store the promise
+    cache.pendingRequest = this._performTokenVerification(token)
+      .then(result => {
+        // Cache the result on success
+        cache.result = result;
+        cache.timestamp = Date.now();
+        cache.pendingRequest = null; // Clear pending request
+        return result;
+      })
+      .catch(error => {
+        cache.pendingRequest = null; // Clear pending request on error
+        throw error;
+      });
+
+    return cache.pendingRequest;
+  }
+
+  // Internal method to perform the actual token verification
+  async _performTokenVerification(token) {
     try {
       // Try to verify token - if endpoint doesn't exist, return valid
       const response = await this.request('/auth/verify-token', {
@@ -284,7 +338,12 @@ class ApiService {
       
       // Only invalidate on actual authentication errors (401, 403)
       if (status === 401 || status === 403) {
-        console.warn('Token invalid or expired:', error.message);
+        // Clear cache on auth errors
+        this.tokenVerificationCache = {
+          result: { valid: false, message: error.message },
+          timestamp: Date.now(),
+          pendingRequest: null
+        };
         return { valid: false, message: error.message };
       }
       
@@ -295,8 +354,19 @@ class ApiService {
       } else {
         console.log('Token verification failed (network/other error), assuming valid');
       }
+      
+      // Cache valid result even on network errors
       return { valid: true };
     }
+  }
+
+  // Clear token verification cache (useful after login/logout)
+  clearTokenCache() {
+    this.tokenVerificationCache = {
+      result: null,
+      timestamp: null,
+      pendingRequest: null
+    };
   }
 
 }

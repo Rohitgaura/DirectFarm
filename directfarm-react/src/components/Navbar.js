@@ -29,47 +29,59 @@ const Navbar = () => {
 
   // ✅ Load user from localStorage immediately
   useEffect(() => {
+    let isMounted = true;
+    let verifyTimeout = null;
+    let isVerifying = false;
+
     const loadUser = () => {
-      console.log('🔄 Navbar: Loading user from localStorage...');
       const storedUser = localStorage.getItem('user');
       const token = localStorage.getItem('token');
-  
-      console.log('🔄 Navbar: storedUser exists:', !!storedUser);
-      console.log('🔄 Navbar: token exists:', !!token);
   
       if (storedUser && token) {
         try {
           // ✅ Load user immediately from localStorage (no waiting)
           const userData = JSON.parse(storedUser);
-          console.log('✅ Navbar: User data parsed:', userData);
-          console.log('✅ Navbar: User name:', userData.name);
-          console.log('✅ Navbar: User role:', userData.role);
           
           // Set user state immediately
-          setUser(userData);
-          console.log('✅ Navbar: User state set');
+          if (isMounted) {
+            setUser(userData);
+          }
           
-          // ✅ Optional: Verify token in background (non-blocking, won't affect UI)
-          // Only verify if the endpoint exists and works
-          apiService.verifyToken().then(result => {
-            if (result && result.valid === false) {
-              // Only clear if token is explicitly invalid
-              console.warn('⚠️ Navbar: Token verification failed, clearing user');
-              localStorage.removeItem('user');
-              localStorage.removeItem('token');
-              setUser(null);
-            } else {
-              console.log('✅ Navbar: Token verified successfully');
-            }
-          }).catch(error => {
-            // Ignore verification errors - don't clear user on network/API errors
-            console.log('ℹ️ Navbar: Token verification skipped (non-critical):', error.message);
-          });
+          // ✅ Verify token in background (debounced, prevent duplicate requests)
+          if (!isVerifying) {
+            clearTimeout(verifyTimeout);
+            verifyTimeout = setTimeout(async () => {
+              isVerifying = true;
+              try {
+                const result = await apiService.verifyToken();
+                if (!isMounted) return;
+                
+                if (result && result.valid === false) {
+                  localStorage.removeItem('user');
+                  localStorage.removeItem('token');
+                  setUser(null);
+                }
+              } catch (error) {
+                // Only clear on auth errors (401, 403), not on network errors
+                if (error.status === 401 || error.status === 403) {
+                  if (isMounted) {
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                    setUser(null);
+                  }
+                }
+              } finally {
+                isVerifying = false;
+              }
+            }, 1000); // Debounce verification by 1 second
+          }
         } catch (error) {
           console.error('❌ Navbar: Error parsing user data:', error);
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
-          setUser(null);
+          if (isMounted) {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            setUser(null);
+          }
         }
       } else {
         console.log('ℹ️ Navbar: No user or token found, setting user to null');
@@ -80,36 +92,33 @@ const Navbar = () => {
     // Load user immediately on mount
     loadUser();
   
-    // ✅ Sync across tabs & components - reload immediately on storage change
+    // ✅ Sync across tabs & components - reload on storage change (debounced)
     const handleStorageChange = (e) => {
-      console.log('🔄 Navbar: Storage event detected:', e.key);
       if (e.key === 'user' || e.key === null) {
-        loadUser();
+        clearTimeout(verifyTimeout);
+        verifyTimeout = setTimeout(loadUser, 300);
       }
     };
     
-    // ✅ Handle custom userChanged event (same tab) - fires immediately after login
-    const handleUserChanged = (e) => {
-      console.log('🔄 Navbar: userChanged event received');
-      // Load user immediately - localStorage is synchronous
-      loadUser();
-      // Also check again after a tiny delay to ensure state update
-      setTimeout(() => {
-        loadUser();
-      }, 10);
+    // ✅ Handle custom userChanged event (same tab) - debounced to prevent rapid calls
+    const handleUserChanged = () => {
+      clearTimeout(verifyTimeout);
+      verifyTimeout = setTimeout(loadUser, 300);
     };
     
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('userChanged', handleUserChanged);
-  
-    // Also listen for focus event (when user returns to tab)
+
+    // Also listen for focus event (when user returns to tab) - debounced
     const handleFocus = () => {
-      console.log('🔄 Navbar: Window focused, reloading user');
-      loadUser();
+      clearTimeout(verifyTimeout);
+      verifyTimeout = setTimeout(loadUser, 500);
     };
     window.addEventListener('focus', handleFocus);
   
     return () => {
+      isMounted = false;
+      clearTimeout(verifyTimeout);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('userChanged', handleUserChanged);
       window.removeEventListener('focus', handleFocus);
