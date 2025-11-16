@@ -71,9 +71,13 @@ const Login = () => {
     }
     
     setIsLoading(true);
+
+    
     
     try {
       // Simulate API call - replace with actual API call
+
+      console.log('form is running and data is sent');
       console.log('Login attempt:', formData);
       
       // Call actual API for login
@@ -156,36 +160,33 @@ const Login = () => {
         }
       }, 1000);
       
-    } catch (error) {
+    }  catch (error) {
       console.error('❌ Login failed:', error);
-      
-      // Handle different types of errors
-      let errorMessage = 'Login failed. Please try again.';
-      
-      if (error.response) {
-        // Server responded with error
-        const serverError = error.response.data;
-        if (serverError.message) {
-          errorMessage = serverError.message;
-        } else if (serverError.error) {
-          errorMessage = serverError.error;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
+    
+      // The error structure is now ALWAYS:
+      // { success:false, message:"...", status:401, data:... }
+    
+      const errorMessage =
+        error?.message ||
+        error?.data?.message ||
+        "Login failed. Please try again.";
+    
+      // Show the error on page (below inputs or top)
+      setErrors(prev => ({
+        ...prev,
+        global: errorMessage
+      }));
+    
       toast.error(errorMessage, {
         position: "top-right",
         autoClose: 4000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
+        hideProgressBar: false
       });
-      
+    
     } finally {
       setIsLoading(false);
     }
+
   };
 
   return (
@@ -213,6 +214,13 @@ const Login = () => {
             <h1>Welcome Back</h1>
             <p>Sign in to your DirectFarm account</p>
           </div>
+          {errors.global && (
+  <div className="global-error">
+    <i className="fas fa-exclamation-triangle"></i>
+    {errors.global}
+  </div>
+)}
+
 
           <form onSubmit={handleSubmit} className="auth-form">
             <motion.div 

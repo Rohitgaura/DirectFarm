@@ -94,6 +94,7 @@ router.post('/login', [
     .withMessage('Password is required')
 ], async (req, res) => {
   try {
+    
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -105,6 +106,7 @@ router.post('/login', [
     }
 
     const { email, password } = req.body;
+    
 
     // Find user by email and include password for comparison
     const user = await User.findOne({ email }).select('+password');
@@ -149,6 +151,7 @@ router.post('/login', [
       }
     });
   } catch (error) {
+    
     console.error('Login error:', error);
     res.status(500).json({
       success: false,

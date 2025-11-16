@@ -39,43 +39,51 @@ class ApiService {
   // Generic request method
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    const config = {
-      headers: this.getHeaders(),
-      ...options,
-    };
+    const config = { headers: this.getHeaders(), ...options };
 
     try {
       const response = await fetch(url, config);
-      
-      // Handle non-JSON responses
-      let data;
+
+      // ---- Try to parse JSON ----
+      let data = null;
       try {
         data = await response.json();
-      } catch (e) {
-        // If response is not JSON, create error with status
+      } catch (jsonErr) {
+        // Response is NOT JSON
         if (!response.ok) {
-          const error = new Error(response.statusText || 'Something went wrong');
-          error.status = response.status;
-          throw error;
+          throw {
+            success: false,
+            status: response.status,
+            message: response.statusText || "Something went wrong"
+          };
         }
         return { success: true };
       }
 
+      // ---- Handle server errors (400-500) ----
       if (!response.ok) {
-        const error = new Error(data.message || 'Something went wrong');
-        error.status = response.status;
-        error.response = data;
-        throw error;
+        throw {
+          success: false,
+          status: response.status,
+          message: data?.message || "Something went wrong",
+          data
+        };
       }
 
+      // ---- Success ----
       return data;
+
     } catch (error) {
-      // Preserve status code if available
-      if (!error.status && error.response) {
-        error.status = error.response.status;
-      }
-      console.error('API Request Error:', error);
-      throw error;
+      // Standardize error so frontend never crashes
+      return Promise.reject({
+        success: false,
+        status: error?.status || 500,
+        message:
+          error?.message ||
+          error?.data?.message ||
+          "Something went wrong",
+        data: error?.data || null
+      });
     }
   }
 
@@ -92,6 +100,8 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
+
+    console.log(response);
 
     if (response.success && response.data.token) {
       this.setAuthToken(response.data.token);
