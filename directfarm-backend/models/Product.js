@@ -17,10 +17,10 @@ const productSchema = new mongoose.Schema({
     required: [true, 'Quantity is required'],
     min: [0, 'Quantity cannot be negative']
   },
-  price: {
+  pricePerKg: {
     type: Number,
-    required: [true, 'Price is required'],
-    min: [0, 'Price cannot be negative']
+    required: [true, 'Price per kg is required'],
+    min: [0, 'Price per kg cannot be negative']
   },
   harvestingDate: {
     type: Date

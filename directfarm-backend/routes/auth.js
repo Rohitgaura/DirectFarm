@@ -27,7 +27,11 @@ router.post('/register', [
     .withMessage('Please provide a valid 10-digit phone number'),
   body('role')
     .isIn(['farmer', 'buyer'])
-    .withMessage('Role must be either farmer or buyer')
+    .withMessage('Role must be either farmer or buyer'),
+  body('experienceYears')
+    .optional()
+    .isInt({ min: 0, max: 50 })
+    .withMessage('Experience years must be between 0 and 50')
 ], async (req, res) => {
   try {
     // Check for validation errors
@@ -40,7 +44,8 @@ router.post('/register', [
       });
     }
 
-    const { name, email, password, phone, role, address } = req.body;
+    const { name, email, password, phone, role, experienceYears} = req.body;
+    console.log(req.body);
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -58,7 +63,8 @@ router.post('/register', [
       password,
       phone,
       role,
-      address: address || ''
+      experienceYears
+      //address: address || ''
     });
 
     await user.save();
@@ -68,7 +74,8 @@ router.post('/register', [
       const farmer = new Farmer({
         userId: user._id,
         farmName: `${name}'s Farm`,
-        farmLocation: address || '',
+        experienceYears: experienceYears,
+        //farmLocation: address || '',
         verificationStatus: false
       });
       await farmer.save();

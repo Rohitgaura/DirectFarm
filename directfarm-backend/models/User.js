@@ -21,15 +21,21 @@ const userSchema = new mongoose.Schema({
     minlength: [6, 'Password must be at least 6 characters'],
     select: false
   },
+  phone: {
+    type: String,
+    required: [true, 'Phone number is required'],
+    match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
+  },
   role: {
     type: String,
     enum: ['farmer', 'buyer'],
     required: [true, 'Role is required']
   },
-  phone: {
-    type: String,
-    required: [true, 'Phone number is required'],
-    match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit phone number']
+  experienceYears: {
+    type: Number,
+    required: [true, 'Experience years is required'],
+    min: [0, 'Experience years must be at least 0'],
+    max: [50, 'Experience years must be at most 50']
   },
   address: {
     type: String,

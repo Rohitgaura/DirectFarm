@@ -18,6 +18,7 @@ import BuyerDashboard from './components/BuyerDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import Footer from './components/Footer';
 import './App.css';
+import GuestRoute from './components/GuestRoute';
 
 function App() {
   return (
@@ -33,8 +34,23 @@ function App() {
           <Route path="/competitive-advantage" element={<CompetitiveAdvantage />} />
           <Route path="/implementation" element={<Implementation />} />
           <Route path="/social-impact" element={<SocialImpact />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route 
+  path="/login" 
+  element={
+    <GuestRoute type="login">
+      <Login />
+    </GuestRoute>
+  }
+/>
+
+<Route 
+  path="/register" 
+  element={
+    <GuestRoute type="register">
+      <Register />
+    </GuestRoute>
+  }
+/>
           <Route 
             path="/farmer-dashboard" 
             element={

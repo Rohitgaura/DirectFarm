@@ -107,7 +107,8 @@ const FarmerDashboard = () => {
                   totalRate: (product.quantity * product.price).toFixed(2),
                   description: product.description || '',
                   images: product.images || [],
-                  uploadingDate: product.createdAt
+                  uploadingDate: product.createdAt,
+                  harvestingDate: product.harvestingDate
                 }));
                 setUploadedCrops(transformedProducts);
               }
@@ -412,7 +413,7 @@ const FarmerDashboard = () => {
         name: formData.vegetableType,
         quantity: parseFloat(formData.quantity),
         price: parseFloat(formData.ratePerKg),
-        harvestingDate: formData.harvestingDate ? new Date(formData.harvestingDate).toISOString() : undefined,
+        harvestingDate: formData.harvestingDate  ,//? new Date(formData.harvestingDate).toISOString() : undefined,
         description: formData.description || '',
         images: formData.images || [],
         location: {
@@ -440,7 +441,8 @@ const FarmerDashboard = () => {
           totalRate: calculateTotalRate(),
           description: response.data.description || response.data.product?.description || '',
           images: response.data.images || response.data.product?.images || [],
-          uploadingDate: response.data.createdAt || response.data.product?.createdAt
+          uploadingDate: response.data.createdAt || response.data.product?.createdAt,
+          harvestingDate: response.data.harvestingDate || response.data.product?.harvestingDate
         };
 
         const updatedCrops = [newProduct, ...uploadedCrops];
@@ -851,12 +853,12 @@ const FarmerDashboard = () => {
                     <div className="crop-info">
                       <h3>{crop.vegetableType}</h3>
                       <div className="crop-details">
-                        <span className="quantity">{crop.quantity} kg</span>
-                        <span className="rate">₹{crop.ratePerKg}/kg</span>
+                        <span className="quantity">Quantity: {crop.quantity} kg</span>
+                        <span className="rate">Rate: ₹{crop.ratePerKg}/kg</span>
                         <span className="total">Total: ₹{crop.totalRate}</span>
                       </div>
                       {crop.description && (
-                        <p className="description">{crop.description}</p>
+                        <p className="description">Description: {crop.description}</p>
                       )}
                       {crop.location && (
                         <div className="crop-location">
@@ -869,10 +871,11 @@ const FarmerDashboard = () => {
                       <div className="crop-meta">
                         <span className="upload-date">
                           <i className="fas fa-calendar"></i>
-                          {formatDate(crop.uploadDate)}
+                          Uploading Date: {formatDate(crop.uploadingDate)}
                         </span>
-                        <span className={`status ${crop.status.toLowerCase()}`}>
-                          {crop.status}
+                        
+                        <span className={`status ${(crop.status ?? "").toLowerCase()}`}>
+                        {crop.status ?? "Pending"}
                         </span>
                       </div>
                       <button

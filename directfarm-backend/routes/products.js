@@ -146,10 +146,10 @@ router.post('/', protect, authorize('farmer'), [
       farmerId: req.body.farmerId || req.user._id || req.user.id,
       name: req.body.name,
       quantity: parseFloat(req.body.quantity),
-      price: parseFloat(req.body.price),
+      pricePerKg: parseFloat(req.body.price),
       description: req.body.description || '',
       images: req.body.images || [],
-      harvestingDate: req.body.harvestingDate ? new Date(req.body.harvestingDate) : undefined,
+      harvestingDate: req.body.harvestingDate ,//? new Date(req.body.harvestingDate) : undefined,
       location: req.body.location || {}
     };
 

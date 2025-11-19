@@ -131,8 +131,11 @@ const Register = () => {
         password: formData.password,
         phone: formData.phone,
         role: formData.userType,
-        address: addressString || ''
+        experienceYears: formData.experienceYears
+        //address: addressString || ''
       };
+      
+      console.log('userData', userData);
       
       const response = await apiService.register(userData);
       console.log('✅ Registration successful:', response);
