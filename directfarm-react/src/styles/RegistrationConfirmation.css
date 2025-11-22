@@ -1,0 +1,220 @@
+/* Registration Confirmation Page Styles */
+
+.confirmation-view {
+    padding: 2rem 0;
+}
+
+.confirmation-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.confirmation-header h2 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #333;
+    margin-bottom: 0.5rem;
+}
+
+.confirmation-header p {
+    color: #666;
+    font-size: 1rem;
+}
+
+/* Role Badge - Large and Prominent */
+.role-badge-large {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    padding: 3rem 2rem;
+    border-radius: 20px;
+    text-align: center;
+    margin-bottom: 2.5rem;
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.role-badge-large::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transform: translateX(-100%);
+    animation: shine 3s ease-in-out infinite;
+}
+
+@keyframes shine {
+
+    0%,
+    100% {
+        transform: translateX(-100%);
+    }
+
+    50% {
+        transform: translateX(100%);
+    }
+}
+
+.role-badge-large.farmer {
+    background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+    box-shadow: 0 15px 40px rgba(76, 175, 80, 0.3);
+}
+
+.role-badge-large.buyer {
+    background: linear-gradient(135deg, #2196F3 0%, #1565C0 100%);
+    box-shadow: 0 15px 40px rgba(33, 150, 243, 0.3);
+}
+
+.role-badge-large i {
+    font-size: 4rem;
+    color: white;
+    margin-bottom: 1rem;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.role-badge-large h3 {
+    font-size: 2rem;
+    font-weight: 900;
+    color: white;
+    margin-bottom: 0.5rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.role-badge-large p {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.95);
+    margin: 0;
+}
+
+/* Confirmation Details */
+.confirmation-details {
+    margin-bottom: 2.5rem;
+}
+
+.detail-section {
+    background: #f8f9fa;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 1.5rem;
+}
+
+.detail-section h4 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.detail-section h4 i {
+    color: #667eea;
+    font-size: 1.2rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.detail-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+/* Confirmation Actions */
+.confirmation-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e1e5e9;
+}
+
+.back-btn,
+.confirm-btn {
+    flex: 1;
+    padding: 1.2rem 2rem;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+}
+
+.back-btn {
+    background: #e1e5e9;
+    color: #666;
+}
+
+.back-btn:hover {
+    background: #d1d5d9;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.confirm-btn {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.confirm-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+}
+
+.confirm-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .role-badge-large i {
+        font-size: 3rem;
+    }
+
+    .role-badge-large h3 {
+        font-size: 1.6rem;
+    }
+
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .confirmation-actions {
+        flex-direction: column;
+    }
+
+    .back-btn,
+    .confirm-btn {
+        width: 100%;
+    }
+}

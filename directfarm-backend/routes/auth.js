@@ -36,6 +36,7 @@ router.post('/register', [
   try {
     // Check for validation errors
     const errors = validationResult(req);
+    console.log("error is here", errors);
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
@@ -44,7 +45,7 @@ router.post('/register', [
       });
     }
 
-    const { name, email, password, phone, role, experienceYears} = req.body;
+    const { name, email, password, phone, role } = req.body;
     console.log(req.body);
 
     // Check if user already exists
@@ -56,16 +57,22 @@ router.post('/register', [
       });
     }
 
-    // Create new user
-    const user = new User({
+    // Create new user object
+    const userData = {
       name,
       email,
       password,
       phone,
-      role,
-      experienceYears
+      role
       //address: address || ''
-    });
+    };
+
+    // Only add experienceYears if role is farmer
+    if (role === 'farmer' && req.body.experienceYears !== undefined) {
+      userData.experienceYears = req.body.experienceYears;
+    }
+
+    const user = new User(userData);
 
     await user.save();
 
@@ -73,17 +80,22 @@ router.post('/register', [
     if (role === 'farmer') {
       const farmer = new Farmer({
         userId: user._id,
-        farmName: `${name}'s Farm`,
-        experienceYears: experienceYears,
-        //farmLocation: address || '',
+        name: name,
+        email: email,
+        phone: phone,
+        address: req.body.address || '',
+        farmName: req.body.farmName || `${name}'s Farm`,
+        experienceYears: req.body.experienceYears,
         verificationStatus: false
       });
       await farmer.save();
     } else if (role === 'buyer') {
       const buyer = new Buyer({
         userId: user._id,
-        buyerName: name,
-        buyerLocation: address || '',
+        name: name,
+        email: email,
+        phone: phone,
+        address: req.body.address || '',
         verificationStatus: false
       });
       await buyer.save();
@@ -122,7 +134,7 @@ router.post('/login', [
     .withMessage('Password is required')
 ], async (req, res) => {
   try {
-    
+
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -134,11 +146,11 @@ router.post('/login', [
     }
 
     const { email, password } = req.body;
-    
+
 
     // Find user by email and include password for comparison
     const user = await User.findOne({ email }).select('+password');
-    
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -167,7 +179,7 @@ router.post('/login', [
       }
     });
   } catch (error) {
-    
+
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
@@ -182,7 +194,7 @@ router.post('/login', [
 router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    
+
     res.json({
       success: true,
       data: { user }
@@ -221,14 +233,23 @@ router.put('/profile', protect, [
       });
     }
 
-    const { name, phone, address } = req.body;
+    const { name, phone, address, latitude, longitude } = req.body;
 
     // Find and update user
     const user = await User.findById(req.user._id);
-    
+
     if (name) user.name = name;
     if (phone) user.phone = phone;
     if (address !== undefined) user.address = address;
+
+    // Update location if coordinates are provided
+    if (latitude !== undefined && longitude !== undefined) {
+      user.location = {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+        formattedAddress: user.location?.formattedAddress || ''
+      };
+    }
 
     await user.save();
 

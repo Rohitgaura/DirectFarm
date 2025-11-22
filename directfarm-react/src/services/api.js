@@ -5,14 +5,14 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api
 class ApiService {
   constructor() {
     this.baseURL = API_BASE_URL;
-    
+
     // Cache for token verification to prevent duplicate requests
     this.tokenVerificationCache = {
       result: null,
       timestamp: null,
       pendingRequest: null
     };
-    
+
     // Cache TTL (Time To Live) - 30 seconds
     this.VERIFY_TOKEN_CACHE_TTL = 30 * 1000; // 30 seconds in milliseconds
   }
@@ -61,6 +61,7 @@ class ApiService {
       } catch (jsonErr) {
         // Response is NOT JSON
         if (!response.ok) {
+          // eslint-disable-next-line no-throw-literal
           throw {
             success: false,
             status: response.status,
@@ -72,6 +73,7 @@ class ApiService {
 
       // ---- Handle server errors (400-500) ----
       if (!response.ok) {
+        // eslint-disable-next-line no-throw-literal
         throw {
           success: false,
           status: response.status,
@@ -144,6 +146,62 @@ class ApiService {
     return this.request('/auth/profile', {
       method: 'PUT',
       body: JSON.stringify(profileData),
+    });
+  }
+
+  // Location APIs
+  async getStates() {
+    const response = await this.request('/locations/states');
+    return response;
+  }
+
+  async getDistricts(state) {
+    const response = await this.request(`/locations/districts/${state}`);
+    return response;
+  }
+
+  async getSubdistricts(district) {
+    const response = await this.request(`/locations/subdistricts/${district}`);
+    return response;
+  }
+
+  async getVillages(subdistrict) {
+    const response = await this.request(`/locations/villages/${subdistrict}`);
+    return response;
+  }
+
+  async geocodeLocation(locationData) {
+    const response = await this.request('/locations/geocode', {
+      method: 'POST',
+      body: JSON.stringify(locationData)
+    });
+    return response;
+  }
+
+  async reverseGeocodeLocation(latitude, longitude) {
+    const response = await this.request('/locations/reverse-geocode', {
+      method: 'POST',
+      body: JSON.stringify({ latitude, longitude })
+    });
+    return response;
+  }
+
+  async updateFarmerProfile(farmerId, profileData) {
+    return this.request(`/farmers/${farmerId}`, {
+      method: 'PUT',
+      body: JSON.stringify(profileData),
+    });
+  }
+
+  // Success Stories Methods
+  async getSuccessStories() {
+    return this.request('/success-stories');
+  }
+
+  async submitSuccessStory(storyData) {
+    return this.request('/success-stories', {
+      method: 'POST',
+      body: JSON.stringify(storyData),
     });
   }
 
@@ -273,6 +331,50 @@ class ApiService {
     });
   }
 
+  // Negotiation Methods
+  async createNegotiation(data) {
+    return this.request('/negotiations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getFarmerNegotiations() {
+    return this.request('/negotiations/farmer');
+  }
+
+  async getBuyerNegotiations() {
+    return this.request('/negotiations/buyer');
+  }
+
+  async getNegotiationById(id) {
+    return this.request(`/negotiations/${id}`);
+  }
+
+  async updateNegotiationStatus(id, data) {
+    return this.request(`/negotiations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteNegotiation(id) {
+    return this.request(`/negotiations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Notification Methods
+  async getNotifications() {
+    return this.request('/notifications');
+  }
+
+  async markNotificationRead(id) {
+    return this.request(`/notifications/${id}/read`, {
+      method: 'PUT',
+    });
+  }
+
   // Health Check
   async healthCheck() {
     return this.request('/health');
@@ -335,7 +437,7 @@ class ApiService {
     } catch (error) {
       // Check status code if available
       const status = error.status || (error.response && error.response.status);
-      
+
       // Only invalidate on actual authentication errors (401, 403)
       if (status === 401 || status === 403) {
         // Clear cache on auth errors
@@ -346,7 +448,7 @@ class ApiService {
         };
         return { valid: false, message: error.message };
       }
-      
+
       // For other errors (404, network, etc.), assume token is valid
       // This allows the app to work even if verify endpoint doesn't exist
       if (status === 404) {
@@ -354,7 +456,7 @@ class ApiService {
       } else {
         console.log('Token verification failed (network/other error), assuming valid');
       }
-      
+
       // Cache valid result even on network errors
       return { valid: true };
     }

@@ -15,6 +15,8 @@ const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const farmerRoutes = require('./routes/farmers');
 const buyerRoutes = require('./routes/buyers');
+const successStoriesRoutes = require('./routes/successStories');
+const locationRoutes = require('./routes/locations');
 
 // Middleware
 app.use(helmet());
@@ -63,6 +65,10 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/farmers', farmerRoutes);
 app.use('/api/buyers', buyerRoutes);
+app.use('/api/success-stories', successStoriesRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/negotiations', require('./routes/negotiation'));
+app.use('/api/notifications', require('./routes/notification'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

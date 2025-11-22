@@ -50,12 +50,8 @@ const productSchema = new mongoose.Schema({
       trim: true
     },
     coordinates: {
-      latitude: {
-        type: Number
-      },
-      longitude: {
-        type: Number
-      }
+      type: [Number], // [longitude, latitude]
+      index: '2dsphere'
     }
   }
 }, {
@@ -67,5 +63,34 @@ const productSchema = new mongoose.Schema({
 // Index for search functionality
 productSchema.index({ name: 'text', description: 'text' });
 productSchema.index({ farmerId: 1 });
+// productSchema.index({ 'location.coordinates': '2dsphere' }); // Already defined in schema option
+
+// Geocode location if coordinates are missing
+productSchema.pre('save', async function (next) {
+  if (!this.location || (this.location.coordinates && this.location.coordinates.length === 2)) {
+    return next();
+  }
+
+  const locParts = [];
+  if (this.location.village) locParts.push(this.location.village);
+  if (this.location.subdistrict) locParts.push(this.location.subdistrict);
+  if (this.location.district) locParts.push(this.location.district);
+  if (this.location.state) locParts.push(this.location.state);
+
+  if (locParts.length === 0) return next();
+
+  const address = locParts.join(', ');
+  const geocoder = require('../utils/geocoder');
+
+  try {
+    const loc = await geocoder.geocode(address);
+    if (loc && loc.length > 0) {
+      this.location.coordinates = [loc[0].longitude, loc[0].latitude];
+    }
+  } catch (err) {
+    console.error('Product geocoding error:', err);
+  }
+  next();
+});
 
 module.exports = mongoose.model('Product', productSchema);

@@ -7,9 +7,38 @@ const farmerSchema = new mongoose.Schema({
     required: [true, 'User ID is required'],
     unique: true
   },
+  name: {
+    type: String,
+    required: [true, 'Farmer name is required'],
+    trim: true,
+    maxlength: [100, 'Farmer name cannot exceed 100 characters']
+  },
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    lowercase: true
+  },
+  phone: {
+    type: String,
+    required: [true, 'Phone number is required']
+  },
+  address: {
+    type: String,
+    trim: true
+  },
+  location: {
+    type: {
+      type: String,
+      enum: ['Point']
+    },
+    coordinates: {
+      type: [Number],
+      index: '2dsphere'
+    },
+    formattedAddress: String
+  },
   farmName: {
     type: String,
-    required: [true, 'Farm name is required'],
     trim: true,
     maxlength: [100, 'Farm name cannot exceed 100 characters']
   },
@@ -19,23 +48,32 @@ const farmerSchema = new mongoose.Schema({
     min: [0, 'Experience years must be at least 0'],
     max: [50, 'Experience years must be at most 50']
   },
-  //,
-  //farmLocation: {
-   // type: String,
-    //required: [true, 'Farm location is required'],
-    //trim: true
-  //}
-  
   verificationStatus: {
     type: Boolean,
     default: false
+  },
+  totalProducts: {
+    type: Number,
+    default: 0
+  },
+  totalRevenue: {
+    type: Number,
+    default: 0
   }
 }, {
-  timestamps: true
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual for uploaded products
+farmerSchema.virtual('products', {
+  ref: 'Product',
+  localField: 'userId',
+  foreignField: 'farmerId'
 });
 
 // Index on userId for faster lookups
 farmerSchema.index({ userId: 1 });
 
 module.exports = mongoose.model('Farmer', farmerSchema);
-

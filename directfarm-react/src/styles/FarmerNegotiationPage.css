@@ -1,0 +1,275 @@
+.negotiation-page {
+    min-height: 100vh;
+    padding: 100px 20px 40px;
+    background: #f8fafc;
+    display: flex;
+    justify-content: center;
+}
+
+.negotiation-container {
+    width: 100%;
+    max-width: 600px;
+}
+
+.negotiation-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.card-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #2d3748;
+}
+
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-badge.pending {
+    background: #fff7ed;
+    color: #c2410c;
+}
+
+.status-badge.accepted {
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+.status-badge.rejected {
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.status-badge.counter_offer {
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.product-details {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 12px;
+}
+
+.product-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    object-fit: cover;
+}
+
+.product-info h3 {
+    margin: 0 0 0.5rem 0;
+    color: #1e293b;
+}
+
+.original-price {
+    color: #64748b;
+    font-size: 0.95rem;
+}
+
+.offer-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+}
+
+.detail-row.highlight {
+    background: #f0fdf4;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #bbf7d0;
+}
+
+.detail-row.total {
+    border-top: 2px dashed #e2e8f0;
+    padding-top: 1rem;
+    margin-top: 0.5rem;
+}
+
+.detail-row .label {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.detail-row .value {
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.detail-row.highlight .value {
+    color: #15803d;
+    font-size: 1.2rem;
+}
+
+.action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+}
+
+.btn-accept,
+.btn-counter,
+.btn-decline {
+    padding: 0.8rem;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.btn-accept {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.btn-accept:hover {
+    background: #bbf7d0;
+}
+
+.btn-counter {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.btn-counter:hover {
+    background: #bfdbfe;
+}
+
+.btn-decline {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.btn-decline:hover {
+    background: #fecaca;
+}
+
+.counter-input-group {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: #f8fafc;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.counter-input-group input {
+    padding: 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.counter-input-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+}
+
+.counter-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-submit-counter {
+    flex: 2;
+    padding: 0.8rem;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-cancel {
+    flex: 1;
+    padding: 0.8rem;
+    background: #e2e8f0;
+    color: #475569;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.loading-container,
+.error-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@media (max-width: 480px) {
+    .action-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    .btn-accept,
+    .btn-counter,
+    .btn-decline {
+        flex-direction: row;
+        justify-content: center;
+        padding: 1rem;
+    }
+}

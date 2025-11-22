@@ -5,6 +5,9 @@ const Product = require('../models/Product');
 
 const router = express.Router();
 
+// Trigger restart removed
+
+
 // @route   GET /api/products
 // @desc    Get all products with filtering and pagination
 // @access  Public
@@ -16,15 +19,15 @@ router.get('/', async (req, res) => {
 
     // Build filter object
     const filter = {};
-    
+
     if (req.query.farmerId) {
       filter.farmerId = req.query.farmerId;
     }
-    
+
     if (req.query.search) {
       filter.$text = { $search: req.query.search };
     }
-    
+
     if (req.query.minPrice || req.query.maxPrice) {
       filter.price = {};
       if (req.query.minPrice) filter.price.$gte = parseFloat(req.query.minPrice);
@@ -37,11 +40,48 @@ router.get('/', async (req, res) => {
       if (req.query.maxQuantity) filter.quantity.$lte = parseFloat(req.query.maxQuantity);
     }
 
-    // Build sort object
+    // Build sort object (default: newest first)
     let sort = { createdAt: -1 };
     if (req.query.sortBy) {
       const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
       sort = { [req.query.sortBy]: sortOrder };
+    }
+
+    // Geolocation filter using $near for distance-based sorting
+    // Only apply if we have coordinates AND radius
+    if (req.query.latitude && req.query.longitude && req.query.radius) {
+      const lat = parseFloat(req.query.latitude);
+      const lng = parseFloat(req.query.longitude);
+      const radiusInMeters = parseFloat(req.query.radius) * 1000; // Convert km to meters
+
+      // $near requires the field to be indexed with 2dsphere
+      filter['location.coordinates'] = {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [lng, lat]
+          },
+          $maxDistance: radiusInMeters
+        }
+      };
+      // $near automatically sorts by distance, so clear default sort
+      sort = {};
+    } else if (req.query.radius && req.user && req.user.location && req.user.location.coordinates) {
+      // Use user's location if available and lat/lng not provided
+      const lat = req.user.location.coordinates[1];
+      const lng = req.user.location.coordinates[0];
+      const radiusInMeters = parseFloat(req.query.radius) * 1000;
+
+      filter['location.coordinates'] = {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [lng, lat]
+          },
+          $maxDistance: radiusInMeters
+        }
+      };
+      sort = {};
     }
 
     const products = await Product.find(filter)
@@ -50,7 +90,24 @@ router.get('/', async (req, res) => {
       .skip(skip)
       .limit(limit);
 
-    const total = await Product.countDocuments(filter);
+    // Create a separate filter for counting because $near is not supported in countDocuments
+    const countFilter = { ...filter };
+    if (countFilter['location.coordinates'] && countFilter['location.coordinates'].$near) {
+      const nearQuery = countFilter['location.coordinates'].$near;
+      const lng = nearQuery.$geometry.coordinates[0];
+      const lat = nearQuery.$geometry.coordinates[1];
+      const maxDistanceMeters = nearQuery.$maxDistance;
+      const radiusKm = maxDistanceMeters / 1000;
+      const radiusRadians = radiusKm / 6378.1; // Earth radius in km
+
+      countFilter['location.coordinates'] = {
+        $geoWithin: {
+          $centerSphere: [[lng, lat], radiusRadians]
+        }
+      };
+    }
+
+    const total = await Product.countDocuments(countFilter);
 
     res.json({
       success: true,
@@ -149,7 +206,7 @@ router.post('/', protect, authorize('farmer'), [
       pricePerKg: parseFloat(req.body.price),
       description: req.body.description || '',
       images: req.body.images || [],
-      harvestingDate: req.body.harvestingDate ,//? new Date(req.body.harvestingDate) : undefined,
+      harvestingDate: req.body.harvestingDate,//? new Date(req.body.harvestingDate) : undefined,
       location: req.body.location || {}
     };
 
@@ -292,7 +349,7 @@ router.delete('/:id', protect, async (req, res) => {
 // @access  Public
 router.get('/farmer/:farmerId', async (req, res) => {
   try {
-    const products = await Product.find({ 
+    const products = await Product.find({
       farmerId: req.params.farmerId
     }).populate('farmerId', 'name email phone');
 

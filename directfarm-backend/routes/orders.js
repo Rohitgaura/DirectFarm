@@ -16,7 +16,7 @@ router.get('/', protect, async (req, res) => {
     const skip = (page - 1) * limit;
 
     let filter = {};
-    
+
     // Filter by user role
     if (req.user.role === 'buyer') {
       filter.buyer = req.user._id;
@@ -28,7 +28,7 @@ router.get('/', protect, async (req, res) => {
     if (req.query.status) {
       filter.status = req.query.status;
     }
-    
+
     if (req.query.paymentStatus) {
       filter.paymentStatus = req.query.paymentStatus;
     }
@@ -78,9 +78,9 @@ router.get('/:id', protect, async (req, res) => {
     }
 
     // Check if user is authorized to view this order
-    if (order.buyer._id.toString() !== req.user._id.toString() && 
-        order.farmer._id.toString() !== req.user._id.toString() && 
-        req.user.role !== 'admin') {
+    if (order.buyer._id.toString() !== req.user._id.toString() &&
+      order.farmer._id.toString() !== req.user._id.toString() &&
+      req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to view this order'
@@ -152,7 +152,7 @@ router.post('/', protect, authorize('buyer'), [
 
     for (const item of items) {
       const product = await Product.findById(item.product);
-      
+
       if (!product) {
         return res.status(404).json({
           success: false,
@@ -204,8 +204,7 @@ router.post('/', protect, authorize('buyer'), [
 
     // Calculate shipping cost (simple calculation)
     const shippingCost = subtotal > 1000 ? 0 : 100;
-    const tax = subtotal * 0.05; // 5% tax
-    const totalAmount = subtotal + tax + shippingCost;
+    const totalAmount = subtotal + shippingCost;
 
     // Create order
     const order = new Order({
@@ -213,7 +212,6 @@ router.post('/', protect, authorize('buyer'), [
       farmer: farmerId,
       items: orderItems,
       subtotal,
-      tax,
       shippingCost,
       totalAmount,
       shippingAddress,
@@ -277,7 +275,7 @@ router.put('/:id/status', protect, [
     }
 
     // Check authorization
-    const isAuthorized = 
+    const isAuthorized =
       order.buyer.toString() === req.user._id.toString() ||
       order.farmer.toString() === req.user._id.toString() ||
       req.user.role === 'admin';
@@ -298,9 +296,9 @@ router.put('/:id/status', protect, [
     // Handle cancellation
     if (status === 'cancelled' && order.status !== 'cancelled') {
       order.isCancelled = true;
-      order.cancelledBy = req.user.role === 'admin' ? 'admin' : 
-                         order.buyer.toString() === req.user._id.toString() ? 'buyer' : 'farmer';
-      
+      order.cancelledBy = req.user.role === 'admin' ? 'admin' :
+        order.buyer.toString() === req.user._id.toString() ? 'buyer' : 'farmer';
+
       // Restore product quantities
       for (const item of order.items) {
         await Product.findByIdAndUpdate(item.product, {
