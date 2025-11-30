@@ -1,6 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
+const Farmer = require('../models/Farmer');
+const Buyer = require('../models/Buyer');
 const { protect, generateToken } = require('../middleware/auth');
 
 const router = express.Router();
@@ -25,11 +27,16 @@ router.post('/register', [
     .withMessage('Please provide a valid 10-digit phone number'),
   body('role')
     .isIn(['farmer', 'buyer'])
-    .withMessage('Role must be either farmer or buyer')
+    .withMessage('Role must be either farmer or buyer'),
+  body('experienceYears')
+    .optional()
+    .isInt({ min: 0, max: 50 })
+    .withMessage('Experience years must be between 0 and 50')
 ], async (req, res) => {
   try {
     // Check for validation errors
     const errors = validationResult(req);
+    console.log("error is here", errors);
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
@@ -38,7 +45,8 @@ router.post('/register', [
       });
     }
 
-    const { name, email, password, phone, role, address } = req.body;
+    const { name, email, password, phone, role } = req.body;
+    console.log(req.body);
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -49,17 +57,49 @@ router.post('/register', [
       });
     }
 
-    // Create new user
-    const user = new User({
+    // Create new user object
+    const userData = {
       name,
       email,
       password,
       phone,
-      role,
-      address
-    });
+      role
+      //address: address || ''
+    };
+
+    // Only add experienceYears if role is farmer
+    if (role === 'farmer' && req.body.experienceYears !== undefined) {
+      userData.experienceYears = req.body.experienceYears;
+    }
+
+    const user = new User(userData);
 
     await user.save();
+
+    // Create Farmer or Buyer record based on role
+    if (role === 'farmer') {
+      const farmer = new Farmer({
+        userId: user._id,
+        name: name,
+        email: email,
+        phone: phone,
+        address: req.body.address || '',
+        farmName: req.body.farmName || `${name}'s Farm`,
+        experienceYears: req.body.experienceYears,
+        verificationStatus: false
+      });
+      await farmer.save();
+    } else if (role === 'buyer') {
+      const buyer = new Buyer({
+        userId: user._id,
+        name: name,
+        email: email,
+        phone: phone,
+        address: req.body.address || '',
+        verificationStatus: false
+      });
+      await buyer.save();
+    }
 
     // Generate token
     const token = generateToken(user._id);
@@ -94,7 +134,7 @@ router.post('/login', [
     .withMessage('Password is required')
 ], async (req, res) => {
   try {
-    
+
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -106,23 +146,15 @@ router.post('/login', [
     }
 
     const { email, password } = req.body;
-    
+
 
     // Find user by email and include password for comparison
     const user = await User.findOne({ email }).select('+password');
-    
+
     if (!user) {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
-      });
-    }
-
-    // Check if user is active
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated'
       });
     }
 
@@ -134,10 +166,6 @@ router.post('/login', [
         message: 'Invalid credentials'
       });
     }
-
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
 
     // Generate token
     const token = generateToken(user._id);
@@ -151,7 +179,7 @@ router.post('/login', [
       }
     });
   } catch (error) {
-    
+
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
@@ -166,7 +194,7 @@ router.post('/login', [
 router.get('/me', protect, async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
-    
+
     res.json({
       success: true,
       data: { user }
@@ -205,15 +233,23 @@ router.put('/profile', protect, [
       });
     }
 
-    const { name, phone, address, profileImage } = req.body;
+    const { name, phone, address, latitude, longitude } = req.body;
 
     // Find and update user
     const user = await User.findById(req.user._id);
-    
+
     if (name) user.name = name;
     if (phone) user.phone = phone;
-    if (address) user.address = address;
-    if (profileImage) user.profileImage = profileImage;
+    if (address !== undefined) user.address = address;
+
+    // Update location if coordinates are provided
+    if (latitude !== undefined && longitude !== undefined) {
+      user.location = {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+        formattedAddress: user.location?.formattedAddress || ''
+      };
+    }
 
     await user.save();
 
@@ -227,6 +263,28 @@ router.put('/profile', protect, [
     res.status(500).json({
       success: false,
       message: 'Server error during profile update'
+    });
+  }
+});
+
+// @route   GET /api/auth/verify-token
+// @desc    Verify token validity
+// @access  Private
+router.get('/verify-token', protect, async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      valid: true,
+      message: 'Token is valid',
+      data: {
+        user: req.user
+      }
+    });
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      valid: false,
+      message: 'Token is invalid'
     });
   }
 });

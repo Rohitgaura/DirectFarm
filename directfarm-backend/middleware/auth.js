@@ -25,15 +25,6 @@ const protect = async (req, res, next) => {
         });
       }
 
-      console.log('error is present here boss');
-
-      if (!req.user.isActive) {
-        return res.status(401).json({
-          success: false,
-          message: 'Account is deactivated'
-        });
-      }
-
       next();
     } catch (error) {
       console.error('Token verification error:', error);

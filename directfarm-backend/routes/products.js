@@ -5,6 +5,9 @@ const Product = require('../models/Product');
 
 const router = express.Router();
 
+// Trigger restart removed
+
+
 // @route   GET /api/products
 // @desc    Get all products with filtering and pagination
 // @access  Public
@@ -16,43 +19,95 @@ router.get('/', async (req, res) => {
 
     // Build filter object
     const filter = {};
-    
-    if (req.query.category) {
-      filter.category = req.query.category;
+
+    if (req.query.farmerId) {
+      filter.farmerId = req.query.farmerId;
     }
-    
-    if (req.query.isOrganic !== undefined) {
-      filter.isOrganic = req.query.isOrganic === 'true';
-    }
-    
-    if (req.query.isAvailable !== undefined) {
-      filter.isAvailable = req.query.isAvailable === 'true';
-    }
-    
+
     if (req.query.search) {
       filter.$text = { $search: req.query.search };
     }
-    
+
     if (req.query.minPrice || req.query.maxPrice) {
       filter.price = {};
       if (req.query.minPrice) filter.price.$gte = parseFloat(req.query.minPrice);
       if (req.query.maxPrice) filter.price.$lte = parseFloat(req.query.maxPrice);
     }
 
-    // Build sort object
+    if (req.query.minQuantity || req.query.maxQuantity) {
+      filter.quantity = {};
+      if (req.query.minQuantity) filter.quantity.$gte = parseFloat(req.query.minQuantity);
+      if (req.query.maxQuantity) filter.quantity.$lte = parseFloat(req.query.maxQuantity);
+    }
+
+    // Build sort object (default: newest first)
     let sort = { createdAt: -1 };
     if (req.query.sortBy) {
       const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
       sort = { [req.query.sortBy]: sortOrder };
     }
 
+    // Geolocation filter using $near for distance-based sorting
+    // Only apply if we have coordinates AND radius
+    if (req.query.latitude && req.query.longitude && req.query.radius) {
+      const lat = parseFloat(req.query.latitude);
+      const lng = parseFloat(req.query.longitude);
+      const radiusInMeters = parseFloat(req.query.radius) * 1000; // Convert km to meters
+
+      // $near requires the field to be indexed with 2dsphere
+      filter['location.coordinates'] = {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [lng, lat]
+          },
+          $maxDistance: radiusInMeters
+        }
+      };
+      // $near automatically sorts by distance, so clear default sort
+      sort = {};
+    } else if (req.query.radius && req.user && req.user.location && req.user.location.coordinates) {
+      // Use user's location if available and lat/lng not provided
+      const lat = req.user.location.coordinates[1];
+      const lng = req.user.location.coordinates[0];
+      const radiusInMeters = parseFloat(req.query.radius) * 1000;
+
+      filter['location.coordinates'] = {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [lng, lat]
+          },
+          $maxDistance: radiusInMeters
+        }
+      };
+      sort = {};
+    }
+
     const products = await Product.find(filter)
-      .populate('farmer', 'name email phone')
+      .populate('farmerId', 'name email phone averageRating totalRatings')
       .sort(sort)
       .skip(skip)
       .limit(limit);
 
-    const total = await Product.countDocuments(filter);
+    // Create a separate filter for counting because $near is not supported in countDocuments
+    const countFilter = { ...filter };
+    if (countFilter['location.coordinates'] && countFilter['location.coordinates'].$near) {
+      const nearQuery = countFilter['location.coordinates'].$near;
+      const lng = nearQuery.$geometry.coordinates[0];
+      const lat = nearQuery.$geometry.coordinates[1];
+      const maxDistanceMeters = nearQuery.$maxDistance;
+      const radiusKm = maxDistanceMeters / 1000;
+      const radiusRadians = radiusKm / 6378.1; // Earth radius in km
+
+      countFilter['location.coordinates'] = {
+        $geoWithin: {
+          $centerSphere: [[lng, lat], radiusRadians]
+        }
+      };
+    }
+
+    const total = await Product.countDocuments(countFilter);
 
     res.json({
       success: true,
@@ -77,7 +132,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const product = await Product.findById(req.params.id)
-      .populate('farmer', 'name email phone address');
+      .populate('farmerId', 'name email phone address');
 
     if (!product) {
       return res.status(404).json({
@@ -105,60 +160,77 @@ router.get('/:id', async (req, res) => {
 router.post('/', protect, authorize('farmer'), [
   body('name')
     .trim()
+    .notEmpty()
+    .withMessage('Product name is required')
     .isLength({ min: 2, max: 100 })
     .withMessage('Product name must be between 2 and 100 characters'),
-  body('description')
-    .trim()
-    .isLength({ min: 10, max: 500 })
-    .withMessage('Description must be between 10 and 500 characters'),
-  body('category')
-    .isIn(['vegetables', 'fruits', 'grains', 'dairy', 'poultry', 'other'])
-    .withMessage('Invalid category'),
   body('price')
     .isFloat({ min: 0 })
     .withMessage('Price must be a positive number'),
   body('quantity')
-    .isInt({ min: 1 })
-    .withMessage('Quantity must be a positive integer'),
-  body('unit')
-    .isIn(['kg', 'dozen', 'piece', 'quintal', 'ton', 'litre'])
-    .withMessage('Invalid unit'),
+    .isFloat({ min: 0 })
+    .withMessage('Quantity must be a positive number'),
+  body('description')
+    .optional()
+    .trim(),
+  body('harvestingDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Invalid harvesting date format'),
   body('images')
-    .isArray({ min: 1 })
-    .withMessage('At least one image is required')
+    .optional()
+    .isArray()
+    .withMessage('Images must be an array'),
+  body('location')
+    .optional()
+    .isObject()
+    .withMessage('Location must be an object')
 ], async (req, res) => {
   try {
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      const errorMessages = errors.array().map(err => err.msg).join(', ');
       return res.status(400).json({
         success: false,
-        message: 'Validation errors',
+        message: errorMessages || 'Validation errors',
         errors: errors.array()
       });
     }
 
+    // Prepare product data - use farmerId from body or from authenticated user
     const productData = {
-      ...req.body,
-      farmer: req.user._id
+      farmerId: req.body.farmerId || req.user._id || req.user.id,
+      name: req.body.name,
+      quantity: parseFloat(req.body.quantity),
+      pricePerKg: parseFloat(req.body.price),
+      description: req.body.description || '',
+      images: req.body.images || [],
+      harvestingDate: req.body.harvestingDate,//? new Date(req.body.harvestingDate) : undefined,
+      location: req.body.location || {}
     };
 
     const product = new Product(productData);
     await product.save();
 
+    // Populate farmer info
     const populatedProduct = await Product.findById(product._id)
-      .populate('farmer', 'name email phone');
+      .populate('farmerId', 'name email phone');
 
     res.status(201).json({
       success: true,
       message: 'Product created successfully',
-      data: { product: populatedProduct }
+      data: {
+        product: populatedProduct,
+        ...populatedProduct.toObject() // Also include direct fields for compatibility
+      }
     });
   } catch (error) {
     console.error('Create product error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during product creation'
+      message: error.message || 'Server error during product creation',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
@@ -174,25 +246,24 @@ router.put('/:id', protect, [
     .withMessage('Product name must be between 2 and 100 characters'),
   body('description')
     .optional()
-    .trim()
-    .isLength({ min: 10, max: 500 })
-    .withMessage('Description must be between 10 and 500 characters'),
+    .trim(),
   body('price')
     .optional()
     .isFloat({ min: 0 })
     .withMessage('Price must be a positive number'),
   body('quantity')
     .optional()
-    .isInt({ min: 0 })
-    .withMessage('Quantity must be a non-negative integer')
+    .isFloat({ min: 0 })
+    .withMessage('Quantity must be a non-negative number')
 ], async (req, res) => {
   try {
     // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
+      const errorMessages = errors.array().map(err => err.msg).join(', ');
       return res.status(400).json({
         success: false,
-        message: 'Validation errors',
+        message: errorMessages || 'Validation errors',
         errors: errors.array()
       });
     }
@@ -207,7 +278,8 @@ router.put('/:id', protect, [
     }
 
     // Check if user is the product owner or admin
-    if (product.farmer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    const userId = req.user._id || req.user.id;
+    if (product.farmerId.toString() !== userId.toString() && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this product'
@@ -218,7 +290,7 @@ router.put('/:id', protect, [
       req.params.id,
       req.body,
       { new: true, runValidators: true }
-    ).populate('farmer', 'name email phone');
+    ).populate('farmerId', 'name email phone');
 
     res.json({
       success: true,
@@ -249,14 +321,15 @@ router.delete('/:id', protect, async (req, res) => {
     }
 
     // Check if user is the product owner or admin
-    if (product.farmer.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    const userId = req.user._id || req.user.id;
+    if (product.farmerId.toString() !== userId.toString() && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to delete this product'
       });
     }
 
-    await product.remove();
+    await Product.findByIdAndDelete(req.params.id);
 
     res.json({
       success: true,
@@ -276,10 +349,9 @@ router.delete('/:id', protect, async (req, res) => {
 // @access  Public
 router.get('/farmer/:farmerId', async (req, res) => {
   try {
-    const products = await Product.find({ 
-      farmer: req.params.farmerId,
-      isAvailable: true 
-    }).populate('farmer', 'name email phone');
+    const products = await Product.find({
+      farmerId: req.params.farmerId
+    }).populate('farmerId', 'name email phone');
 
     res.json({
       success: true,

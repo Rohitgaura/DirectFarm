@@ -15,6 +15,8 @@ const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
 const farmerRoutes = require('./routes/farmers');
 const buyerRoutes = require('./routes/buyers');
+const successStoriesRoutes = require('./routes/successStories');
+const locationRoutes = require('./routes/locations');
 
 // Middleware
 app.use(helmet());
@@ -35,12 +37,26 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/directfarm', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ Connected to MongoDB'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
+
+
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
+    console.log(`📦 Database: ${mongoose.connection.name}`);
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err.message);
+    process.exit(1); // Exit process if database connection fails
+  });
+
+// Handle MongoDB connection events
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️  MongoDB disconnected');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB error:', err);
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -49,6 +65,15 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/farmers', farmerRoutes);
 app.use('/api/buyers', buyerRoutes);
+app.use('/api/success-stories', successStoriesRoutes);
+app.use('/api/locations', locationRoutes);
+app.use('/api/negotiations', require('./routes/negotiation'));
+app.use('/api/notifications', require('./routes/notification'));
+app.use('/api/chat', require('./routes/chat'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/ratings', require('./routes/rating'));
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
