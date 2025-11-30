@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import apiService from '../../services/api';
+import authUtils from '../../utils/auth';
 import '../../styles/Auth.css';
 
 const Login = () => {
@@ -14,6 +15,18 @@ const Login = () => {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+
+  // Redirect if already logged in
+  React.useEffect(() => {
+    const auth = authUtils.getAuth();
+    if (auth && auth.user) {
+      const role = auth.user.role;
+      if (role === 'farmer') navigate('/farmer-dashboard');
+      else if (role === 'buyer') navigate('/buyer-dashboard');
+      else if (role === 'admin') navigate('/admin-dashboard');
+      else navigate('/');
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -113,19 +126,14 @@ const Login = () => {
         lastLogin: userData.lastLogin
       };
 
-      // Save token and user to localStorage
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(cleanUserData));
+      // Save token and user using authUtils (Hybrid Storage)
+      authUtils.setAuth(token, cleanUserData);
 
-      console.log('✅ Token saved:', token ? 'Yes' : 'No');
-      console.log('✅ User saved to localStorage:', cleanUserData);
-      console.log('✅ localStorage.user:', localStorage.getItem('user'));
+      console.log('✅ Auth saved via authUtils');
 
       // Verify data was saved
-      const verifyUser = localStorage.getItem('user');
-      const verifyToken = localStorage.getItem('token');
-      console.log('✅ Verification - User in localStorage:', verifyUser ? 'Yes' : 'No');
-      console.log('✅ Verification - Token in localStorage:', verifyToken ? 'Yes' : 'No');
+      const verifyAuth = authUtils.getAuth();
+      console.log('✅ Verification - Auth valid:', verifyAuth ? 'Yes' : 'No');
 
       // Dispatch custom event to notify Navbar immediately (localStorage is synchronous)
       console.log('📢 Dispatching userChanged event');
@@ -150,15 +158,22 @@ const Login = () => {
 
       // Navigate based on user role after successful login
       const userRole = cleanUserData.role;
-      setTimeout(() => {
-        if (userRole === 'farmer') {
-          navigate('/farmer-dashboard');
-        } else if (userRole === 'buyer') {
-          navigate('/buyer-dashboard');
-        } else {
-          navigate('/');
-        }
-      }, 1000);
+      console.log('🧭 Navigation - User Role:', userRole);
+
+      // Navigate immediately
+      if (userRole === 'farmer') {
+        console.log('👉 Navigating to /farmer-dashboard');
+        navigate('/farmer-dashboard');
+      } else if (userRole === 'buyer') {
+        console.log('👉 Navigating to /buyer-dashboard');
+        navigate('/buyer-dashboard');
+      } else if (userRole === 'admin') {
+        console.log('👉 Navigating to /admin-dashboard');
+        navigate('/admin-dashboard');
+      } else {
+        console.log('👉 Navigating to / (Home) - Unknown role');
+        navigate('/');
+      }
 
     } catch (error) {
       console.error('❌ Login failed:', error);

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiService from '../../services/api';
 import '../../styles/NegotiationHistory.css';
 
 const NegotiationHistory = () => {
+  const navigate = useNavigate();
   const [negotiations, setNegotiations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -157,9 +159,9 @@ const NegotiationHistory = () => {
                   </div>
                 </div>
 
-                {/* Delete button - only show for pending negotiations */}
-                {negotiation.status === 'pending' && (
-                  <div className="card-actions">
+                {/* Actions */}
+                <div className="card-actions">
+                  {negotiation.status === 'pending' && (
                     <motion.button
                       className="delete-btn"
                       onClick={() => handleDelete(negotiation._id)}
@@ -169,8 +171,45 @@ const NegotiationHistory = () => {
                       <i className="fas fa-trash-alt"></i>
                       Delete Request
                     </motion.button>
-                  </div>
-                )}
+                  )}
+
+                  {negotiation.status === 'accepted' && (
+                    <motion.button
+                      className="pay-now-btn"
+                      onClick={() => {
+                        const cartItem = {
+                          productId: negotiation.productId?._id,
+                          vegetableType: negotiation.productId?.name,
+                          quantity: negotiation.quantity,
+                          totalPrice: (negotiation.offeredPrice * negotiation.quantity).toFixed(2),
+                          pricePerKg: negotiation.offeredPrice
+                        };
+
+                        localStorage.setItem('cart', JSON.stringify([cartItem]));
+                        navigate('/checkout');
+                      }}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      style={{
+                        backgroundColor: '#28a745',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      }}
+                    >
+                      <i className="fas fa-credit-card"></i>
+                      Pay Now
+                    </motion.button>
+                  )}
+                </div>
               </motion.div>
             ))}
           </div>

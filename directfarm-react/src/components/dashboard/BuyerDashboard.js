@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import apiService from '../../services/api';
+import authUtils from '../../utils/auth';
 import '../../styles/BuyerDashboard.css';
 import LocationSelector from './LocationSelector';
+import ChatModal from '../chat/ChatModal';
+import StarRating from '../common/StarRating';
 
 const BuyerDashboard = () => {
+  const navigate = useNavigate();
   const [location, setLocation] = useState({
     state: '',
     district: '',
@@ -43,6 +48,11 @@ const BuyerDashboard = () => {
   const [selectedCropForOffer, setSelectedCropForOffer] = useState(null);
   const [offerData, setOfferData] = useState({ price: '', quantity: '' });
 
+  // Chat state
+  const [showChat, setShowChat] = useState(false);
+  const [selectedFarmer, setSelectedFarmer] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
   // Vegetable types for filtering
   const vegetableTypes = [
     'Tomato', 'Potato', 'Onion', 'Carrot', 'Cabbage', 'Cauliflower',
@@ -55,10 +65,9 @@ const BuyerDashboard = () => {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        // Get user from localStorage
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const userData = JSON.parse(storedUser);
+        // Get user from authUtils
+        const userData = authUtils.getUser();
+        if (userData) {
           setUser(userData);
         }
       } catch (error) {
@@ -101,10 +110,12 @@ const BuyerDashboard = () => {
           productId: product._id,
           farmerId: product.farmerId?._id || product.farmerId,
           farmerName: product.farmerId?.name || product.farmer?.name || 'Unknown Farmer',
+          farmerRating: product.farmerId?.averageRating || 0,
+          farmerTotalRatings: product.farmerId?.totalRatings || 0,
           vegetableType: product.name,
           quantity: product.quantity,
           ratePerKg: product.pricePerKg || product.price, // Handle both field names
-          totalRate: (product.quantity * (product.pricePerKg || product.price)).toFixed(2),
+          totalRate: (product.quantity * (product.price || product.pricePerKg)).toFixed(2),
           harvestingDate: product.harvestingDate,
           description: product.description || '',
           images: product.images || [],
@@ -278,7 +289,7 @@ const BuyerDashboard = () => {
           // Update local user object
           const updatedUser = { ...user, location: { coordinates: [location.coordinates.longitude, location.coordinates.latitude] } };
           setUser(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
+          authUtils.updateUser(updatedUser);
         } catch (error) {
           console.error('Failed to update location in profile:', error);
         }
@@ -334,11 +345,20 @@ const BuyerDashboard = () => {
     });
   };
 
-  const handleContactFarmer = (crop) => {
-    toast.success(`Contacting ${crop.farmerName}`, {
-      position: "top-right",
-      autoClose: 2000,
+  const handleTalkToFarmer = (crop) => {
+    if (!user) {
+      toast.error('Please login to chat with farmers');
+      return;
+    }
+    setSelectedFarmer({
+      id: crop.farmerId,
+      name: crop.farmerName
     });
+    setSelectedProduct({
+      id: crop.productId,
+      vegetableType: crop.vegetableType
+    });
+    setShowChat(true);
   };
 
   // Handle add to cart
@@ -742,7 +762,16 @@ const BuyerDashboard = () => {
                         <h3>{crop.vegetableType}</h3>
                         <div className="farmer-info">
                           <i className="fas fa-user"></i>
-                          <span>{crop.farmerName}</span>
+                          <span
+                            onClick={() => navigate(`/farmer/${crop.farmerId}`)}
+                            style={{ cursor: 'pointer', textDecoration: 'underline', color: '#27ae60' }}
+                          >
+                            {crop.farmerName}
+                          </span>
+                        </div>
+                        <div className="farmer-rating" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '5px' }}>
+                          <StarRating rating={crop.farmerRating || 1} readOnly size="0.9rem" />
+                          <span style={{ fontSize: '0.8rem', color: '#666' }}>({crop.farmerTotalRatings || 0})</span>
                         </div>
                       </div>
 
@@ -769,10 +798,12 @@ const BuyerDashboard = () => {
                         <div className="crop-location">
                           <i className="fas fa-map-marker-alt"></i>
                           <span>
-                            {crop.location.village && `${crop.location.village}, `}
-                            {crop.location.subdistrict && `${crop.location.subdistrict}, `}
-                            {crop.location.district && `${crop.location.district}, `}
-                            {crop.location.state || 'Location not specified'}
+                            {[
+                              crop.location.village,
+                              crop.location.subdistrict,
+                              crop.location.district,
+                              crop.location.state
+                            ].filter(Boolean).join(', ') || 'Location not specified'}
                           </span>
                         </div>
                       )}
@@ -825,12 +856,13 @@ const BuyerDashboard = () => {
                             Add to Cart
                           </button>
                         </div>
+
                         <button
-                          onClick={() => handleContactFarmer(crop)}
-                          className="contact-btn"
+                          onClick={() => handleTalkToFarmer(crop)}
+                          className="talk-btn"
                         >
-                          <i className="fas fa-phone"></i>
-                          Contact
+                          <i className="fas fa-comments"></i>
+                          Talk to Farmer
                         </button>
                         <button
                           onClick={() => handleMakeOffer(crop)}
@@ -848,6 +880,21 @@ const BuyerDashboard = () => {
             )
           }
         </motion.div >
+
+        {/* Chat Modal */}
+        {showChat && selectedFarmer && (
+          <ChatModal
+            isOpen={showChat}
+            onClose={() => {
+              setShowChat(false);
+              setSelectedFarmer(null);
+              setSelectedProduct(null);
+            }}
+            farmer={selectedFarmer}
+            product={selectedProduct}
+            currentUser={user}
+          />
+        )}
       </div >
     </div >
   );

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import authUtils from '../../utils/auth';
 
 const GuestRoute = ({ children, type = "login" }) => {
   const [checking, setChecking] = useState(true);
@@ -8,10 +9,9 @@ const GuestRoute = ({ children, type = "login" }) => {
   const location = useLocation();
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+    const isAuthenticated = authUtils.isAuthenticated();
 
-    if (token && storedUser) {
+    if (isAuthenticated) {
       // User already logged in
       let msg =
         type === "register"

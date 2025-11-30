@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import authUtils from '../../utils/auth';
 
 const ProtectedRoute = ({ children, requiredRole = null }) => {
   const [isChecking, setIsChecking] = useState(true);
@@ -11,10 +12,11 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     const checkAuthorization = () => {
       try {
         // Check if user is logged in
-        const storedUser = localStorage.getItem('user');
-        const token = localStorage.getItem('token');
+        const auth = authUtils.getAuth();
+        console.log('🛡️ ProtectedRoute: Checking auth for path:', location.pathname);
+        console.log('🛡️ ProtectedRoute: Auth data:', auth);
 
-        if (!storedUser || !token) {
+        if (!auth) {
           // Not logged in - redirect to login
           setIsAuthorized(false);
           setIsChecking(false);
@@ -26,10 +28,11 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
         }
 
         // Parse user data
-        const user = JSON.parse(storedUser);
+        const user = auth.user;
 
         // If role is required, check if user role matches
         if (requiredRole && user.role !== requiredRole) {
+          console.warn(`🛡️ ProtectedRoute: Role mismatch. Required: ${requiredRole}, Found: ${user.role}`);
           // Role doesn't match - redirect to appropriate dashboard or home
           setIsAuthorized(false);
           setIsChecking(false);
@@ -56,8 +59,9 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
       } catch (error) {
         console.error('Error checking authorization:', error);
         // Clear invalid data
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        console.error('Error checking authorization:', error);
+        // Clear invalid data
+        authUtils.clearAuth();
         setIsAuthorized(false);
         setIsChecking(false);
         toast.error('Session expired. Please login again.', {
@@ -102,15 +106,15 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
 
   // Not authorized - redirect based on situation
   if (!isAuthorized) {
-    const storedUser = localStorage.getItem('user');
+    const auth = authUtils.getAuth();
 
-    if (!storedUser) {
+    if (!auth) {
       // Not logged in - redirect to login with return URL
       return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
     try {
-      const user = JSON.parse(storedUser);
+      const user = auth.user;
 
       // Role mismatch - redirect to appropriate dashboard
       if (user.role === 'farmer') {

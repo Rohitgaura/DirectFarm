@@ -1,5 +1,7 @@
 // API Service for DirectFarm Frontend
 
+import authUtils from '../utils/auth';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
 
 class ApiService {
@@ -19,17 +21,21 @@ class ApiService {
 
   // Helper method to get auth token
   getAuthToken() {
-    return localStorage.getItem('token');
+    return authUtils.getToken();
   }
 
   // Helper method to set auth token
   setAuthToken(token) {
-    localStorage.setItem('token', token);
+    // Note: This method might be redundant if we use authUtils.setAuth in Login.js
+    // But keeping it for compatibility, though it only sets the cookie now
+    // Ideally, we should pass user object too, but for now let's just update the token
+    // or rely on Login.js to call authUtils.setAuth
+    console.warn('setAuthToken called directly. Prefer using authUtils.setAuth(token, user)');
   }
 
   // Helper method to remove auth token
   removeAuthToken() {
-    localStorage.removeItem('token');
+    authUtils.clearAuth();
   }
 
   // Helper method to get headers
@@ -116,7 +122,10 @@ class ApiService {
     console.log(response);
 
     if (response.success && response.data.token) {
-      this.setAuthToken(response.data.token);
+      // We don't set auth here anymore, Login.js handles it with authUtils.setAuth
+      // to ensure both token and user data are set together
+      // this.setAuthToken(response.data.token); 
+
       // Clear token cache after login to force fresh verification
       this.clearTokenCache();
     }
@@ -147,6 +156,22 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify(profileData),
     });
+  }
+
+  // Rating & Reviews
+  async submitRating(ratingData) {
+    return this.request('/ratings', {
+      method: 'POST',
+      body: JSON.stringify(ratingData),
+    });
+  }
+
+  async getUserRatings(userId) {
+    return this.request(`/ratings/user/${userId}`);
+  }
+
+  async getTopRatedUsers(role) {
+    return this.request(`/ratings/top-rated?role=${role}`);
   }
 
   // Location APIs
@@ -364,6 +389,28 @@ class ApiService {
     });
   }
 
+  // Chat Methods
+  async sendMessage(data) {
+    return this.request('/chat/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getConversation(userId) {
+    return this.request(`/chat/conversation/${userId}`);
+  }
+
+  async getConversations() {
+    return this.request('/chat/conversations');
+  }
+
+  async markMessageRead(messageId) {
+    return this.request(`/chat/${messageId}/read`, {
+      method: 'PUT',
+    });
+  }
+
   // Notification Methods
   async getNotifications() {
     return this.request('/notifications');
@@ -374,6 +421,40 @@ class ApiService {
       method: 'PUT',
     });
   }
+
+  // Admin Methods
+  async getAdminStats() {
+    return this.request('/admin/stats');
+  }
+
+  async getAllUsers() {
+    return this.request('/admin/users');
+  }
+
+
+
+  async getAllProducts() {
+    return this.request('/admin/products');
+  }
+
+
+
+  // Analytics Methods
+  async getAdminAnalytics() {
+    return this.request('/analytics/admin');
+  }
+
+  async getFarmerAnalytics() {
+    return this.request('/analytics/farmer');
+  }
+
+  async getBuyerAnalytics() {
+    return this.request('/analytics/buyer');
+  }
+
+
+
+  // Rating Methods
 
   // Health Check
   async healthCheck() {

@@ -2,17 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiService from '../../services/api';
+import authUtils from '../../utils/auth';
+import RatingModal from '../common/RatingModal';
 import '../../styles/OrderHistory.css';
 
 const OrderHistory = () => {
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
+    const [selectedOrder, setSelectedOrder] = useState(null);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
+        const storedUser = authUtils.getUser();
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            setUser(storedUser);
         }
         loadOrders();
     }, []);
@@ -27,24 +31,27 @@ const OrderHistory = () => {
         } catch (error) {
             console.error('Error loading orders:', error);
             toast.error('Failed to load order history');
-            // Mock data for demonstration
-            setOrders([
-                {
-                    _id: '1',
-                    items: [
-                        {
-                            productId: { name: 'Tomato', pricePerKg: 25 },
-                            quantity: 10,
-                            price: 25
-                        }
-                    ],
-                    totalAmount: 250,
-                    status: 'delivered',
-                    createdAt: '2024-01-15T10:30:00Z'
-                }
-            ]);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleRateClick = (order) => {
+        setSelectedOrder(order);
+        setIsRatingModalOpen(true);
+    };
+
+    const handleRatingSubmit = async (ratingData) => {
+        try {
+            const response = await apiService.submitRating(ratingData);
+            if (response.success) {
+                toast.success('Rating submitted successfully');
+                loadOrders(); // Reload orders to update rating status
+            }
+        } catch (error) {
+            console.error('Error submitting rating:', error);
+            toast.error(error.message || 'Failed to submit rating');
+            throw error; // Re-throw to let modal handle loading state
         }
     };
 
@@ -90,6 +97,27 @@ const OrderHistory = () => {
             hour: '2-digit',
             minute: '2-digit'
         });
+    };
+
+    const canRate = (order) => {
+        if (order.status !== 'delivered') return false;
+        if (user?.role === 'buyer') return !order.isRatedByBuyer;
+        if (user?.role === 'farmer') return !order.isRatedBySeller;
+        return false;
+    };
+
+    const getRatedUserName = (order) => {
+        if (!order) return '';
+        if (user?.role === 'buyer') {
+            // Assuming first item's farmer for now, or fetch farmer name from order details if available
+            // In a real app, we might need to fetch farmer details or have it populated in order
+            // The Order model has items array with farmerId.
+            // We might need to populate farmer details in getOrders API.
+            // For now, let's say "Farmer" or "Seller"
+            return 'Seller';
+        } else {
+            return order.buyerId?.name || 'Buyer';
+        }
     };
 
     return (
@@ -163,9 +191,24 @@ const OrderHistory = () => {
                                 </div>
 
                                 <div className="order-footer">
-                                    <div className="order-status" style={{ backgroundColor: getStatusColor(order.status) }}>
-                                        <i className={`fas ${getStatusIcon(order.status)}`}></i>
-                                        <span>{order.status?.toUpperCase() || 'PENDING'}</span>
+                                    <div className="order-status-actions">
+                                        <div className="order-status" style={{ backgroundColor: getStatusColor(order.status) }}>
+                                            <i className={`fas ${getStatusIcon(order.status)}`}></i>
+                                            <span>{order.status?.toUpperCase() || 'PENDING'}</span>
+                                        </div>
+                                        {canRate(order) && (
+                                            <button
+                                                className="rate-btn"
+                                                onClick={() => handleRateClick(order)}
+                                            >
+                                                <i className="fas fa-star"></i> Rate User
+                                            </button>
+                                        )}
+                                        {((user?.role === 'buyer' && order.isRatedByBuyer) || (user?.role === 'farmer' && order.isRatedBySeller)) && (
+                                            <div className="rated-badge">
+                                                <i className="fas fa-check"></i> Rated
+                                            </div>
+                                        )}
                                     </div>
                                     <div className="order-total">
                                         <span className="total-label">Total:</span>
@@ -177,6 +220,14 @@ const OrderHistory = () => {
                     </div>
                 )}
             </div>
+
+            <RatingModal
+                isOpen={isRatingModalOpen}
+                onClose={() => setIsRatingModalOpen(false)}
+                onSubmit={handleRatingSubmit}
+                orderId={selectedOrder?._id}
+                ratedUserName={getRatedUserName(selectedOrder)}
+            />
         </div>
     );
 };

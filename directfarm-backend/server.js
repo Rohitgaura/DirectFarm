@@ -69,6 +69,11 @@ app.use('/api/success-stories', successStoriesRoutes);
 app.use('/api/locations', locationRoutes);
 app.use('/api/negotiations', require('./routes/negotiation'));
 app.use('/api/notifications', require('./routes/notification'));
+app.use('/api/chat', require('./routes/chat'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/ratings', require('./routes/rating'));
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

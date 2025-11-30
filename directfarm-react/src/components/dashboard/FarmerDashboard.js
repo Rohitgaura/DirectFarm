@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import apiService from '../../services/api';
+import authUtils from '../../utils/auth';
+import StarRating from '../common/StarRating';
 import '../../styles/FarmerDashboard.css';
 
 const FarmerDashboard = () => {
@@ -15,10 +17,32 @@ const FarmerDashboard = () => {
     images: []
   });
 
-  // Global location state (similar to BuyerDashboard)
   const [location, setLocation] = useState({
     coordinates: null
   });
+  const [locationAddress, setLocationAddress] = useState(null);
+
+  // Reverse geocode coordinates to get address
+  useEffect(() => {
+    const fetchAddress = async () => {
+      if (location.coordinates) {
+        try {
+          const response = await apiService.reverseGeocodeLocation(
+            location.coordinates.latitude,
+            location.coordinates.longitude
+          );
+          if (response.success) {
+            setLocationAddress(response.data);
+          }
+        } catch (error) {
+          console.error('Error fetching address:', error);
+        }
+      } else {
+        setLocationAddress(null);
+      }
+    };
+    fetchAddress();
+  }, [location.coordinates]);
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -38,25 +62,27 @@ const FarmerDashboard = () => {
   useEffect(() => {
     const loadUserAndProducts = async () => {
       try {
-        // Get user from localStorage
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const userData = JSON.parse(storedUser);
+        // Get user from authUtils
+        const userData = authUtils.getUser();
+        console.log('🌾 FarmerDashboard: Loaded user data:', userData);
+        if (userData) {
           setUser(userData);
+          console.log('🌾 FarmerDashboard: User state set');
 
           // Fetch products for this farmer - use either _id or id
           const userId = userData._id || userData.id;
           if (userId) {
             try {
               const productsResponse = await apiService.getProducts({ farmerId: userId });
+              console.log('🌾 FarmerDashboard: Products response:', productsResponse);
               if (productsResponse.success && productsResponse.data) {
                 // Transform products to match the display format
                 const transformedProducts = productsResponse.data.map(product => ({
                   id: product._id,
                   vegetableType: product.name,
                   quantity: product.quantity,
-                  ratePerKg: product.price,
-                  totalRate: (product.quantity * product.price).toFixed(2),
+                  ratePerKg: product.price || product.pricePerKg,
+                  totalRate: (product.quantity * (product.price || product.pricePerKg)).toFixed(2),
                   description: product.description || '',
                   images: product.images || [],
                   uploadingDate: product.createdAt,
@@ -109,7 +135,7 @@ const FarmerDashboard = () => {
           // Update local user object to avoid re-requesting
           const updatedUser = { ...user, location: { coordinates: [location.coordinates.longitude, location.coordinates.latitude] } };
           setUser(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
+          authUtils.updateUser(updatedUser);
         } catch (error) {
           console.error('Failed to update location in profile:', error);
         }
@@ -316,14 +342,10 @@ const FarmerDashboard = () => {
     // Check if user is logged in
     let currentUser = user;
     if (!currentUser || (!currentUser._id && !currentUser.id)) {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          currentUser = JSON.parse(storedUser);
-          setUser(currentUser);
-        } catch (error) {
-          console.error('Error parsing user from localStorage:', error);
-        }
+      const userData = authUtils.getUser();
+      if (userData) {
+        currentUser = userData;
+        setUser(currentUser);
       }
     }
 
@@ -367,7 +389,7 @@ const FarmerDashboard = () => {
           id: response.data._id || response.data.product?._id,
           vegetableType: response.data.name || response.data.product?.name,
           quantity: response.data.quantity || response.data.product?.quantity,
-          ratePerKg: response.data.price || response.data.product?.price,
+          ratePerKg: response.data.price || response.data.pricePerKg || response.data.product?.price || response.data.product?.pricePerKg,
           totalRate: calculateTotalRate(),
           description: response.data.description || response.data.product?.description || '',
           images: response.data.images || response.data.product?.images || [],
@@ -446,7 +468,45 @@ const FarmerDashboard = () => {
         >
           <h1>Farmer Dashboard</h1>
           <p>Upload your crop details and manage your produce</p>
+          {user && (
+            <div className="dashboard-rating" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', justifyContent: 'center' }}>
+              <StarRating rating={user.averageRating || 0} readOnly size="1.5rem" />
+              <span style={{ fontSize: '1.1rem', fontWeight: '600', color: '#333' }}>
+                {(user.averageRating || 0).toFixed(1)} ({user.totalRatings || 0} reviews)
+              </span>
+            </div>
+          )}
         </motion.div>
+
+        {/* View Public Profile Button */}
+        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+          <button
+            onClick={() => window.location.href = `/farmer/${user._id || user.id}`}
+            style={{
+              background: 'white',
+              color: '#27ae60',
+              border: '2px solid #27ae60',
+              padding: '0.5rem 1.5rem',
+              borderRadius: '25px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = '#27ae60';
+              e.currentTarget.style.color = 'white';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'white';
+              e.currentTarget.style.color = '#27ae60';
+            }}
+          >
+            <i className="fas fa-eye"></i> View Public Profile
+          </button>
+        </div>
 
         {/* Location Section - New Addition */}
         <motion.div
@@ -470,10 +530,20 @@ const FarmerDashboard = () => {
                 <div className="status-info">
                   <h3 style={{ margin: 0, fontSize: '1rem', color: '#166534' }}>Location Active</h3>
                   <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: '#15803d' }}>Your products will be shown to nearby buyers</p>
-                  <div className="coordinates-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', marginTop: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
-                    <i className="fas fa-satellite-dish"></i>
-                    <span>{location.coordinates.latitude.toFixed(4)}, {location.coordinates.longitude.toFixed(4)}</span>
-                  </div>
+                  {locationAddress ? (
+                    <div className="address-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', marginTop: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
+                      <i className="fas fa-map-marker-alt"></i>
+                      <span>
+                        {locationAddress.district && `${locationAddress.district}, `}
+                        {locationAddress.state}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="coordinates-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', marginTop: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
+                      <i className="fas fa-satellite-dish"></i>
+                      <span>{location.coordinates.latitude.toFixed(4)}, {location.coordinates.longitude.toFixed(4)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               <button

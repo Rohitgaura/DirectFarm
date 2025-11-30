@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiService from '../../services/api';
+import authUtils from '../../utils/auth';
 import '../../styles/Checkout.css';
 
 const Checkout = () => {
@@ -29,7 +30,7 @@ const Checkout = () => {
         setCartItems(cart);
 
         // Pre-fill phone if available in user profile
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const user = authUtils.getUser() || {};
         if (user.phone) {
             setFormData(prev => ({ ...prev, phone: user.phone }));
         }

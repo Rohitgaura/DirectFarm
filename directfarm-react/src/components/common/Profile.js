@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiService from '../../services/api';
+import authUtils from '../../utils/auth';
+import StarRating from '../common/StarRating';
 import '../../styles/Profile.css';
 
 const Profile = () => {
@@ -16,14 +18,10 @@ const Profile = () => {
     });
     const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        loadUserData();
-    }, []);
-
-    const loadUserData = () => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            const userData = JSON.parse(storedUser);
+    const loadUserData = React.useCallback(async () => {
+        // First load from authUtils for immediate display
+        const userData = authUtils.getUser();
+        if (userData) {
             setUser(userData);
             setFormData({
                 name: userData.name || '',
@@ -33,7 +31,35 @@ const Profile = () => {
                 role: userData.role || ''
             });
         }
-    };
+
+        // Then fetch fresh data from API
+        try {
+            const response = await apiService.getProfile();
+            if (response.success) {
+                const freshUser = response.data.user;
+                setUser(freshUser);
+                // Update authUtils
+                authUtils.updateUser(freshUser);
+
+                // Only update form data if not editing
+                if (!isEditing) {
+                    setFormData({
+                        name: freshUser.name || '',
+                        email: freshUser.email || '',
+                        phone: freshUser.phone || '',
+                        address: freshUser.address || '',
+                        role: freshUser.role || ''
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching profile:', error);
+        }
+    }, [isEditing]);
+
+    useEffect(() => {
+        loadUserData();
+    }, [loadUserData]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -51,9 +77,9 @@ const Profile = () => {
             const response = await apiService.updateProfile(formData);
 
             if (response.success) {
-                // Update localStorage with new data
+                // Update authUtils with new data
                 const updatedUser = { ...user, ...formData };
-                localStorage.setItem('user', JSON.stringify(updatedUser));
+                authUtils.updateUser(updatedUser);
                 setUser(updatedUser);
 
                 // Dispatch event to update navbar
@@ -260,6 +286,19 @@ const Profile = () => {
                                         Role
                                     </div>
                                     <div className="info-value role-badge">{user.role?.toUpperCase() || 'USER'}</div>
+                                </div>
+
+                                <div className="info-item">
+                                    <div className="info-label">
+                                        <i className="fas fa-star"></i>
+                                        Rating
+                                    </div>
+                                    <div className="info-value" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <StarRating rating={user.averageRating || 0} readOnly size="1.2rem" />
+                                        <span style={{ color: '#666', fontSize: '0.9rem' }}>
+                                            ({user.totalRatings || 0} reviews)
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         )}

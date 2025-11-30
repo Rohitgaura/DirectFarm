@@ -33,6 +33,7 @@ const Footer = () => {
       }
     } else {
       // Navigate to other pages
+      window.scrollTo(0, 0);
       navigate(path);
     }
   };
@@ -73,6 +74,18 @@ const Footer = () => {
             <p><i className="fas fa-envelope"></i> info@directfarm.com</p>
             <p><i className="fas fa-phone"></i> +91 98765 43210</p>
             <p><i className="fas fa-map-marker-alt"></i> Patna, Bihar, India</p>
+          </div>
+          <div className="footer-section">
+            <h4>Policies</h4>
+            <ul>
+              <li><button onClick={() => handleQuickLink('/terms-conditions', null)} className="footer-link">Terms & Conditions</button></li>
+              <li><button onClick={() => handleQuickLink('/privacy-policy', null)} className="footer-link">Privacy Policy</button></li>
+              <li><button onClick={() => handleQuickLink('/refund-policy', null)} className="footer-link">Refund Policy</button></li>
+              <li><button onClick={() => handleQuickLink('/delivery-policy', null)} className="footer-link">Delivery Policy</button></li>
+              <li><button onClick={() => handleQuickLink('/data-protection-policy', null)} className="footer-link">Data Protection</button></li>
+              <li><button onClick={() => handleQuickLink('/seller-verification-policy', null)} className="footer-link">Seller Verification</button></li>
+              <li><button onClick={() => handleQuickLink('/disclaimer-policy', null)} className="footer-link">Disclaimer</button></li>
+            </ul>
           </div>
         </div>
         <div className="footer-bottom">

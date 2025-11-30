@@ -85,7 +85,7 @@ router.get('/', async (req, res) => {
     }
 
     const products = await Product.find(filter)
-      .populate('farmerId', 'name email phone')
+      .populate('farmerId', 'name email phone averageRating totalRatings')
       .sort(sort)
       .skip(skip)
       .limit(limit);

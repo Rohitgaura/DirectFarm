@@ -138,11 +138,22 @@ router.put('/:id', protect, async (req, res) => {
             message = `Farmer proposed a new price: ₹${counterOfferPrice}/kg`;
         }
 
+        // Fetch product to get name
+        const product = await Product.findById(negotiation.productId);
+
         const notification = new Notification({
             recipientId: negotiation.buyerId,
             type: 'negotiation_update',
             message: message,
-            relatedId: negotiation._id
+            relatedId: negotiation._id,
+            metadata: {
+                status: status,
+                negotiationId: negotiation._id,
+                productId: negotiation.productId,
+                productName: product ? product.name : 'Product',
+                quantity: negotiation.quantity,
+                price: status === 'accepted' ? negotiation.offeredPrice : (negotiation.counterOfferPrice || negotiation.offeredPrice)
+            }
         });
         await notification.save();
 

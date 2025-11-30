@@ -19,7 +19,12 @@ const notificationSchema = new mongoose.Schema({
         default: false
     },
     relatedId: {
-        type: mongoose.Schema.Types.ObjectId
+        type: mongoose.Schema.Types.ObjectId,
+        required: false
+    },
+    metadata: {
+        type: mongoose.Schema.Types.Mixed,
+        required: false
     }
 }, {
     timestamps: true

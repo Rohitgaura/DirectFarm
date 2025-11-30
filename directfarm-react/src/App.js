@@ -25,10 +25,24 @@ import NegotiationHistory from './components/negotiation/NegotiationHistory';
 import FarmerNegotiationPage from './components/negotiation/FarmerNegotiationPage';
 import HelpFeedback from './components/common/HelpFeedback';
 import SuccessStories from './components/pages/SuccessStories';
+import ChatHistory from './components/chat/ChatHistory';
+import AdminDashboard from './components/admin/AdminDashboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Footer from './components/common/Footer';
 import './App.css';
 import GuestRoute from './components/auth/GuestRoute';
+import FarmerAnalytics from './components/dashboard/FarmerAnalytics';
+import BuyerAnalytics from './components/dashboard/BuyerAnalytics';
+import TermsConditions from './components/policies/TermsConditions';
+import PrivacyPolicy from './components/policies/PrivacyPolicy';
+import RefundPolicy from './components/policies/RefundPolicy';
+import DeliveryPolicy from './components/policies/DeliveryPolicy';
+import DataProtectionPolicy from './components/policies/DataProtectionPolicy';
+import SellerVerificationPolicy from './components/policies/SellerVerificationPolicy';
+import DisclaimerPolicy from './components/policies/DisclaimerPolicy';
+import TopRatedFarmers from './components/home/TopRatedFarmers';
+import FarmerProfile from './components/profile/FarmerProfile';
+import Notifications from './components/common/Notifications';
 
 function App() {
   return (
@@ -77,6 +91,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/farmer/:id" element={<FarmerProfile />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route
+            path="/admin-dashboard"
+            element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/cart"
             element={
@@ -118,6 +142,14 @@ function App() {
             }
           />
           <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <ChatHistory />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/profile"
             element={
               <ProtectedRoute>
@@ -136,6 +168,29 @@ function App() {
           <Route path="/career" element={<Career />} />
           <Route path="/help" element={<HelpFeedback />} />
           <Route path="/success-stories" element={<SuccessStories />} />
+          <Route
+            path="/farmer-analytics"
+            element={
+              <ProtectedRoute requiredRole="farmer">
+                <FarmerAnalytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/buyer-analytics"
+            element={
+              <ProtectedRoute requiredRole="buyer">
+                <BuyerAnalytics />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/terms-conditions" element={<TermsConditions />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/refund-policy" element={<RefundPolicy />} />
+          <Route path="/delivery-policy" element={<DeliveryPolicy />} />
+          <Route path="/data-protection-policy" element={<DataProtectionPolicy />} />
+          <Route path="/seller-verification-policy" element={<SellerVerificationPolicy />} />
+          <Route path="/disclaimer-policy" element={<DisclaimerPolicy />} />
         </Routes>
         <Footer />
         <ToastContainer />

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../../services/api';
+import authUtils from '../../utils/auth';
 import '../../styles/SuccessStories.css';
 
 const SuccessStories = () => {
@@ -25,9 +26,9 @@ const SuccessStories = () => {
     });
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
+        const storedUser = authUtils.getUser();
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            setUser(storedUser);
         }
         loadStories();
     }, []);

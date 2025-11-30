@@ -28,11 +28,23 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['farmer', 'buyer'],
-    required: [true, 'Role is required']
+    enum: ['farmer', 'buyer', 'admin'],
+    required: [true, 'Role is required'],
+    default: 'buyer'
+  },
+  averageRating: {
+    type: Number,
+    default: 0,
+    min: 0,
+    max: 5
+  },
+  totalRatings: {
+    type: Number,
+    default: 0
   },
   experienceYears: {
     type: Number,
+    default: 0,
     required: function () {
       return this.role === 'farmer';
     },

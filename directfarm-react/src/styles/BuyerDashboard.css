@@ -754,6 +754,35 @@
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
+.talk-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+  margin-top: 0.5rem;
+}
+
+.talk-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+  background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+}
+
+.talk-btn:active {
+  transform: translateY(0);
+}
+
 .favorite-btn {
   background: #f8f9fa;
   border: 2px solid #e1e5e9;

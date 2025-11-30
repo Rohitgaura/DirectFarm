@@ -7,13 +7,8 @@ import '../../styles/CropsHistory.css';
 const CropsHistory = () => {
     const [crops, setCrops] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [user, setUser] = useState(null);
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
         loadCrops();
     }, []);
 

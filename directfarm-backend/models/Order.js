@@ -36,6 +36,14 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'confirmed', 'delivered', 'cancelled'],
     default: 'pending'
+  },
+  isRatedByBuyer: {
+    type: Boolean,
+    default: false
+  },
+  isRatedBySeller: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true,
@@ -44,7 +52,7 @@ const orderSchema = new mongoose.Schema({
 });
 
 // Calculate totalAmount before saving
-orderSchema.pre('save', function(next) {
+orderSchema.pre('save', function (next) {
   if (this.items && this.items.length > 0 && !this.totalAmount) {
     this.totalAmount = this.items.reduce((sum, item) => {
       return sum + (item.price * item.quantity);

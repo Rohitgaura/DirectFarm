@@ -15,13 +15,13 @@ router.get('/', async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const farmers = await User.find({ role: 'farmer', isActive: true })
+    const farmers = await User.find({ role: 'farmer' })
       .select('name email phone address isVerified createdAt')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await User.countDocuments({ role: 'farmer', isActive: true });
+    const total = await User.countDocuments({ role: 'farmer' });
 
     res.json({
       success: true,
@@ -45,10 +45,9 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    const farmer = await User.findOne({ 
-      _id: req.params.id, 
-      role: 'farmer', 
-      isActive: true 
+    const farmer = await User.findOne({
+      _id: req.params.id,
+      role: 'farmer'
     }).select('-password');
 
     if (!farmer) {
@@ -59,14 +58,14 @@ router.get('/:id', async (req, res) => {
     }
 
     // Get farmer's products
-    const products = await Product.find({ 
-      farmer: req.params.id, 
-      isAvailable: true 
+    const products = await Product.find({
+      farmerId: req.params.id,
+      quantity: { $gt: 0 }
     }).sort({ createdAt: -1 });
 
     // Get farmer's order statistics
     const orderStats = await Order.aggregate([
-      { $match: { farmer: farmer._id } },
+      { $match: { 'items.farmerId': farmer._id } },
       {
         $group: {
           _id: null,
@@ -114,17 +113,17 @@ router.get('/:id/products', async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const products = await Product.find({ 
-      farmer: req.params.id, 
-      isAvailable: true 
+    const products = await Product.find({
+      farmer: req.params.id,
+      quantity: { $gt: 0 }
     })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const total = await Product.countDocuments({ 
-      farmer: req.params.id, 
-      isAvailable: true 
+    const total = await Product.countDocuments({
+      farmer: req.params.id,
+      quantity: { $gt: 0 }
     });
 
     res.json({

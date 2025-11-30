@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import apiService from '../../services/api'; // ✅ import apiService
+import authUtils from '../../utils/auth';
+import TopRatedFarmers from '../home/TopRatedFarmers';
 import '../../styles/Home.css';
 
 const Home = () => {
@@ -13,14 +15,14 @@ const Home = () => {
     let verifyTimeout = null;
 
     const loadUser = async () => {
-      const storedUser = localStorage.getItem('user');
-      const token = localStorage.getItem('token');
+      const storedUser = authUtils.getUser();
+      const token = authUtils.getToken();
 
       if (storedUser && token) {
         try {
           // Set user immediately from localStorage (optimistic update)
           if (isMounted) {
-            setUser(JSON.parse(storedUser));
+            setUser(storedUser);
           }
 
           // Verify token in background (debounced)
@@ -31,16 +33,14 @@ const Home = () => {
               if (!isMounted) return;
 
               if (result && result.valid === false) {
-                localStorage.removeItem('user');
-                localStorage.removeItem('token');
+                authUtils.clearAuth();
                 setUser(null);
               }
             } catch (error) {
               // Only clear on auth errors (401, 403), not on network errors
               if (error.status === 401 || error.status === 403) {
                 if (isMounted) {
-                  localStorage.removeItem('user');
-                  localStorage.removeItem('token');
+                  authUtils.clearAuth();
                   setUser(null);
                 }
               }
@@ -202,6 +202,13 @@ const Home = () => {
                           Go to Dashboard
                         </Link>
                       </motion.div>
+                    ) : user.role === 'admin' ? (
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Link to="/admin-dashboard" className="btn btn-primary">
+                          <i className="fas fa-tachometer-alt"></i>
+                          Admin Dashboard
+                        </Link>
+                      </motion.div>
                     ) : (
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Link to="/buyer-dashboard" className="btn btn-primary">
@@ -234,6 +241,9 @@ const Home = () => {
           </div>
         </motion.div>
       </motion.section>
+
+      {/* Top Rated Farmers Section */}
+      <TopRatedFarmers />
 
       {/* Highlights Section */}
       <motion.section

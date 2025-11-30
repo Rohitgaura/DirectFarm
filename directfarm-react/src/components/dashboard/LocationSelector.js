@@ -21,6 +21,14 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
         village: ''
     });
 
+    // Prevent background scroll when modal is open
+    useEffect(() => {
+        document.body.style.overflow = 'hidden';
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, []);
+
     useEffect(() => {
         if (mode === 'manual') {
             fetchStates();
