@@ -17,9 +17,30 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: function () {
+      // Password is required only for local authentication
+      return !this.googleId && !this.facebookId;
+    },
     minlength: [6, 'Password must be at least 6 characters'],
     select: false
+  },
+  googleId: {
+    type: String,
+    unique: true,
+    sparse: true // Allows null values while maintaining uniqueness for non-null values
+  },
+  facebookId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+  authProvider: {
+    type: String,
+    enum: ['local', 'google', 'facebook'],
+    default: 'local'
+  },
+  profilePicture: {
+    type: String
   },
   phone: {
     type: String,
@@ -65,7 +86,9 @@ const userSchema = new mongoose.Schema({
       index: '2dsphere'
     },
     formattedAddress: String
-  }
+  },
+  resetPasswordOtp: String,
+  resetPasswordOtpExpire: Date
 }, {
   timestamps: true,
   createdAt: 'createdAt',
@@ -97,7 +120,8 @@ userSchema.pre('save', async function (next) {
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  // Skip password hashing for OAuth users or if password hasn't been modified
+  if (!this.isModified('password') || !this.password) return next();
 
   try {
     const salt = await bcrypt.genSalt(12);

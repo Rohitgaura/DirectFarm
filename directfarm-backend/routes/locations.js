@@ -65,20 +65,29 @@ router.post('/geocode', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Address is required' });
         }
 
-        const loc = await geocoder.geocode(address);
+        try {
+            const loc = await geocoder.geocode(address);
 
-        if (!loc || loc.length === 0) {
-            return res.status(404).json({ success: false, message: 'Location not found' });
-        }
-
-        res.json({
-            success: true,
-            data: {
-                latitude: loc[0].latitude,
-                longitude: loc[0].longitude,
-                formattedAddress: loc[0].formattedAddress
+            if (!loc || loc.length === 0) {
+                return res.status(404).json({ success: false, message: 'Location not found' });
             }
-        });
+
+            res.json({
+                success: true,
+                data: {
+                    latitude: loc[0].latitude,
+                    longitude: loc[0].longitude,
+                    formattedAddress: loc[0].formattedAddress
+                }
+            });
+        } catch (geocodeError) {
+            console.error('Geocoding service unavailable:', geocodeError.message);
+            return res.status(503).json({
+                success: false,
+                message: 'Geocoding service temporarily unavailable. Please try again later.',
+                error: geocodeError.message
+            });
+        }
     } catch (error) {
         console.error('Geocoding error:', error);
         res.status(500).json({ success: false, message: 'Server error' });
@@ -94,24 +103,54 @@ router.post('/reverse-geocode', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Latitude and longitude are required' });
         }
 
-        const loc = await geocoder.reverse({ lat: latitude, lon: longitude });
+        try {
+            const loc = await geocoder.reverse({ lat: latitude, lon: longitude });
 
-        if (!loc || loc.length === 0) {
-            return res.status(404).json({ success: false, message: 'Address not found' });
-        }
-
-        // Extract relevant address components
-        const addressData = loc[0];
-        res.json({
-            success: true,
-            data: {
-                formattedAddress: addressData.formattedAddress,
-                state: addressData.state || addressData.administrativeLevels?.level1long || '',
-                district: addressData.city || addressData.administrativeLevels?.level2long || '',
-                country: addressData.country || '',
-                countryCode: addressData.countryCode || ''
+            if (!loc || loc.length === 0) {
+                // Return coordinates as fallback if no address found
+                return res.json({
+                    success: true,
+                    data: {
+                        formattedAddress: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+                        state: '',
+                        district: '',
+                        country: '',
+                        countryCode: '',
+                        fallback: true
+                    }
+                });
             }
-        });
+
+            // Extract relevant address components
+            const addressData = loc[0];
+            res.json({
+                success: true,
+                data: {
+                    formattedAddress: addressData.formattedAddress,
+                    state: addressData.state || addressData.administrativeLevels?.level1long || '',
+                    district: addressData.city || addressData.administrativeLevels?.level2long || '',
+                    country: addressData.country || '',
+                    countryCode: addressData.countryCode || ''
+                }
+            });
+        } catch (geocodeError) {
+            // Handle network errors (like ENOTFOUND) gracefully
+            console.error('Geocoding service unavailable:', geocodeError.message);
+
+            // Return coordinates as fallback when service is unavailable
+            res.json({
+                success: true,
+                data: {
+                    formattedAddress: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`,
+                    state: '',
+                    district: '',
+                    country: '',
+                    countryCode: '',
+                    fallback: true,
+                    error: 'Geocoding service temporarily unavailable'
+                }
+            });
+        }
     } catch (error) {
         console.error('Reverse geocoding error:', error);
         res.status(500).json({ success: false, message: 'Server error' });

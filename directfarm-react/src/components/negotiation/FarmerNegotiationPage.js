@@ -13,11 +13,7 @@ const FarmerNegotiationPage = () => {
     const [counterPrice, setCounterPrice] = useState('');
     const [showCounterInput, setShowCounterInput] = useState(false);
 
-    useEffect(() => {
-        fetchNegotiation();
-    }, [id]);
-
-    const fetchNegotiation = async () => {
+    const fetchNegotiation = React.useCallback(async () => {
         try {
             const response = await apiService.getNegotiationById(id);
             console.log('Negotiation Data Received:', response);
@@ -32,7 +28,11 @@ const FarmerNegotiationPage = () => {
             toast.error('Failed to load negotiation details');
             setLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchNegotiation();
+    }, [fetchNegotiation]);
 
     const handleAction = async (status) => {
         try {
