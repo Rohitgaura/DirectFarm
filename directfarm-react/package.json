@@ -1,6 +1,7 @@
 {
   "name": "directfarm-react",
   "version": "0.1.0",
+  "proxy": "http://localhost:5001",
   "private": true,
   "dependencies": {
     "@greatsumini/react-facebook-login": "^3.4.0",

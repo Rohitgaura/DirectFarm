@@ -1,19 +1,30 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import apiService from '../../services/api';
+import authUtils from '../../utils/auth';
 import '../../styles/HelpFeedback.css';
 
 const HelpFeedback = () => {
+  const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     type: 'feedback',
     subject: '',
     message: '',
     email: '',
-    priority: 'medium'
+    phone: '',
+    priority: 'medium',
+    name: ''
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    const currentUser = authUtils.getUser();
+    setUser(currentUser);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -22,7 +33,6 @@ const HelpFeedback = () => {
       [name]: value
     }));
 
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
@@ -44,10 +54,15 @@ const HelpFeedback = () => {
       newErrors.message = 'Message must be at least 10 characters';
     }
 
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+    if (!user) {
+      if (!formData.email.trim()) {
+        newErrors.email = 'Email is required';
+      } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+        newErrors.email = 'Email is invalid';
+      }
+      if (!formData.phone.trim()) {
+        newErrors.phone = 'Phone number is required';
+      }
     }
 
     setErrors(newErrors);
@@ -65,33 +80,37 @@ const HelpFeedback = () => {
     setIsSubmitting(true);
 
     try {
-      // Simulate API call - in real app, this would send to backend
-      console.log('Submitting feedback:', formData);
+      const submissionData = {
+        ...formData,
+        user: user?._id || user?.id
+      };
 
-      // Simulate delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await apiService.submitFeedback(submissionData);
 
-      toast.success('Thank you for your feedback! We will get back to you soon.', {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      if (response.success) {
+        setSubmitSuccess(true);
+        toast.success('Thank you for your feedback!');
 
-      // Reset form
-      setFormData({
-        type: 'feedback',
-        subject: '',
-        message: '',
-        email: '',
-        priority: 'medium'
-      });
+        // Reset form after delay
+        setTimeout(() => {
+          setSubmitSuccess(false);
+          setFormData({
+            type: 'feedback',
+            subject: '',
+            message: '',
+            email: '',
+            phone: '',
+            priority: 'medium',
+            name: ''
+          });
+        }, 3000);
+      } else {
+        throw new Error(response.message || 'Submission failed');
+      }
 
     } catch (error) {
       console.error('Error submitting feedback:', error);
-      toast.error('Failed to submit feedback. Please try again.');
+      toast.error(error.message || 'Failed to submit feedback. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -107,152 +126,180 @@ const HelpFeedback = () => {
       >
         <div className="page-header">
           <h1>
-            <i className="fas fa-question-circle"></i>
+            <i className="fas fa-headset"></i>
             Help & Feedback
           </h1>
           <p>We'd love to hear from you! Send us your feedback, complaints, or suggestions.</p>
         </div>
 
         <div className="content-body">
-          <div className="help-tabs">
-            <button
-              className={`tab-btn ${formData.type === 'feedback' ? 'active' : ''}`}
-              onClick={() => setFormData(prev => ({ ...prev, type: 'feedback' }))}
+          {submitSuccess ? (
+            <motion.div
+              className="success-message-container"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
             >
-              <i className="fas fa-comment-alt"></i>
-              Feedback
-            </button>
-            <button
-              className={`tab-btn ${formData.type === 'complaint' ? 'active' : ''}`}
-              onClick={() => setFormData(prev => ({ ...prev, type: 'complaint' }))}
-            >
-              <i className="fas fa-exclamation-triangle"></i>
-              Complaint
-            </button>
-            <button
-              className={`tab-btn ${formData.type === 'suggestion' ? 'active' : ''}`}
-              onClick={() => setFormData(prev => ({ ...prev, type: 'suggestion' }))}
-            >
-              <i className="fas fa-lightbulb"></i>
-              Suggestion
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="feedback-form">
-            <div className="form-group">
-              <label htmlFor="priority">
-                <i className="fas fa-flag"></i>
-                Priority
-              </label>
-              <select
-                id="priority"
-                name="priority"
-                value={formData.priority}
-                onChange={handleChange}
-                className={errors.priority ? 'error' : ''}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-              {errors.priority && <span className="error-message">{errors.priority}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="subject">
-                <i className="fas fa-tag"></i>
-                Subject
-              </label>
-              <input
-                type="text"
-                id="subject"
-                name="subject"
-                value={formData.subject}
-                onChange={handleChange}
-                className={errors.subject ? 'error' : ''}
-                placeholder={`Enter ${formData.type} subject`}
-              />
-              {errors.subject && <span className="error-message">{errors.subject}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="email">
-                <i className="fas fa-envelope"></i>
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={errors.email ? 'error' : ''}
-                placeholder="Enter your email address"
-              />
-              {errors.email && <span className="error-message">{errors.email}</span>}
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="message">
-                <i className="fas fa-edit"></i>
-                {formData.type === 'feedback' ? 'Feedback' :
-                  formData.type === 'complaint' ? 'Complaint Details' :
-                    'Suggestion Details'}
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                value={formData.message}
-                onChange={handleChange}
-                className={errors.message ? 'error' : ''}
-                placeholder={`Please describe your ${formData.type} in detail...`}
-                rows="6"
-              />
-              {errors.message && <span className="error-message">{errors.message}</span>}
-            </div>
-
-            <div className="form-actions">
+              <div className="success-icon">
+                <i className="fas fa-check-circle"></i>
+              </div>
+              <h2>Feedback Received!</h2>
+              <p>Thank you for helping us improve DirectFarm. We will review your message shortly.</p>
               <button
-                type="submit"
-                disabled={isSubmitting}
-                className="submit-btn"
+                className="submit-another-btn"
+                onClick={() => {
+                  setSubmitSuccess(false);
+                  setFormData({
+                    type: 'feedback',
+                    subject: '',
+                    message: '',
+                    email: '',
+                    phone: '',
+                    priority: 'medium',
+                    name: ''
+                  });
+                }}
               >
-                {isSubmitting ? (
-                  <motion.div
-                    className="loading-spinner"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  >
-                    <i className="fas fa-spinner"></i>
-                  </motion.div>
-                ) : (
-                  <>
-                    <i className="fas fa-paper-plane"></i>
-                    Submit {formData.type.charAt(0).toUpperCase() + formData.type.slice(1)}
-                  </>
-                )}
+                Submit Another
               </button>
-            </div>
-          </form>
+            </motion.div>
+          ) : (
+            <>
+              <div className="help-tabs">
+                {['feedback', 'complaint', 'suggestion'].map(type => (
+                  <button
+                    key={type}
+                    className={`tab-btn ${formData.type === type ? 'active' : ''}`}
+                    onClick={() => setFormData(prev => ({ ...prev, type }))}
+                  >
+                    <i className={`fas fa-${type === 'feedback' ? 'comment-alt' : type === 'complaint' ? 'exclamation-circle' : 'lightbulb'}`}></i>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </button>
+                ))}
+              </div>
+
+              <form onSubmit={handleSubmit} className="feedback-form">
+                <div className="form-group full-width">
+                  <label htmlFor="priority">Priority Level</label>
+                  <div className="priority-options">
+                    {['low', 'medium', 'high', 'urgent'].map(p => (
+                      <div
+                        key={p}
+                        className={`priority-chip ${formData.priority === p ? 'selected' : ''} ${p}`}
+                        onClick={() => setFormData(prev => ({ ...prev, priority: p }))}
+                      >
+                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="subject">Subject</label>
+                  <input
+                    type="text"
+                    id="subject"
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    className={errors.subject ? 'error' : ''}
+                    placeholder={`Enter ${formData.type} subject`}
+                  />
+                  {errors.subject && <span className="error-message">{errors.subject}</span>}
+                </div>
+
+                {/* Conditional Render: Contact Info for Guests */}
+                {!user && (
+                  <div className="guest-info-grid">
+                    <div className="form-group">
+                      <label htmlFor="name">Your Name</label>
+                      <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleChange}
+                        placeholder="Enter your name"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="email">Email <span className="required">*</span></label>
+                      <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        className={errors.email ? 'error' : ''}
+                        placeholder="Enter your email"
+                      />
+                      {errors.email && <span className="error-message">{errors.email}</span>}
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="phone">Phone <span className="required">*</span></label>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        className={errors.phone ? 'error' : ''}
+                        placeholder="Enter your phone number"
+                      />
+                      {errors.phone && <span className="error-message">{errors.phone}</span>}
+                    </div>
+                  </div>
+                )}
+
+                <div className="form-group full-width">
+                  <label htmlFor="message">Message</label>
+                  <textarea
+                    id="message"
+                    name="message"
+                    value={formData.message}
+                    onChange={handleChange}
+                    className={errors.message ? 'error' : ''}
+                    placeholder={`Please describe your ${formData.type} in detail...`}
+                    rows="5"
+                  />
+                  {errors.message && <span className="error-message">{errors.message}</span>}
+                </div>
+
+                <div className="form-actions">
+                  <motion.button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="submit-btn"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <i className="fas fa-spinner fa-spin"></i> Sending...
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-paper-plane"></i> Submit
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              </form>
+            </>
+          )}
 
           <div className="help-info">
-            <h3>
-              <i className="fas fa-info-circle"></i>
-              Need Immediate Help?
-            </h3>
-            <div className="contact-info">
-              <div className="contact-item">
-                <i className="fas fa-phone"></i>
-                <span>Call us: +91 9876543210</span>
+            <div className="contact-card">
+              <i className="fas fa-envelope"></i>
+              <div>
+                <h4>Email Support</h4>
+                <p>support@directfarm.com</p>
               </div>
-              <div className="contact-item">
-                <i className="fas fa-envelope"></i>
-                <span>Email: support@directfarm.com</span>
-              </div>
-              <div className="contact-item">
-                <i className="fas fa-clock"></i>
-                <span>Available: 9 AM - 6 PM (Mon-Fri)</span>
+            </div>
+            <div className="contact-card">
+              <i className="fas fa-phone-alt"></i>
+              <div>
+                <h4>Phone Support</h4>
+                <p>+91 98765 43210</p>
               </div>
             </div>
           </div>

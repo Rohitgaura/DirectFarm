@@ -8,6 +8,7 @@ import authUtils from '../../utils/auth';
 import '../../styles/BuyerDashboard.css';
 import LocationSelector from './LocationSelector';
 import ChatModal from '../chat/ChatModal';
+import { PRODUCT_CATEGORIES, CATEGORIES } from '../../constants/productCategories';
 import StarRating from '../common/StarRating';
 
 const BuyerDashboard = () => {
@@ -22,6 +23,7 @@ const BuyerDashboard = () => {
   const [locationAddress, setLocationAddress] = useState(null);
   const [showLocationSelector, setShowLocationSelector] = useState(false);
   const [filters, setFilters] = useState({
+    category: '',
     vegetableType: '',
     harvestingDate: '',
     uploadedDate: '',
@@ -32,6 +34,7 @@ const BuyerDashboard = () => {
   });
   // Temporary filters for manual application
   const [tempFilters, setTempFilters] = useState({
+    category: '',
     vegetableType: '',
     harvestingDate: '',
     uploadedDate: '',
@@ -53,13 +56,6 @@ const BuyerDashboard = () => {
   const [selectedFarmer, setSelectedFarmer] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
 
-  // Vegetable types for filtering
-  const vegetableTypes = [
-    'Tomato', 'Potato', 'Onion', 'Carrot', 'Cabbage', 'Cauliflower',
-    'Spinach', 'Lettuce', 'Cucumber', 'Bell Pepper', 'Broccoli', 'Radish',
-    'Beetroot', 'Turnip', 'Sweet Potato', 'Ginger', 'Garlic', 'Green Beans',
-    'Peas', 'Corn', 'Eggplant', 'Okra', 'Pumpkin', 'Squash', 'Zucchini'
-  ];
 
   // Load user on component mount (products will be loaded after location is set)
   useEffect(() => {
@@ -94,10 +90,11 @@ const BuyerDashboard = () => {
       }
 
       // Add other filters if they are server-supported (optional, but good for future)
-      // For now, we stick to what the server supports: search, minPrice, maxPrice
+      // For now, we stick to what the server supports: search, minPrice, maxPrice, category
       if (filters.searchQuery) params.search = filters.searchQuery;
       if (filters.minPrice) params.minPrice = filters.minPrice;
       if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+      if (filters.category) params.category = filters.category; // Ensure category is sent to API
 
       // Increase limit to get more results for client-side filtering of other fields
       params.limit = 100;
@@ -112,6 +109,7 @@ const BuyerDashboard = () => {
           farmerName: product.farmerId?.name || product.farmer?.name || 'Unknown Farmer',
           farmerRating: product.farmerId?.averageRating || 0,
           farmerTotalRatings: product.farmerId?.totalRatings || 0,
+          category: product.category || 'Vegetables',
           vegetableType: product.name,
           quantity: product.quantity,
           ratePerKg: product.pricePerKg || product.price, // Handle both field names
@@ -147,6 +145,13 @@ const BuyerDashboard = () => {
   // Filter crops based on current filters
   useEffect(() => {
     let filtered = crops;
+
+    // Filter by category
+    if (filters.category) {
+      filtered = filtered.filter(crop =>
+        crop.category === filters.category
+      );
+    }
 
     // Filter by vegetable type
     if (filters.vegetableType) {
@@ -311,10 +316,19 @@ const BuyerDashboard = () => {
   // Filter handling
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setTempFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    // Special handling for category change to reset invalid sub-type selections
+    if (name === 'category') {
+      setTempFilters(prev => ({
+        ...prev,
+        category: value,
+        vegetableType: '' // Reset item type when category changes
+      }));
+    } else {
+      setTempFilters(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
 
   const applyFilters = () => {
@@ -324,6 +338,7 @@ const BuyerDashboard = () => {
 
   const clearFilters = () => {
     const resetFilters = {
+      category: '',
       vegetableType: '',
       harvestingDate: '',
       uploadedDate: '',
@@ -598,18 +613,37 @@ const BuyerDashboard = () => {
               </div>
 
               <div className="filter-group">
+                <label htmlFor="category">
+                  <i className="fas fa-layer-group"></i>
+                  Category
+                </label>
+                <select
+                  id="category"
+                  name="category"
+                  value={tempFilters.category}
+                  onChange={handleFilterChange}
+                >
+                  <option value="">All Categories</option>
+                  {CATEGORIES.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="filter-group">
                 <label htmlFor="vegetableType">
                   <i className="fas fa-seedling"></i>
-                  Vegetable Type
+                  Product Name
                 </label>
                 <select
                   id="vegetableType"
                   name="vegetableType"
                   value={tempFilters.vegetableType}
                   onChange={handleFilterChange}
+                  disabled={!tempFilters.category}
                 >
-                  <option value="">All Vegetables</option>
-                  {vegetableTypes.map(type => (
+                  <option value="">All Products</option>
+                  {tempFilters.category && PRODUCT_CATEGORIES[tempFilters.category]?.map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
                 </select>

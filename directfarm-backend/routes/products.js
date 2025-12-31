@@ -24,6 +24,13 @@ router.get('/', async (req, res) => {
       filter.farmerId = req.query.farmerId;
     }
 
+    console.log('🔍 [DEBUG] GET /api/products Filter:', JSON.stringify(filter));
+
+    // Filter by category
+    if (req.query.category) {
+      filter.category = req.query.category;
+    }
+
     if (req.query.search) {
       filter.$text = { $search: req.query.search };
     }

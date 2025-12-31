@@ -12,6 +12,12 @@ const productSchema = new mongoose.Schema({
     trim: true,
     maxlength: [100, 'Product name cannot exceed 100 characters']
   },
+  category: {
+    type: String,
+    required: [true, 'Product category is required'],
+    trim: true,
+    index: true
+  },
   quantity: {
     type: Number,
     required: [true, 'Quantity is required'],

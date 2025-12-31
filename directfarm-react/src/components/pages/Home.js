@@ -235,6 +235,13 @@ const Home = () => {
                       Join as Buyer
                     </Link>
                   </motion.div>
+
+                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Link to="/login" className="btn btn-outline">
+                      <i className="fas fa-sign-in-alt"></i>
+                      Login
+                    </Link>
+                  </motion.div>
                 </>
               )}
             </motion.div>

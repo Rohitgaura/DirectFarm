@@ -339,6 +339,8 @@
 .crop-details {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
 }
@@ -518,7 +520,7 @@
 }
 
 /* Responsive Design */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .dashboard-content {
     grid-template-columns: 1fr;
     gap: 1.5rem;
