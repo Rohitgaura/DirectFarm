@@ -4,6 +4,8 @@ import { toast } from 'react-toastify';
 import apiService from '../../services/api';
 import '../../styles/CropsHistory.css';
 
+import authUtils from '../../utils/auth';
+
 const CropsHistory = () => {
     const [crops, setCrops] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -15,7 +17,16 @@ const CropsHistory = () => {
     const loadCrops = async () => {
         setIsLoading(true);
         try {
-            const response = await apiService.getFarmerProducts();
+            const user = authUtils.getUser();
+            if (!user) {
+                toast.error('Please login to view history');
+                setIsLoading(false);
+                return;
+            }
+
+            const userId = user._id || user.id;
+            const response = await apiService.getFarmerProducts(userId);
+
             if (response.success) {
                 // Sort by upload date (newest first)
                 const sortedCrops = (response.data || []).sort((a, b) =>
@@ -25,7 +36,10 @@ const CropsHistory = () => {
             }
         } catch (error) {
             console.error('Error loading crops:', error);
-            toast.error('Failed to load crops history');
+            // Don't show error toast on 404 (just means empty)
+            if (error.response && error.response.status !== 404) {
+                toast.error('Failed to load crops history');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -160,17 +174,7 @@ const CropsHistory = () => {
                                         </div>
                                     )}
 
-                                    {crop.location && (
-                                        <div className="crop-location-box">
-                                            <i className="fas fa-map-marker-alt"></i>
-                                            <span>
-                                                {crop.location.village && `${crop.location.village}, `}
-                                                {crop.location.subdistrict && `${crop.location.subdistrict}, `}
-                                                {crop.location.district && `${crop.location.district}, `}
-                                                {crop.location.state || 'Location not specified'}
-                                            </span>
-                                        </div>
-                                    )}
+
                                 </div>
                             </motion.div>
                         ))}

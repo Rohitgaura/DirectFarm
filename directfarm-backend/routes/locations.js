@@ -94,6 +94,9 @@ router.post('/geocode', async (req, res) => {
     }
 });
 
+// Simple in-memory cache for geocoding
+const geoCache = new Map();
+
 // Reverse geocode coordinates to address
 router.post('/reverse-geocode', async (req, res) => {
     try {
@@ -103,7 +106,20 @@ router.post('/reverse-geocode', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Latitude and longitude are required' });
         }
 
+        // Check cache first
+        const cacheKey = `${latitude}-${longitude}`;
+        if (geoCache.has(cacheKey)) {
+            console.log('✅ [DEBUG] Returning cached location for:', cacheKey);
+            return res.json({
+                success: true,
+                data: geoCache.get(cacheKey)
+            });
+        }
+
         try {
+            // Add slight delay to respect rate limits
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
             const loc = await geocoder.reverse({ lat: latitude, lon: longitude });
 
             if (!loc || loc.length === 0) {
@@ -123,15 +139,37 @@ router.post('/reverse-geocode', async (req, res) => {
 
             // Extract relevant address components
             const addressData = loc[0];
+            console.log('🔍 [DEBUG] Reverse Geocode Result:', JSON.stringify(addressData));
+
+            // Improved mapping for OpenStreetMap
+            const district = addressData.district ||
+                addressData.city ||
+                addressData.county ||
+                addressData.state_district ||
+                addressData.administrativeLevels?.level2long ||
+                '';
+
+            const state = addressData.state ||
+                addressData.stateCode ||
+                addressData.administrativeLevels?.level1long ||
+                '';
+
+            const responseData = {
+                formattedAddress: addressData.formattedAddress,
+                state: state,
+                district: district,
+                subdistrict: addressData.suburb || addressData.administrativeLevels?.level3long || '',
+                village: addressData.village || addressData.town || addressData.hamlet || addressData.neighbourhood || '',
+                country: addressData.country || '',
+                countryCode: addressData.countryCode || ''
+            };
+
+            // Store in cache
+            geoCache.set(cacheKey, responseData);
+
             res.json({
                 success: true,
-                data: {
-                    formattedAddress: addressData.formattedAddress,
-                    state: addressData.state || addressData.administrativeLevels?.level1long || '',
-                    district: addressData.city || addressData.administrativeLevels?.level2long || '',
-                    country: addressData.country || '',
-                    countryCode: addressData.countryCode || ''
-                }
+                data: responseData
             });
         } catch (geocodeError) {
             // Handle network errors (like ENOTFOUND) gracefully

@@ -470,6 +470,14 @@ class ApiService {
 
   // Rating Methods
 
+  // Feedback Methods
+  async submitFeedback(data) {
+    return this.request('/feedback', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   // Health Check
   async healthCheck() {
     return this.request('/health');

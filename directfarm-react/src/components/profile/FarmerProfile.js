@@ -140,33 +140,83 @@ const FarmerProfile = () => {
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 whileHover={{ y: -5 }}
+                                style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    height: '100%' // Ensure full height logic works if grid is set
+                                }}
                             >
-                                <div className="product-image">
+                                <div className="product-image" style={{ height: '200px', overflow: 'hidden' }}>
                                     {product.images && product.images.length > 0 ? (
                                         <img
                                             src={product.images[0]}
                                             alt={product.name}
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
                                     ) : (
-                                        <div className="no-image">
+                                        <div className="no-image" style={{
+                                            width: '100%',
+                                            height: '100%',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            background: '#f5f6fa',
+                                            color: '#dcdde1',
+                                            fontSize: '3rem'
+                                        }}>
                                             <i className="fas fa-leaf"></i>
                                         </div>
                                     )}
                                     <div className="product-badge">Available</div>
                                 </div>
 
-                                <div className="product-info">
-                                    <div className="product-header">
-                                        <h3>{product.name}</h3>
-                                        <span className="price">₹{product.pricePerKg}/kg</span>
+                                <div className="product-info" style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                    <div className="product-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                        <h3 style={{ margin: 0, fontSize: '1.25rem', color: '#2c3e50' }}>{product.name}</h3>
+                                        <span className="price" style={{
+                                            background: '#e8f5e9',
+                                            color: '#27ae60',
+                                            padding: '0.25rem 0.75rem',
+                                            borderRadius: '20px',
+                                            fontWeight: '600',
+                                            whiteSpace: 'nowrap'
+                                        }}>₹{product.pricePerKg}/kg</span>
                                     </div>
 
-                                    <p className="description">{product.description || 'No description available'}</p>
+                                    <p className="description" style={{
+                                        color: '#666',
+                                        lineHeight: '1.6',
+                                        marginBottom: '1.5rem',
+                                        flex: 1 // Push meta down
+                                    }}>
+                                        {product.description || 'No description available for this product.'}
+                                    </p>
 
-                                    <div className="product-meta">
-                                        <span><i className="fas fa-weight-hanging"></i> {product.quantity} kg left</span>
+                                    <div className="product-meta" style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '1fr 1fr',
+                                        gap: '1rem',
+                                        fontSize: '0.9rem',
+                                        color: '#7f8c8d',
+                                        background: '#f8f9fa',
+                                        padding: '1rem',
+                                        borderRadius: '8px'
+                                    }}>
+                                        <span>
+                                            <i className="fas fa-weight-hanging" style={{ marginRight: '0.5rem', color: '#3498db' }}></i>
+                                            {product.quantity} kg left
+                                        </span>
                                         {product.harvestingDate && (
-                                            <span><i className="fas fa-clock"></i> Harvest: {new Date(product.harvestingDate).toLocaleDateString()}</span>
+                                            <span>
+                                                <i className="fas fa-clock" style={{ marginRight: '0.5rem', color: '#e67e22' }}></i>
+                                                Harvest: {new Date(product.harvestingDate).toLocaleDateString()}
+                                            </span>
+                                        )}
+                                        {product.location && (product.location.district || product.location.state) && (
+                                            <span style={{ gridColumn: 'span 2' }}>
+                                                <i className="fas fa-map-marker-alt" style={{ marginRight: '0.5rem', color: '#e74c3c' }}></i>
+                                                {[product.location.village, product.location.district, product.location.state].filter(Boolean).join(', ')}
+                                            </span>
                                         )}
                                     </div>
                                 </div>

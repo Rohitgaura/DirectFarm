@@ -302,11 +302,38 @@ const Navbar = () => {
     { path: '/help', label: 'Help' }
   );
 
+  // ✅ Ripple Effect
+  const createRipple = (event) => {
+    const container = event.currentTarget;
+    const circle = document.createElement("span");
+    const diameter = Math.max(container.clientWidth, container.clientHeight);
+    const radius = diameter / 2;
+
+    const rect = container.getBoundingClientRect();
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${event.clientX - rect.left - radius}px`;
+    circle.style.top = `${event.clientY - rect.top - radius}px`;
+    circle.classList.add("ripple");
+
+    const existingRipple = container.getElementsByClassName("ripple")[0];
+    if (existingRipple) {
+      existingRipple.remove(); // Remove existing to prevent buildup, or allow multiple
+    }
+
+    container.appendChild(circle);
+
+    // Remove ripple after animation
+    setTimeout(() => {
+      circle.remove();
+    }, 600);
+  };
+
   return (
-    <nav className="navbar">
+    <nav className="navbar" onClick={createRipple}>
       <div className="nav-container">
         {/* Logo */}
-        <div className="nav-logo" onClick={() => handleNavigation('/')} style={{ cursor: 'pointer' }}>
+        <div className="nav-logo" onClick={(e) => { e.stopPropagation(); handleNavigation('/'); }} style={{ cursor: 'pointer' }}>
           <i className="fas fa-seedling"></i>
           <span>DirectFarm</span>
         </div>
@@ -317,14 +344,14 @@ const Navbar = () => {
             <li key={item.label}>
               {item.sectionId ? (
                 <button
-                  onClick={() => handleNavigation(item.path, item.sectionId)}
+                  onClick={(e) => { e.stopPropagation(); handleNavigation(item.path, item.sectionId); }}
                   className="nav-link-btn"
                 >
                   {item.label}
                 </button>
               ) : (
                 <button
-                  onClick={() => handleNavigation(item.path, item.sectionId)}
+                  onClick={(e) => { e.stopPropagation(); handleNavigation(item.path, item.sectionId); }}
                   className={`nav-link-btn ${location.pathname === item.path ? 'active' : ''}`}
                 >
                   {item.label}
@@ -344,7 +371,7 @@ const Navbar = () => {
                 ref={notificationRef}
                 style={{ position: 'relative', marginRight: '20px', cursor: 'pointer' }}
               >
-                <div className="notification-bell" onClick={toggleNotifications}>
+                <div className="notification-bell" onClick={(e) => { e.stopPropagation(); toggleNotifications(); }}>
                   <i className="fas fa-bell" style={{ fontSize: '1.2rem', color: '#333' }}></i>
                   {unreadCount > 0 && (
                     <span className="notification-badge" style={{
@@ -398,82 +425,16 @@ const Navbar = () => {
                             gap: '5px'
                           }}
                           onClick={() => {
-                            markAsRead(notification._id);
-
-                            // Handle chat notifications
-                            if (notification.type === 'chat') {
-                              // Check if metadata exists
-                              if (notification.metadata && notification.metadata.senderId) {
-                                const senderInfo = notification.metadata;
-                                setChatPartner({
-                                  id: senderInfo.senderId,
-                                  name: senderInfo.senderName
-                                });
-                                if (senderInfo.productId) {
-                                  setChatProduct({
-                                    id: senderInfo.productId,
-                                    vegetableType: senderInfo.productName
-                                  });
-                                } else {
-                                  setChatProduct(null);
-                                }
-                                setShowChat(true);
-                                setShowNotifications(false);
-                              } else {
-                                console.error('Chat notification missing metadata:', notification);
-                                toast.error('Unable to open chat - notification data incomplete');
-                              }
-                            }
-                            // Handle negotiation notifications
-                            else if (notification.type === 'negotiation' || notification.type === 'negotiation_update') {
-                              if (user.role === 'farmer' && notification.type === 'negotiation') {
-                                navigate(`/negotiation/${notification.relatedId}`);
-                              } else if (user.role === 'buyer') {
-                                navigate('/negotiations');
-                              }
+                            if (window.confirm("Mark as read?")) {
+                              markAsRead(notification._id);
                             }
                           }}
-
                         >
                           <p style={{ margin: '0', fontSize: '0.9rem' }}>{notification.message}</p>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '0.75rem', color: '#888' }}>
                               {new Date(notification.createdAt).toLocaleDateString()}
                             </span>
-                            {notification.type === 'negotiation_update' &&
-                              notification.metadata?.status === 'accepted' &&
-                              user.role === 'buyer' && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    markAsRead(notification._id);
-
-                                    const cartItem = {
-                                      productId: notification.metadata.productId,
-                                      vegetableType: notification.metadata.productName,
-                                      quantity: notification.metadata.quantity,
-                                      totalPrice: (notification.metadata.price * notification.metadata.quantity).toFixed(2),
-                                      pricePerKg: notification.metadata.price
-                                    };
-
-                                    localStorage.setItem('cart', JSON.stringify([cartItem]));
-                                    setShowNotifications(false);
-                                    navigate('/checkout');
-                                  }}
-                                  style={{
-                                    padding: '4px 12px',
-                                    backgroundColor: '#28a745',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '4px',
-                                    cursor: 'pointer',
-                                    fontSize: '0.8rem',
-                                    fontWeight: 'bold'
-                                  }}
-                                >
-                                  Pay Now
-                                </button>
-                              )}
                           </div>
                         </div>
                       ))
@@ -502,7 +463,7 @@ const Navbar = () => {
               </div>
 
               <div className="profile-wrapper" ref={profileRef} style={{ position: 'relative' }}>
-                <div className="profile-trigger" onClick={toggleProfile}>
+                <div className="profile-trigger" onClick={(e) => { e.stopPropagation(); toggleProfile(); }}>
                   <div className="profile-avatar">
                     {(user.name || user.email).charAt(0).toUpperCase()}
                   </div>
@@ -636,10 +597,10 @@ const Navbar = () => {
             </div>
           ) : (
             <>
-              <button onClick={() => handleNavigation('/login')} className="nav-btn nav-btn-login">
+              <button onClick={(e) => { e.stopPropagation(); handleNavigation('/login'); }} className="nav-btn nav-btn-login">
                 <i className="fas fa-sign-in-alt"></i> Login
               </button>
-              <button onClick={() => handleNavigation('/register')} className="nav-btn nav-btn-register">
+              <button onClick={(e) => { e.stopPropagation(); handleNavigation('/register'); }} className="nav-btn nav-btn-register">
                 <i className="fas fa-user-plus"></i> Register
               </button>
             </>
@@ -647,7 +608,7 @@ const Navbar = () => {
         </div>
 
         {/* Mobile Menu Toggle */}
-        <div className={`nav-toggle ${menuOpen ? 'active' : ''}`} onClick={toggleMenu}>
+        <div className={`nav-toggle ${menuOpen ? 'active' : ''}`} onClick={(e) => { e.stopPropagation(); toggleMenu(); }}>
           <span className="bar"></span>
           <span className="bar"></span>
           <span className="bar"></span>

@@ -1,59 +1,61 @@
-// models/Feedback.js
 const mongoose = require('mongoose');
 
-const feedbackSchema = new mongoose.Schema({
-  type: {
-    type: String,
-    enum: ['feedback', 'complaint', 'suggestion'],
-    required: true,
-    default: 'feedback'
+const FeedbackSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false
   },
-  subject: {
+  name: {
     type: String,
-    required: true,
-    trim: true,
-    maxlength: [100, 'Subject cannot exceed 100 characters']
-  },
-  message: {
-    type: String,
-    required: true,
-    minlength: [10, 'Message must be at least 10 characters long'],
-    maxlength: [1000, 'Message cannot exceed 1000 characters']
+    required: false
   },
   email: {
     type: String,
-    required: true,
-    trim: true,
-    lowercase: true,
-    match: [/\S+@\S+\.\S+/, 'Please provide a valid email address']
+    required: false
+  },
+  phone: {
+    type: String,
+    required: false
+  },
+  type: {
+    type: String,
+    enum: ['feedback', 'complaint', 'suggestion'],
+    default: 'feedback'
   },
   priority: {
     type: String,
     enum: ['low', 'medium', 'high', 'urgent'],
     default: 'medium'
   },
-  // If logged-in user submits feedback
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
+  subject: {
+    type: String,
+    required: [true, 'Please add a subject'],
+    trim: true,
+    maxlength: [100, 'Subject can not be more than 100 characters']
   },
-  // Optional backend admin fields
+  message: {
+    type: String,
+    required: [true, 'Please add a message'],
+    maxlength: [1000, 'Message can not be more than 1000 characters']
+  },
   status: {
     type: String,
-    enum: ['new', 'in_progress', 'resolved', 'closed'],
+    enum: ['new', 'read', 'in-progress', 'resolved'],
     default: 'new'
   },
-  adminResponse: {
-    type: String,
-    maxlength: [1000, 'Admin response cannot exceed 1000 characters']
-  },
-  respondedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User' // Usually an admin
-  },
-  respondedAt: {
-    type: Date
+  createdAt: {
+    type: Date,
+    default: Date.now
   }
-}, { timestamps: true });
+});
 
-module.exports = mongoose.model('Feedback', feedbackSchema);
+// Validate that contact info is present if user is not logged in
+FeedbackSchema.pre('save', function (next) {
+  if (!this.user && (!this.email || !this.phone)) {
+    return next(new Error('Email and Phone are required for guest feedback'));
+  }
+  next();
+});
+
+module.exports = mongoose.model('Feedback', FeedbackSchema);

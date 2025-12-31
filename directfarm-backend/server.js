@@ -19,6 +19,7 @@ const successStoriesRoutes = require('./routes/successStories');
 const locationRoutes = require('./routes/locations');
 
 // Middleware
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -67,6 +68,7 @@ app.use('/api/farmers', farmerRoutes);
 app.use('/api/buyers', buyerRoutes);
 app.use('/api/success-stories', successStoriesRoutes);
 app.use('/api/locations', locationRoutes);
+app.use('/api/feedback', feedbackRoutes); // Used feedback routes
 app.use('/api/negotiations', require('./routes/negotiation'));
 app.use('/api/notifications', require('./routes/notification'));
 app.use('/api/chat', require('./routes/chat'));

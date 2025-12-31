@@ -45,12 +45,18 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
+    console.log(`🔍 [DEBUG] Fetching farmer profile for ID: ${req.params.id}`);
+
+    const userCheck = await User.findById(req.params.id);
+    console.log(`🔍 [DEBUG] User check: ${userCheck ? `Found, Role: ${userCheck.role}` : 'Not Found'}`);
+
     const farmer = await User.findOne({
       _id: req.params.id,
       role: 'farmer'
     }).select('-password');
 
     if (!farmer) {
+      console.log('❌ [DEBUG] Farmer not found query returned null');
       return res.status(404).json({
         success: false,
         message: 'Farmer not found'
@@ -114,7 +120,7 @@ router.get('/:id/products', async (req, res) => {
     const skip = (page - 1) * limit;
 
     const products = await Product.find({
-      farmer: req.params.id,
+      farmerId: req.params.id,
       quantity: { $gt: 0 }
     })
       .sort({ createdAt: -1 })
@@ -122,7 +128,7 @@ router.get('/:id/products', async (req, res) => {
       .limit(limit);
 
     const total = await Product.countDocuments({
-      farmer: req.params.id,
+      farmerId: req.params.id,
       quantity: { $gt: 0 }
     });
 

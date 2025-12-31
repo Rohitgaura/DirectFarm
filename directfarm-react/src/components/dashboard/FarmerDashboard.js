@@ -4,12 +4,14 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
+import { PRODUCT_CATEGORIES, CATEGORIES } from '../../constants/productCategories';
 import StarRating from '../common/StarRating';
 import LocationSelector from './LocationSelector';
 import '../../styles/FarmerDashboard.css';
 
 const FarmerDashboard = () => {
   const [formData, setFormData] = useState({
+    category: '',
     vegetableType: '',
     quantity: '',
     ratePerKg: '',
@@ -17,6 +19,8 @@ const FarmerDashboard = () => {
     description: '',
     images: []
   });
+
+  // ... (location state remains same)
 
   const [location, setLocation] = useState({
     coordinates: null
@@ -52,14 +56,6 @@ const FarmerDashboard = () => {
   const [isGettingLocation, setIsGettingLocation] = useState(false);
   const [user, setUser] = useState(null);
 
-  // Vegetable types dropdown options
-  const vegetableTypes = [
-    'Tomato', 'Potato', 'Onion', 'Carrot', 'Cabbage', 'Cauliflower',
-    'Spinach', 'Lettuce', 'Cucumber', 'Bell Pepper', 'Broccoli', 'Radish',
-    'Beetroot', 'Turnip', 'Sweet Potato', 'Ginger', 'Garlic', 'Green Beans',
-    'Peas', 'Corn', 'Eggplant', 'Okra', 'Pumpkin', 'Squash', 'Zucchini'
-  ];
-
   // Load user and products on component mount
   useEffect(() => {
     const loadUserAndProducts = async () => {
@@ -81,6 +77,7 @@ const FarmerDashboard = () => {
                 // Transform products to match the display format
                 const transformedProducts = productsResponse.data.map(product => ({
                   id: product._id,
+                  category: product.category || 'Vegetables', // Default back to Vegetables if missing
                   vegetableType: product.name,
                   quantity: product.quantity,
                   ratePerKg: product.price || product.pricePerKg,
@@ -91,6 +88,7 @@ const FarmerDashboard = () => {
                   harvestingDate: product.harvestingDate,
                   location: product.location // Keep location for display if available
                 }));
+
                 setUploadedCrops(transformedProducts);
               }
             } catch (error) {
@@ -105,6 +103,8 @@ const FarmerDashboard = () => {
 
     loadUserAndProducts();
   }, []);
+
+  // ... (location effects remain same)
 
   // Auto-load saved location on mount if available
   useEffect(() => {
@@ -164,10 +164,19 @@ const FarmerDashboard = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+
+    if (name === 'category') {
+      setFormData(prev => ({
+        ...prev,
+        category: value,
+        vegetableType: '' // Reset item type when category changes
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
 
     // Clear error when user starts typing
     if (errors[name]) {
@@ -640,9 +649,29 @@ const FarmerDashboard = () => {
             <form onSubmit={handleSubmit} className="crop-form">
               <div className="form-row">
                 <div className="form-group">
+                  <label htmlFor="category">
+                    <i className="fas fa-layer-group"></i>
+                    Category
+                  </label>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    className={errors.category ? 'error' : ''}
+                  >
+                    <option value="">Select Category</option>
+                    {CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                  {errors.category && <span className="error-message">{errors.category}</span>}
+                </div>
+
+                <div className="form-group">
                   <label htmlFor="vegetableType">
                     <i className="fas fa-seedling"></i>
-                    Vegetable Type
+                    Product Name
                   </label>
                   <select
                     id="vegetableType"
@@ -650,9 +679,10 @@ const FarmerDashboard = () => {
                     value={formData.vegetableType}
                     onChange={handleChange}
                     className={errors.vegetableType ? 'error' : ''}
+                    disabled={!formData.category}
                   >
-                    <option value="">Select vegetable type</option>
-                    {vegetableTypes.map(type => (
+                    <option value="">Select Product</option>
+                    {formData.category && PRODUCT_CATEGORIES[formData.category]?.map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
                   </select>
@@ -838,14 +868,7 @@ const FarmerDashboard = () => {
                       {crop.description && (
                         <p className="description">Description: {crop.description}</p>
                       )}
-                      {crop.location && (
-                        <div className="crop-location">
-                          <i className="fas fa-map-marker-alt"></i>
-                          <span>
-                            {crop.location.village}, {crop.location.subdistrict}, {crop.location.district}, {crop.location.state}
-                          </span>
-                        </div>
-                      )}
+
                       <div className="crop-meta">
                         <span className="upload-date">
                           <i className="fas fa-calendar"></i>
