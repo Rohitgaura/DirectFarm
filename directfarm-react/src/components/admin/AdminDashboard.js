@@ -16,16 +16,11 @@ const AdminDashboard = () => {
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-    useEffect(() => {
-        loadData();
-    }, [activeTab]);
-
     const toggleSidebar = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
 
-
-    const loadData = async () => {
+    const loadData = React.useCallback(async () => {
         setIsLoading(true);
         try {
             if (activeTab === 'stats') {
@@ -44,7 +39,11 @@ const AdminDashboard = () => {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [activeTab]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData, activeTab]);
 
     const handleDeleteUser = async (id) => {
         if (!window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;

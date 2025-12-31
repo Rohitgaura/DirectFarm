@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-    LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area
+    LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import apiService from '../../services/api';
 import { toast } from 'react-toastify';

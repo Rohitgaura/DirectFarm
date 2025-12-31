@@ -516,7 +516,7 @@ const BuyerDashboard = () => {
                 <div className="status-info">
                   <h3>Location Active</h3>
                   <p>Showing products near you</p>
-                  {locationAddress ? (
+                  {locationAddress && (locationAddress.district || locationAddress.state) ? (
                     <div className="address-badge">
                       <i className="fas fa-map-marker-alt"></i>
                       <span>

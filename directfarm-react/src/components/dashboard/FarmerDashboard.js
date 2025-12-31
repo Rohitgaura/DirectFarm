@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
 import StarRating from '../common/StarRating';
+import LocationSelector from './LocationSelector';
 import '../../styles/FarmerDashboard.css';
 
 const FarmerDashboard = () => {
@@ -21,6 +22,7 @@ const FarmerDashboard = () => {
     coordinates: null
   });
   const [locationAddress, setLocationAddress] = useState(null);
+  const [showLocationSelector, setShowLocationSelector] = useState(false);
 
   // Reverse geocode coordinates to get address
   useEffect(() => {
@@ -104,7 +106,7 @@ const FarmerDashboard = () => {
     loadUserAndProducts();
   }, []);
 
-  // Auto-request location on mount if user is logged in and location is not set
+  // Auto-load saved location on mount if available
   useEffect(() => {
     if (user && !location.coordinates && !isGettingLocation) {
       // Check if we already have location in user profile
@@ -116,10 +118,8 @@ const FarmerDashboard = () => {
             longitude: user.location.coordinates[0]
           }
         }));
-      } else {
-        // If not, ask for it
-        getCurrentLocation();
       }
+      // Don't auto-request location, let user choose
     }
   }, [user, location.coordinates, isGettingLocation]);
 
@@ -447,6 +447,30 @@ const FarmerDashboard = () => {
     }
   };
 
+  // Handle location selection from selector
+  const handleLocationSelect = (locationData) => {
+    if (locationData.type === 'current') {
+      setLocation(prev => ({
+        ...prev,
+        coordinates: {
+          latitude: locationData.coordinates[1],
+          longitude: locationData.coordinates[0]
+        }
+      }));
+      toast.success('Location captured successfully!');
+    } else {
+      setLocation(prev => ({
+        ...prev,
+        coordinates: {
+          latitude: locationData.coordinates[1],
+          longitude: locationData.coordinates[0]
+        }
+      }));
+      toast.success(`Location set to ${locationData.address}`);
+    }
+    setShowLocationSelector(false);
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -530,7 +554,7 @@ const FarmerDashboard = () => {
                 <div className="status-info">
                   <h3 style={{ margin: 0, fontSize: '1rem', color: '#166534' }}>Location Active</h3>
                   <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: '#15803d' }}>Your products will be shown to nearby buyers</p>
-                  {locationAddress ? (
+                  {locationAddress && (locationAddress.district || locationAddress.state) ? (
                     <div className="address-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', marginTop: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
                       <i className="fas fa-map-marker-alt"></i>
                       <span>
@@ -563,27 +587,46 @@ const FarmerDashboard = () => {
               <h3 style={{ margin: '0 0 0.5rem', color: '#374151' }}>Enable Location Access</h3>
               <p style={{ margin: '0 0 1.5rem', color: '#6b7280' }}>We need your location to show your products to buyers in your area.</p>
 
-              <button
-                onClick={getCurrentLocation}
-                disabled={isGettingLocation}
-                className="find-products-btn"
-                style={{ background: '#2ecc71', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
-              >
-                {isGettingLocation ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i>
-                    Detecting Location...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-location-arrow"></i>
-                    Enable Location
-                  </>
-                )}
-              </button>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={getCurrentLocation}
+                  disabled={isGettingLocation}
+                  className="find-products-btn"
+                  style={{ background: '#2ecc71', color: 'white', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  {isGettingLocation ? (
+                    <>
+                      <i className="fas fa-spinner fa-spin"></i>
+                      Detecting...
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-location-arrow"></i>
+                      Use Current Location
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setShowLocationSelector(true)}
+                  style={{ background: 'white', color: '#2ecc71', border: '2px solid #2ecc71', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  <i className="fas fa-map-marked-alt"></i>
+                  Select Location
+                </button>
+              </div>
             </div>
           )}
         </motion.div>
+
+        <AnimatePresence>
+          {showLocationSelector && (
+            <LocationSelector
+              onLocationSelect={handleLocationSelect}
+              onClose={() => setShowLocationSelector(false)}
+            />
+          )}
+        </AnimatePresence>
 
         <div className="dashboard-content">
           {/* Upload Form Section */}

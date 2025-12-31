@@ -126,17 +126,7 @@ const Register = () => {
     try {
       console.log('Registration attempt:', formData);
 
-      // Build address string from address fields if available
-      let addressString = '';
-      if (formData.address) {
-        const addressParts = [
-          formData.address.street,
-          formData.address.city,
-          formData.address.state,
-          formData.address.pincode
-        ].filter(part => part && part.trim() !== '');
-        addressString = addressParts.join(', ');
-      }
+      // Address string calculation removed as it was unused
 
       const userData = {
         name: `${formData.firstName} ${formData.lastName}`,

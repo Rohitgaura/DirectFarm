@@ -12,6 +12,7 @@ import CompetitiveAdvantage from './components/pages/CompetitiveAdvantage';
 import Implementation from './components/pages/Implementation';
 import SocialImpact from './components/pages/SocialImpact';
 import Login from './components/auth/Login';
+import ForgotPassword from './components/auth/ForgotPassword';
 import Register from './components/auth/Register';
 import FarmerDashboard from './components/dashboard/FarmerDashboard';
 import BuyerDashboard from './components/dashboard/BuyerDashboard';
@@ -40,7 +41,6 @@ import DeliveryPolicy from './components/policies/DeliveryPolicy';
 import DataProtectionPolicy from './components/policies/DataProtectionPolicy';
 import SellerVerificationPolicy from './components/policies/SellerVerificationPolicy';
 import DisclaimerPolicy from './components/policies/DisclaimerPolicy';
-import TopRatedFarmers from './components/home/TopRatedFarmers';
 import FarmerProfile from './components/profile/FarmerProfile';
 import Notifications from './components/common/Notifications';
 
@@ -66,6 +66,7 @@ function App() {
               </GuestRoute>
             }
           />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
 
           <Route
             path="/register"
