@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
+import authUtils from '../../utils/auth';
 import apiService from '../../services/api';
 import '../../styles/NegotiationHistory.css';
 
@@ -11,6 +12,12 @@ const NegotiationHistory = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const currentUser = authUtils.getUser();
+    if (currentUser?.role === 'farmer') {
+      navigate('/farmer-dashboard', { replace: true });
+      return;
+    }
+
     const fetchNegotiations = async () => {
       try {
         const response = await apiService.getBuyerNegotiations();
@@ -28,6 +35,7 @@ const NegotiationHistory = () => {
     };
 
     fetchNegotiations();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDelete = async (negotiationId) => {

@@ -1,39 +1,61 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const messageSchema = new mongoose.Schema({
-    senderId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    recipientId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    productId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
-        required: false // Optional - for product-specific context
-    },
-    message: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    read: {
-        type: Boolean,
-        default: false
+const Message = sequelize.define('Message', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
     }
+  },
+  roomId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'chat_rooms',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
+  },
+  senderId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  text: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  },
+  time: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW
+  },
+  status: {
+    type: DataTypes.ENUM('sending', 'sent', 'delivered', 'read'),
+    defaultValue: 'sent'
+  }
 }, {
-    timestamps: true
+  tableName: 'messages',
+  timestamps: true,
+  indexes: [
+    {
+      fields: ['roomId', 'time']
+    }
+  ]
 });
 
-// Compound index for fast conversation queries
-messageSchema.index({ senderId: 1, recipientId: 1 });
-messageSchema.index({ recipientId: 1, senderId: 1 });
+Message.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  return values;
+};
 
-// Index for unread message queries
-messageSchema.index({ recipientId: 1, read: 1 });
-
-module.exports = mongoose.model('Message', messageSchema);
+module.exports = Message;

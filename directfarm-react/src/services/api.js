@@ -2,11 +2,28 @@
 
 import authUtils from '../utils/auth';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+const getApiBaseUrl = () => {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+
+    // 1. Domain Access (directfarm.co.in or Cloudflare Tunnel)
+    if (hostname.includes('directfarm.co.in') || (hostname !== 'localhost' && hostname !== '127.0.0.1' && !/^(\d{1,3}\.){3}\d{1,3}$/.test(hostname))) {
+      return process.env.REACT_APP_API_URL || 'https://directfarm.co.in/api';
+    }
+
+    // 2. Network IP Access (e.g. http://192.168.X.X:3000 from mobile/other system)
+    if (/^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
+      return `http://${hostname}:5001/api`;
+    }
+  }
+
+  // 3. Localhost Development
+  return 'http://localhost:5001/api';
+};
 
 class ApiService {
   constructor() {
-    this.baseURL = API_BASE_URL;
+    this.baseURL = getApiBaseUrl();
 
     // Cache for token verification to prevent duplicate requests
     this.tokenVerificationCache = {
@@ -55,7 +72,27 @@ class ApiService {
   // Generic request method
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    const config = { headers: this.getHeaders(), ...options };
+
+    // Default headers
+    let headers = { ...options.headers };
+
+    // Set default Content-Type to application/json if not present AND body is not FormData
+    if (!headers['Content-Type'] && !(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+
+    // Add Authorization if not already present
+    if (!headers.Authorization) {
+      const token = this.getAuthToken();
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+    }
+
+    const config = {
+      ...options,
+      headers
+    };
 
     try {
       const response = await fetch(url, config);
@@ -105,11 +142,32 @@ class ApiService {
     }
   }
 
-  // Authentication Methods
-  async register(userData) {
-    return this.request('/auth/register', {
+  // Authentication Methods — OTP-based Registration
+  async initiateRegistration(userData) {
+    return this.request('/auth/register/initiate', {
       method: 'POST',
       body: JSON.stringify(userData),
+    });
+  }
+
+  async verifyRegistrationOtp(data) {
+    return this.request('/auth/register/verify-otp', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async confirmRegistration(registrationId) {
+    return this.request('/auth/register/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ registrationId }),
+    });
+  }
+
+  async resendRegistrationOtp(registrationId) {
+    return this.request('/auth/register/resend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ registrationId }),
     });
   }
 
@@ -256,22 +314,54 @@ class ApiService {
   }
 
   async createProduct(productData) {
-    return this.request('/products', {
+    // If productData is FormData, fetch will automatically set the Content-Type to multipart/form-data with boundary
+    // So we don't need to stringify or set Content-Type header manually
+    const config = productData instanceof FormData ? {} : {
       method: 'POST',
       body: JSON.stringify(productData),
-    });
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+
+    if (productData instanceof FormData) {
+      config.method = 'POST';
+      config.body = productData;
+      // headers must be empty/undefined for FormData to let browser set boundary
+    }
+
+    return this.request('/products', config);
   }
 
   async updateProduct(id, productData) {
-    return this.request(`/products/${id}`, {
+    const config = productData instanceof FormData ? {
+      method: 'PUT',
+      body: productData
+      // headers left undefined for FormData
+    } : {
       method: 'PUT',
       body: JSON.stringify(productData),
-    });
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    };
+
+    return this.request(`/products/${id}`, config);
   }
 
   async deleteProduct(id) {
     return this.request(`/products/${id}`, {
       method: 'DELETE',
+    });
+  }
+
+  async updateProductStatus(id, statusData) {
+    return this.request(`/products/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify(typeof statusData === 'string' ? { status: statusData } : statusData),
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
   }
 
@@ -397,6 +487,10 @@ class ApiService {
     });
   }
 
+  async getProductBids(productId) {
+    return this.request(`/negotiations/product/${productId}`);
+  }
+
   async deleteNegotiation(id) {
     return this.request(`/negotiations/${id}`, {
       method: 'DELETE',
@@ -404,25 +498,118 @@ class ApiService {
   }
 
   // Chat Methods
+  // Chat Methods
   async sendMessage(data) {
-    return this.request('/chat/send', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    // Adapter: Find room first, then send message
+    try {
+      const { recipientId, message } = data;
+
+      // 1. Get Room ID
+      const roomRes = await this.request('/chat/room', {
+        method: 'POST',
+        body: JSON.stringify({ targetUserId: recipientId })
+      });
+
+      if (!roomRes.success) {
+        throw roomRes;
+      }
+
+      // 2. Send Message
+      const res = await this.request('/chat/message', {
+        method: 'POST',
+        body: JSON.stringify({
+          roomId: roomRes.roomId,
+          text: message
+        }),
+      });
+
+      // Map backend 'text' to frontend 'message'
+      if (res.success && res.data) {
+        res.data.message = res.data.text;
+      }
+      return res;
+
+    } catch (error) {
+      console.error('SendMessage adapter error:', error);
+      return { success: false, message: error.message || 'Failed to send message' };
+    }
   }
 
   async getConversation(userId) {
-    return this.request(`/chat/conversation/${userId}`);
+    // Adapter: Find room first, then get messages
+    try {
+      // 1. Get Room ID
+      const roomRes = await this.request('/chat/room', {
+        method: 'POST',
+        body: JSON.stringify({ targetUserId: userId })
+      });
+
+      if (!roomRes.success) {
+        // If room doesn't exist, return empty list
+        return { success: true, data: [] };
+      }
+
+      // 2. Get Messages
+      const msgsRes = await this.request(`/chat/messages/${roomRes.roomId}?limit=50`);
+
+      // Map backend 'text' to frontend 'message'
+      if (msgsRes.success && msgsRes.data) {
+        msgsRes.data = msgsRes.data.map(msg => ({
+          ...msg,
+          message: msg.text || msg.message,
+          createdAt: msg.time || msg.createdAt // Backend uses 'time', Mongoose uses createdAt
+        }));
+      }
+      return msgsRes;
+
+    } catch (error) {
+      console.error('GetConversation adapter error:', error);
+      return { success: false, message: error.message || 'Failed to load conversation' };
+    }
   }
 
   async getConversations() {
-    return this.request('/chat/conversations');
+    // Adapter: Get rooms, transform to old format
+    const user = authUtils.getUser();
+    if (!user) return { success: false, message: 'User not found' };
+
+    const response = await this.request('/chat/rooms/me');
+
+    if (response.success) {
+      const formatted = response.data.map(room => {
+        // Safety check if partner is missing (e.g. deleted user, population failed)
+        if (!room.user1 || !room.user2) return null;
+
+        const user1Id = room.user1._id || room.user1;
+        const currentId = user._id || user.id;
+
+        const isUser1 = String(user1Id) === String(currentId);
+
+        const partner = isUser1 ? room.user2 : room.user1;
+
+        return {
+          user: partner,
+          lastMessage: {
+            message: room.lastMessage,
+            createdAt: room.lastTime,
+            status: room.lastMessageStatus,
+            senderId: room.lastMessageSenderId
+          },
+          unreadCount: 0, // Not supported in new simple schema yet
+          roomId: room._id
+        };
+      }).filter(Boolean);
+
+      return { success: true, data: formatted };
+    }
+    return response;
   }
 
   async markMessageRead(messageId) {
-    return this.request(`/chat/${messageId}/read`, {
-      method: 'PUT',
-    });
+    // Deprecated in new simple flow, but keeping endpoint call if needed
+    // The new backend has /:messageId/read but getting messageId might be tricky if UI doesn't have it easily.
+    // For now, let's just return success to avoid errors.
+    return { success: true };
   }
 
   // Notification Methods
@@ -434,6 +621,23 @@ class ApiService {
     return this.request(`/notifications/${id}/read`, {
       method: 'PUT',
     });
+  }
+
+  async markProductNotificationsRead(productId) {
+    return this.request(`/notifications/read-by-product/${productId}`, {
+      method: 'PUT',
+    });
+  }
+
+  async markAllNotificationsRead() {
+    return this.request('/notifications/read-all', {
+      method: 'PUT',
+    });
+  }
+
+  // Public Stats (no auth required)
+  async getPublicStats() {
+    return this.request('/public/stats');
   }
 
   // Admin Methods
@@ -449,6 +653,12 @@ class ApiService {
 
   async getAllProducts() {
     return this.request('/admin/products');
+  }
+
+  async getLoginLogs(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    const endpoint = `/admin/login-logs${queryString ? `?${queryString}` : ''}`;
+    return this.request(endpoint);
   }
 
 
@@ -476,6 +686,18 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  // Complaint Methods
+  async submitComplaint(data) {
+    return this.request('/complaints', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getComplaint(requestId) {
+    return this.request(`/complaints/${requestId}`);
   }
 
   // Health Check

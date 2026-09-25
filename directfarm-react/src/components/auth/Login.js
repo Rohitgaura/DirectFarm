@@ -24,6 +24,23 @@ const Login = () => {
     role: ''
   });
   const [phoneErrors, setPhoneErrors] = useState({});
+  const [userLocation, setUserLocation] = useState({ latitude: null, longitude: null });
+
+  // Capture geolocation on mount for login logging
+  React.useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        () => { /* silently fail - location is optional */ },
+        { timeout: 5000 }
+      );
+    }
+  }, []);
 
   // Redirect if already logged in
   React.useEffect(() => {
@@ -102,8 +119,12 @@ const Login = () => {
       console.log('form is running and data is sent');
       console.log('Login attempt:', formData);
 
-      // Call actual API for login
-      const response = await apiService.login(formData);
+      // Call actual API for login - include location data
+      const response = await apiService.login({
+        ...formData,
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
+      });
 
       console.log('✅ Login successful - Full response:', response);
 
@@ -219,7 +240,9 @@ const Login = () => {
     try {
       // First try to login/register without phone (for existing users)
       const response = await apiService.post('/auth/google', {
-        credential: credentialResponse.credential
+        credential: credentialResponse.credential,
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
       });
 
       if (response.success) {
@@ -258,7 +281,9 @@ const Login = () => {
       // Try to login/register without phone (for existing users)
       const apiResponse = await apiService.post('/auth/facebook', {
         accessToken: response.accessToken,
-        userID: response.userID
+        userID: response.userID,
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude
       });
 
       if (apiResponse.success) {
@@ -347,14 +372,18 @@ const Login = () => {
         response = await apiService.post('/auth/google', {
           credential: oauthData.credential,
           phone: phoneFormData.phone,
-          role: phoneFormData.role
+          role: phoneFormData.role,
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude
         });
       } else if (oauthData.type === 'facebook') {
         response = await apiService.post('/auth/facebook', {
           accessToken: oauthData.accessToken,
           userID: oauthData.userID,
           phone: phoneFormData.phone,
-          role: phoneFormData.role
+          role: phoneFormData.role,
+          latitude: userLocation.latitude,
+          longitude: userLocation.longitude
         });
       }
 

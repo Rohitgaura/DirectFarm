@@ -1,30 +1,73 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import apiService from '../../services/api';
+import AnimatedCounter from '../common/AnimatedCounter';
 import '../../styles/SocialImpact.css';
 
 const SocialImpact = () => {
+  const [liveStats, setLiveStats] = useState(null);
+
+  // Fetch live platform stats
+  useEffect(() => {
+    let isMounted = true;
+    const fetchStats = async () => {
+      try {
+        const response = await apiService.getPublicStats();
+        if (isMounted && response.success) {
+          setLiveStats(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching public stats:', error);
+      }
+    };
+    fetchStats();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Helper to format revenue as ₹ Lakh/Crore
+  const formatRevenue = (amount) => {
+    if (!amount) return { value: 0, suffix: '' };
+    if (amount >= 10000000) {
+      return { value: parseFloat((amount / 10000000).toFixed(1)), suffix: ' Cr+', prefix: '₹', decimals: 1 };
+    }
+    if (amount >= 100000) {
+      return { value: parseFloat((amount / 100000).toFixed(1)), suffix: ' L+', prefix: '₹', decimals: 1 };
+    }
+    return { value: amount, suffix: '+', prefix: '₹', decimals: 0 };
+  };
+
+  const revenueData = formatRevenue(liveStats?.totalRevenue);
+
   const impactMetrics = [
     {
+      isStatic: true,
       number: '30-50%',
       title: 'Income Increase',
       description: 'Average increase in farmer income through direct market access',
       icon: 'fas fa-chart-line'
     },
     {
+      isStatic: true,
       number: '40%',
       title: 'Reduced Wastage',
       description: 'Decrease in food wastage through better market access',
       icon: 'fas fa-leaf'
     },
     {
-      number: '1000+',
+      isStatic: false,
+      value: liveStats?.totalFarmers || 0,
+      suffix: '+',
       title: 'Farmers Connected',
       description: 'Farmers actively using the DirectFarm platform',
       icon: 'fas fa-users'
     },
     {
-      number: '₹2.5Cr+',
+      isStatic: false,
+      value: revenueData.value,
+      prefix: revenueData.prefix || '',
+      suffix: revenueData.suffix || '',
+      decimals: revenueData.decimals || 0,
       title: 'Value Generated',
       description: 'Total value generated for farming communities',
       icon: 'fas fa-rupee-sign'
@@ -215,7 +258,20 @@ const SocialImpact = () => {
                 <div className="metric-icon">
                   <i className={metric.icon}></i>
                 </div>
-                <div className="metric-number">{metric.number}</div>
+                <div className="metric-number">
+                  {metric.isStatic ? (
+                    metric.number
+                  ) : (
+                    <AnimatedCounter
+                      end={metric.value}
+                      duration={2500}
+                      prefix={metric.prefix || ''}
+                      suffix={metric.suffix || ''}
+                      decimals={metric.decimals || 0}
+                      separator=","
+                    />
+                  )}
+                </div>
                 <h3>{metric.title}</h3>
                 <p>{metric.description}</p>
               </motion.div>

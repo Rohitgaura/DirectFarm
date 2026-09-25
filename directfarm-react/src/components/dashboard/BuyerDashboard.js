@@ -7,9 +7,10 @@ import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
 import '../../styles/BuyerDashboard.css';
 import LocationSelector from './LocationSelector';
+import ProductDetailsModal from '../product/ProductDetailsModal';
 import ChatModal from '../chat/ChatModal';
-import { PRODUCT_CATEGORIES, CATEGORIES } from '../../constants/productCategories';
 import StarRating from '../common/StarRating';
+import { PRODUCT_CATEGORIES, CATEGORIES } from '../../constants/productCategories';
 
 const BuyerDashboard = () => {
   const navigate = useNavigate();
@@ -45,9 +46,7 @@ const BuyerDashboard = () => {
   });
   const [crops, setCrops] = useState([]);
   const [filteredCrops, setFilteredCrops] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
-  const [orderQuantity, setOrderQuantity] = useState({});
   const [selectedCropForOffer, setSelectedCropForOffer] = useState(null);
   const [offerData, setOfferData] = useState({ price: '', quantity: '' });
 
@@ -55,6 +54,7 @@ const BuyerDashboard = () => {
   const [showChat, setShowChat] = useState(false);
   const [selectedFarmer, setSelectedFarmer] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectedCropDetails, setSelectedCropDetails] = useState(null);
 
 
   // Load user on component mount (products will be loaded after location is set)
@@ -76,7 +76,6 @@ const BuyerDashboard = () => {
 
   // Load products from API
   const loadProducts = async (customParams = {}) => {
-    setIsLoading(true);
     try {
       // Prepare params
       const params = { ...customParams };
@@ -138,7 +137,7 @@ const BuyerDashboard = () => {
         autoClose: 2000,
       });
     } finally {
-      setIsLoading(false);
+      // Loading state removed
     }
   };
 
@@ -377,13 +376,14 @@ const BuyerDashboard = () => {
   };
 
   // Handle add to cart
-  const handleAddToCart = (crop) => {
+  const handleAddToCart = (crop, qty = 1) => {
     if (!user) {
       toast.error('Please login to add items to cart');
       return;
     }
 
-    const quantity = parseFloat(orderQuantity[crop.id]) || 1;
+    // Use passed qty or fallback (though fallback shouldn't be needed with modal)
+    const quantity = parseFloat(qty) || 1;
 
     if (quantity <= 0) {
       toast.error('Please enter a valid quantity');
@@ -424,12 +424,8 @@ const BuyerDashboard = () => {
     // Save updated cart to localStorage
     localStorage.setItem('cart', JSON.stringify(cart));
 
-    // Clear quantity input
-    setOrderQuantity(prev => {
-      const newState = { ...prev };
-      delete newState[crop.id];
-      return newState;
-    });
+    // Dispatch storage event for other components in same tab
+    window.dispatchEvent(new Event('storage'));
   };
 
   const handleMakeOffer = (crop) => {
@@ -782,13 +778,35 @@ const BuyerDashboard = () => {
                     transition={{ duration: 0.4 }}
                     whileHover={{ y: -5, scale: 1.02 }}
                   >
-                    <div className="crop-image">
-                      <img src={crop.images[0]} alt={crop.vegetableType} />
+                    <div className="crop-image" onClick={() => setSelectedCropDetails(crop)} style={{ cursor: 'pointer', position: 'relative' }}>
+                      <img
+                        src={(() => {
+                          const img = crop.images && crop.images[0];
+                          if (!img) return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect fill='%23f0f0f0' width='300' height='200'/%3E%3Ctext fill='%23888888' font-family='sans-serif' font-size='20' dy='7' font-weight='bold' x='50%25' y='50%25' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+                          return typeof img === 'string' ? img : (img.url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect fill='%23f0f0f0' width='300' height='200'/%3E%3Ctext fill='%23888888' font-family='sans-serif' font-size='20' dy='7' font-weight='bold' x='50%25' y='50%25' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E");
+                        })()}
+                        alt={crop.vegetableType}
+                        onError={(e) => { e.target.onerror = null; e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect fill='%23f0f0f0' width='300' height='200'/%3E%3Ctext fill='%23888888' font-family='sans-serif' font-size='20' dy='7' font-weight='bold' x='50%25' y='50%25' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E"; }}
+                      />
                       <div className="crop-status">
                         <span className={`status ${crop.status?.toLowerCase() || 'available'}`}>
                           {crop.status || 'Available'}
                         </span>
                       </div>
+                      <div className="view-more-overlay" style={{
+                        position: 'absolute', bottom: 0, left: 0, right: 0,
+                        background: 'rgba(0,0,0,0.6)', color: 'white',
+                        padding: '8px', textAlign: 'center', fontSize: '0.9rem',
+                        opacity: 0, transition: 'opacity 0.2s',
+                        backdropFilter: 'blur(2px)'
+                      }}>
+                        Click to view details
+                      </div>
+                      <style>{`
+                        .crop-image:hover .view-more-overlay {
+                          opacity: 1 !important;
+                        }
+                      `}</style>
                     </div>
 
                     <div className="crop-content">
@@ -857,56 +875,7 @@ const BuyerDashboard = () => {
                         )}
                       </div>
 
-                      <div className="crop-actions">
-                        <div className="order-quantity">
-                          <label>
-                            <i className="fas fa-shopping-cart"></i>
-                            Quantity (kg):
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            max={crop.quantity}
-                            value={orderQuantity[crop.id] || ''}
-                            onChange={(e) => setOrderQuantity(prev => ({
-                              ...prev,
-                              [crop.id]: e.target.value
-                            }))}
-                            placeholder="Qty"
-                            style={{
-                              width: '80px',
-                              padding: '8px',
-                              margin: '0 10px',
-                              borderRadius: '4px',
-                              border: '1px solid #ddd'
-                            }}
-                          />
-                          <button
-                            onClick={() => handleAddToCart(crop)}
-                            className="order-btn"
-                            disabled={isLoading || !orderQuantity[crop.id] || parseFloat(orderQuantity[crop.id]) <= 0}
-                          >
-                            <i className="fas fa-shopping-cart"></i>
-                            Add to Cart
-                          </button>
-                        </div>
 
-                        <button
-                          onClick={() => handleTalkToFarmer(crop)}
-                          className="talk-btn"
-                        >
-                          <i className="fas fa-comments"></i>
-                          Talk to Farmer
-                        </button>
-                        <button
-                          onClick={() => handleMakeOffer(crop)}
-                          className="offer-btn"
-                          style={{ marginTop: '10px', width: '100%', backgroundColor: '#ff9800', color: 'white', border: 'none', padding: '8px', borderRadius: '4px', cursor: 'pointer' }}
-                        >
-                          <i className="fas fa-handshake"></i>
-                          Make Offer
-                        </button>
-                      </div>
                     </div>
                   </motion.div>
                 ))}
@@ -914,6 +883,23 @@ const BuyerDashboard = () => {
             )
           }
         </motion.div >
+
+        <ProductDetailsModal
+          isOpen={!!selectedCropDetails}
+          onClose={() => setSelectedCropDetails(null)}
+          product={selectedCropDetails}
+          onTalkToFarmer={(crop) => {
+            setSelectedCropDetails(null);
+            handleTalkToFarmer(crop);
+          }}
+          onAddToCart={(crop, quantity) => {
+            handleAddToCart(crop, quantity);
+          }}
+          onMakeOffer={(crop) => {
+            setSelectedCropDetails(null);
+            handleMakeOffer(crop);
+          }}
+        />
 
         {/* Chat Modal */}
         {showChat && selectedFarmer && (

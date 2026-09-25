@@ -1,6 +1,6 @@
 const express = require('express');
 const { protect, authorize } = require('../middleware/auth');
-const User = require('../models/User');
+const { User } = require('../models');
 
 const router = express.Router();
 
@@ -9,8 +9,10 @@ const router = express.Router();
 // @access  Private/Admin
 router.get('/', protect, authorize('admin'), async (req, res) => {
   try {
-    const users = await User.find().select('-password');
-    
+    const users = await User.findAll({
+      order: [['createdAt', 'DESC']]
+    });
+
     res.json({
       success: true,
       count: users.length,
@@ -30,8 +32,8 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
 // @access  Private
 router.get('/:id', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
-    
+    const user = await User.findByPk(req.params.id);
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -57,19 +59,14 @@ router.get('/:id', protect, async (req, res) => {
 // @access  Private
 router.put('/:id', protect, async (req, res) => {
   try {
-    // Check if user is updating their own profile or is admin
-    if (req.params.id !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (req.params.id !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to update this user'
       });
     }
 
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    ).select('-password');
+    const user = await User.findByPk(req.params.id);
 
     if (!user) {
       return res.status(404).json({
@@ -77,6 +74,8 @@ router.put('/:id', protect, async (req, res) => {
         message: 'User not found'
       });
     }
+
+    await user.update(req.body);
 
     res.json({
       success: true,
@@ -97,7 +96,7 @@ router.put('/:id', protect, async (req, res) => {
 // @access  Private/Admin
 router.delete('/:id', protect, authorize('admin'), async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findByPk(req.params.id);
 
     if (!user) {
       return res.status(404).json({
@@ -106,7 +105,7 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
       });
     }
 
-    await user.remove();
+    await user.destroy();
 
     res.json({
       success: true,

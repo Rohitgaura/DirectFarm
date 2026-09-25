@@ -218,3 +218,373 @@
         width: 100%;
     }
 }
+
+/* ======================================
+   OTP VERIFICATION STYLES
+   ====================================== */
+
+.otp-verification-view {
+    padding: 2rem 0;
+}
+
+/* Email Icon & Info Section */
+.otp-email-info {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.otp-icon-circle {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    box-shadow: 0 12px 30px rgba(102, 126, 234, 0.3);
+    transition: all 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.otp-icon-circle.verified {
+    background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%);
+    box-shadow: 0 12px 30px rgba(76, 175, 80, 0.3);
+    transform: scale(1.1);
+}
+
+.otp-icon-circle i {
+    font-size: 2.2rem;
+    color: white;
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.otp-email-info h3 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #333;
+    margin: 0 0 0.5rem;
+}
+
+.otp-email-info p {
+    color: #666;
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.otp-email-info p strong {
+    color: #333;
+}
+
+/* OTP Input Section */
+.otp-input-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.otp-input-boxes {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.otp-box {
+    width: 52px;
+    height: 62px;
+    border: 2px solid #e1e5e9;
+    border-radius: 14px;
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #333;
+    background: #f8f9fa;
+    outline: none;
+    transition: all 0.3s ease;
+    caret-color: #667eea;
+}
+
+.otp-box:focus {
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+    transform: translateY(-2px);
+}
+
+.otp-box.filled {
+    border-color: #667eea;
+    background: white;
+    color: #667eea;
+}
+
+.otp-box.error {
+    border-color: #e74c3c;
+    background: #fff5f5;
+    animation: shakeOtp 0.4s ease;
+}
+
+@keyframes shakeOtp {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+}
+
+/* OTP Error Message */
+.otp-error-message {
+    color: #e74c3c;
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.otp-error-message i {
+    font-size: 1rem;
+}
+
+/* Verifying Spinner */
+.otp-verifying {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: #667eea;
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 1rem 0;
+}
+
+.otp-verifying i {
+    font-size: 1.2rem;
+}
+
+/* Resend Section */
+.otp-resend-section {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e9ecef;
+}
+
+.otp-resend-section p {
+    color: #888;
+    font-size: 0.9rem;
+    margin: 0 0 0.5rem;
+}
+
+.resend-timer {
+    color: #999;
+    font-size: 0.9rem;
+}
+
+.resend-timer strong {
+    color: #667eea;
+    font-weight: 700;
+}
+
+.resend-btn {
+    background: none;
+    border: none;
+    color: #667eea;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.resend-btn:hover {
+    background: rgba(102, 126, 234, 0.08);
+    color: #5a6fd6;
+}
+
+/* OTP Success Section */
+.otp-success-section {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.otp-success-checkmark {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+}
+
+.checkmark-svg {
+    width: 80px;
+    height: 80px;
+}
+
+.checkmark-circle {
+    stroke-dasharray: 166;
+    stroke-dashoffset: 166;
+    stroke-width: 2;
+    stroke-miterlimit: 10;
+    stroke: #4CAF50;
+    animation: otpStroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+}
+
+.checkmark-check {
+    stroke-dasharray: 48;
+    stroke-dashoffset: 48;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke: #4CAF50;
+    animation: otpStroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+}
+
+@keyframes otpStroke {
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+/* OTP Actions */
+.otp-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid #e1e5e9;
+}
+
+.otp-actions .back-btn,
+.otp-actions .confirm-btn {
+    flex: 1;
+}
+
+.otp-actions .confirm-btn.disabled {
+    background: #d1d5d9;
+    box-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.otp-actions .confirm-btn.ready {
+    background: linear-gradient(45deg, #4CAF50, #2E7D32);
+    box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+    animation: readyPulse 2s ease-in-out infinite;
+}
+
+@keyframes readyPulse {
+    0%, 100% {
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.3);
+    }
+    50% {
+        box-shadow: 0 12px 35px rgba(76, 175, 80, 0.5);
+    }
+}
+
+.otp-actions .confirm-btn.ready:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 35px rgba(76, 175, 80, 0.5);
+}
+
+/* Timer Info */
+.otp-timer-info {
+    text-align: center;
+    color: #aaa;
+    font-size: 0.8rem;
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.otp-timer-info i {
+    color: #ccc;
+}
+
+/* Verification Notice on Confirmation Page */
+.verification-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+    border: 1px solid #c8e6c9;
+    border-radius: 14px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.verification-notice > i {
+    font-size: 1.5rem;
+    color: #4CAF50;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.verification-notice strong {
+    color: #2E7D32;
+    font-size: 1rem;
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.verification-notice p {
+    color: #555;
+    font-size: 0.9rem;
+    margin: 0;
+    line-height: 1.4;
+}
+
+.verification-notice p strong {
+    color: #333;
+    font-size: 0.9rem;
+}
+
+/* Responsive - OTP */
+@media (max-width: 768px) {
+    .otp-input-boxes {
+        gap: 8px;
+    }
+
+    .otp-box {
+        width: 44px;
+        height: 54px;
+        font-size: 1.3rem;
+        border-radius: 10px;
+    }
+
+    .otp-icon-circle {
+        width: 72px;
+        height: 72px;
+    }
+
+    .otp-icon-circle i {
+        font-size: 1.8rem;
+    }
+
+    .otp-email-info h3 {
+        font-size: 1.3rem;
+    }
+
+    .otp-actions {
+        flex-direction: column;
+    }
+
+    .otp-actions .back-btn,
+    .otp-actions .confirm-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 400px) {
+    .otp-box {
+        width: 38px;
+        height: 48px;
+        font-size: 1.1rem;
+        border-radius: 8px;
+    }
+
+    .otp-input-boxes {
+        gap: 6px;
+    }
+}

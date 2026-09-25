@@ -1,78 +1,81 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const buyerSchema = new mongoose.Schema({
+const Buyer = sequelize.define('Buyer', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
+    }
+  },
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'User ID is required'],
-    unique: true
+    type: DataTypes.UUID,
+    allowNull: false,
+    unique: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
   },
   name: {
-    type: String,
-    required: [true, 'Buyer name is required'],
-    trim: true,
-    maxlength: [100, 'Buyer name cannot exceed 100 characters']
+    type: DataTypes.STRING(100),
+    allowNull: false
   },
   email: {
-    type: String,
-    required: [true, 'Email is required'],
-    lowercase: true
+    type: DataTypes.STRING(255),
+    allowNull: false
   },
   phone: {
-    type: String,
-    required: [true, 'Phone number is required']
+    type: DataTypes.STRING(20),
+    allowNull: false
   },
   address: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true
   },
   location: {
-    type: {
-      type: String,
-      enum: ['Point']
-    },
-    coordinates: {
-      type: [Number],
-      index: '2dsphere'
-    },
-    formattedAddress: String
+    type: DataTypes.JSONB,
+    allowNull: true
   },
   verificationStatus: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   totalOrders: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
   totalSpent: {
-    type: Number,
-    default: 0
+    type: DataTypes.FLOAT,
+    defaultValue: 0
   },
   averageRating: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 5
+    type: DataTypes.FLOAT,
+    defaultValue: 0
   },
   totalRatings: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   }
 }, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  tableName: 'buyers',
+  timestamps: true
 });
 
-// Virtual for order history
-buyerSchema.virtual('orders', {
-  ref: 'Order',
-  localField: 'userId',
-  foreignField: 'buyerId'
-});
+Buyer.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  return values;
+};
 
-// Index on userId for faster lookups
-buyerSchema.index({ userId: 1 });
+Buyer.findById = function (id) {
+  return Buyer.findByPk(id);
+};
 
-module.exports = mongoose.model('Buyer', buyerSchema);
+module.exports = Buyer;

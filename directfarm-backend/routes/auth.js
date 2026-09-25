@@ -1,17 +1,16 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
-const User = require('../models/User');
-const Farmer = require('../models/Farmer');
-const Buyer = require('../models/Buyer');
+const { Op } = require('sequelize');
+const { User, LoginLog, Farmer, Buyer, PendingRegistration } = require('../models');
 const { protect, generateToken } = require('../middleware/auth');
 
 const router = express.Router();
 
-// @route   POST /api/auth/register
-// @desc    Register a new user
+// @route   POST /api/auth/register/initiate
+// @desc    Initiate registration - validate data and send email OTP
 // @access  Public
-router.post('/register', [
+router.post('/register/initiate', [
   body('name')
     .trim()
     .isLength({ min: 2, max: 50 })
@@ -37,7 +36,6 @@ router.post('/register', [
   try {
     // Check for validation errors
     const errors = validationResult(req);
-    console.log("error is here", errors);
     if (!errors.isEmpty()) {
       return res.status(400).json({
         success: false,
@@ -47,10 +45,9 @@ router.post('/register', [
     }
 
     const { name, email, password, phone, role } = req.body;
-    console.log(req.body);
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -58,66 +55,348 @@ router.post('/register', [
       });
     }
 
-    // Create new user object
-    const userData = {
+    // Remove any existing pending registration for same email
+    await PendingRegistration.destroy({ where: { email } });
+
+    // Generate 6-digit OTP
+    const emailOtp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Hash OTP and password before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedOtp = await bcrypt.hash(emailOtp, salt);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create pending registration
+    const pendingReg = await PendingRegistration.create({
       name,
       email,
-      password,
+      password: hashedPassword,
       phone,
-      role
-      //address: address || ''
-    };
+      role,
+      experienceYears: role === 'farmer' ? (req.body.experienceYears || 0) : 0,
+      address: req.body.address || '',
+      farmName: req.body.farmName || `${name}'s Farm`,
+      emailOtp: hashedOtp,
+      lastOtpSentAt: new Date(),
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000)
+    });
 
-    // Only add experienceYears if role is farmer
-    if (role === 'farmer' && req.body.experienceYears !== undefined) {
-      userData.experienceYears = req.body.experienceYears;
+    // Send OTP email
+    const message = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8faf5; border-radius: 16px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); padding: 40px 30px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">🌱 DirectFarm</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 16px;">Email Verification</p>
+        </div>
+        <div style="padding: 40px 30px;">
+          <p style="color: #333; font-size: 16px; margin: 0 0 8px;">Hello <strong>${name}</strong>,</p>
+          <p style="color: #555; font-size: 15px; line-height: 1.6;">Thank you for registering with DirectFarm! Please use the OTP below to verify your email address.</p>
+          <div style="background: white; border: 2px dashed #4CAF50; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+            <p style="color: #999; font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 1px;">Your Verification Code</p>
+            <h1 style="color: #2E7D32; letter-spacing: 8px; font-size: 36px; margin: 0; font-weight: 800;">${emailOtp}</h1>
+          </div>
+          <p style="color: #888; font-size: 13px; text-align: center;">This code expires in <strong>10 minutes</strong>. Do not share it with anyone.</p>
+        </div>
+        <div style="background: #e8f5e9; padding: 20px 30px; text-align: center;">
+          <p style="color: #666; font-size: 12px; margin: 0;">If you didn't register on DirectFarm, you can safely ignore this email.</p>
+        </div>
+      </div>
+    `;
+
+    try {
+      const sendEmail = require('../utils/sendEmail');
+      await sendEmail({
+        email: email,
+        subject: 'DirectFarm - Verify Your Email Address',
+        message
+      });
+      console.log(`📧 Email OTP sent to ${email}: ${emailOtp}`);
+    } catch (err) {
+      console.error('Email sending failed (Dev Mode):', err.message);
+      console.log(`📧 Email OTP for ${email}: ${emailOtp} (email delivery failed, use this OTP)`);
     }
 
-    const user = new User(userData);
+    res.status(200).json({
+      success: true,
+      message: 'OTP sent to your email address',
+      data: {
+        registrationId: pendingReg.id,
+        email: email.replace(/(.{2})(.*)(@.*)/, '$1***$3'),
+        expiresIn: '10 minutes'
+      }
+    });
+  } catch (error) {
+    console.error('Registration initiation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during registration'
+    });
+  }
+});
 
-    await user.save();
-
-    // Create Farmer or Buyer record based on role
-    if (role === 'farmer') {
-      const farmer = new Farmer({
-        userId: user._id,
-        name: name,
-        email: email,
-        phone: phone,
-        address: req.body.address || '',
-        farmName: req.body.farmName || `${name}'s Farm`,
-        experienceYears: req.body.experienceYears,
-        verificationStatus: false
+// @route   POST /api/auth/register/verify-otp
+// @desc    Verify email OTP for registration
+// @access  Public
+router.post('/register/verify-otp', [
+  body('registrationId')
+    .notEmpty()
+    .withMessage('Registration ID is required'),
+  body('emailOtp')
+    .isLength({ min: 6, max: 6 })
+    .withMessage('OTP must be 6 digits')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
       });
-      await farmer.save();
-    } else if (role === 'buyer') {
-      const buyer = new Buyer({
-        userId: user._id,
-        name: name,
-        email: email,
-        phone: phone,
-        address: req.body.address || '',
-        verificationStatus: false
-      });
-      await buyer.save();
     }
 
-    // Generate token
-    const token = generateToken(user._id);
+    const { registrationId, emailOtp } = req.body;
+
+    const pendingReg = await PendingRegistration.findByPk(registrationId);
+    if (!pendingReg) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration expired or not found. Please register again.'
+      });
+    }
+
+    if (pendingReg.emailVerified) {
+      return res.status(200).json({
+        success: true,
+        message: 'Email already verified',
+        data: { emailVerified: true }
+      });
+    }
+
+    const isMatch = await bcrypt.compare(emailOtp, pendingReg.emailOtp);
+    if (!isMatch) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid OTP. Please try again.'
+      });
+    }
+
+    pendingReg.emailVerified = true;
+    await pendingReg.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully!',
+      data: { emailVerified: true }
+    });
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during OTP verification'
+    });
+  }
+});
+
+// @route   POST /api/auth/register/confirm
+// @desc    Confirm registration after OTP verification
+// @access  Public
+router.post('/register/confirm', [
+  body('registrationId')
+    .notEmpty()
+    .withMessage('Registration ID is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
+    const { registrationId } = req.body;
+
+    const pendingReg = await PendingRegistration.findByPk(registrationId);
+    if (!pendingReg) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration expired or not found. Please register again.'
+      });
+    }
+
+    if (!pendingReg.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please verify your email before confirming registration.'
+      });
+    }
+
+    const existingUser = await User.findOne({ where: { email: pendingReg.email } });
+    if (existingUser) {
+      await PendingRegistration.destroy({ where: { id: registrationId } });
+      return res.status(400).json({
+        success: false,
+        message: 'User with this email already exists'
+      });
+    }
+
+    // Create user with already hashed password
+    const user = await User.create({
+      name: pendingReg.name,
+      email: pendingReg.email,
+      password: pendingReg.password,
+      phone: pendingReg.phone,
+      role: pendingReg.role,
+      experienceYears: pendingReg.role === 'farmer' ? pendingReg.experienceYears : 0,
+      address: pendingReg.address
+    });
+
+    if (pendingReg.role === 'farmer') {
+      await Farmer.create({
+        userId: user.id,
+        name: pendingReg.name,
+        email: pendingReg.email,
+        phone: pendingReg.phone,
+        address: pendingReg.address,
+        farmName: pendingReg.farmName,
+        experienceYears: pendingReg.experienceYears,
+        verificationStatus: false
+      });
+    } else if (pendingReg.role === 'buyer') {
+      await Buyer.create({
+        userId: user.id,
+        name: pendingReg.name,
+        email: pendingReg.email,
+        phone: pendingReg.phone,
+        address: pendingReg.address,
+        verificationStatus: false
+      });
+    }
+
+    // Delete pending registration
+    await PendingRegistration.destroy({ where: { id: registrationId } });
+
+    const token = generateToken(user.id);
 
     res.status(201).json({
       success: true,
-      message: 'User registered successfully',
+      message: 'Registration completed successfully! Welcome to DirectFarm!',
       data: {
         user,
         token
       }
     });
   } catch (error) {
-    console.error('Registration error:', error);
+    console.error('Registration confirmation error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during registration'
+      message: 'Server error during registration confirmation'
+    });
+  }
+});
+
+// @route   POST /api/auth/register/resend-otp
+// @desc    Resend email OTP for registration
+// @access  Public
+router.post('/register/resend-otp', [
+  body('registrationId')
+    .notEmpty()
+    .withMessage('Registration ID is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+
+    const { registrationId } = req.body;
+
+    const pendingReg = await PendingRegistration.findByPk(registrationId);
+    if (!pendingReg) {
+      return res.status(400).json({
+        success: false,
+        message: 'Registration expired or not found. Please register again.'
+      });
+    }
+
+    const timeSinceLastSend = Date.now() - new Date(pendingReg.lastOtpSentAt).getTime();
+    if (timeSinceLastSend < 60000) {
+      const waitSeconds = Math.ceil((60000 - timeSinceLastSend) / 1000);
+      return res.status(429).json({
+        success: false,
+        message: `Please wait ${waitSeconds} seconds before requesting another OTP`,
+        data: { retryAfter: waitSeconds }
+      });
+    }
+
+    if (pendingReg.otpResendCount >= 5) {
+      return res.status(429).json({
+        success: false,
+        message: 'Maximum OTP resend limit reached. Please register again.'
+      });
+    }
+
+    const emailOtp = Math.floor(100000 + Math.random() * 900000).toString();
+    const salt = await bcrypt.genSalt(10);
+    const hashedOtp = await bcrypt.hash(emailOtp, salt);
+
+    pendingReg.emailOtp = hashedOtp;
+    pendingReg.emailVerified = false;
+    pendingReg.otpResendCount += 1;
+    pendingReg.lastOtpSentAt = new Date();
+    pendingReg.expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await pendingReg.save();
+
+    const message = `
+      <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f8faf5; border-radius: 16px; overflow: hidden;">
+        <div style="background: linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%); padding: 40px 30px; text-align: center;">
+          <h1 style="color: white; margin: 0; font-size: 28px;">🌱 DirectFarm</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0; font-size: 16px;">Email Verification (Resent)</p>
+        </div>
+        <div style="padding: 40px 30px;">
+          <p style="color: #333; font-size: 16px; margin: 0 0 8px;">Hello <strong>${pendingReg.name}</strong>,</p>
+          <p style="color: #555; font-size: 15px;">Here is your new verification code:</p>
+          <div style="background: white; border: 2px dashed #4CAF50; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+            <p style="color: #999; font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 1px;">Your Verification Code</p>
+            <h1 style="color: #2E7D32; letter-spacing: 8px; font-size: 36px; margin: 0; font-weight: 800;">${emailOtp}</h1>
+          </div>
+          <p style="color: #888; font-size: 13px; text-align: center;">This code expires in <strong>10 minutes</strong>.</p>
+        </div>
+      </div>
+    `;
+
+    try {
+      const sendEmail = require('../utils/sendEmail');
+      await sendEmail({
+        email: pendingReg.email,
+        subject: 'DirectFarm - Your New Verification Code',
+        message
+      });
+      console.log(`📧 Resent OTP to ${pendingReg.email}: ${emailOtp}`);
+    } catch (err) {
+      console.error('Email resend failed (Dev Mode):', err.message);
+      console.log(`📧 Resent OTP for ${pendingReg.email}: ${emailOtp} (email failed, use this OTP)`);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'New OTP sent to your email',
+      data: {
+        remainingResends: 5 - pendingReg.otpResendCount
+      }
+    });
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
     });
   }
 });
@@ -135,8 +414,6 @@ router.post('/login', [
     .withMessage('Password is required')
 ], async (req, res) => {
   try {
-
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -148,9 +425,7 @@ router.post('/login', [
 
     const { email, password } = req.body;
 
-
-    // Find user by email and include password for comparison
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ where: { email } });
 
     if (!user) {
       return res.status(401).json({
@@ -159,7 +434,6 @@ router.post('/login', [
       });
     }
 
-    // Check password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -168,8 +442,24 @@ router.post('/login', [
       });
     }
 
-    // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
+
+    // Log login event safely
+    try {
+      const lat = req.body.latitude ? parseFloat(req.body.latitude) : null;
+      const lng = req.body.longitude ? parseFloat(req.body.longitude) : null;
+      await LoginLog.create({
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        authMethod: 'local',
+        latitude: isNaN(lat) ? null : lat,
+        longitude: isNaN(lng) ? null : lng
+      });
+    } catch (logError) {
+      console.error('Failed to log login event:', logError.message);
+    }
 
     res.json({
       success: true,
@@ -180,7 +470,6 @@ router.post('/login', [
       }
     });
   } catch (error) {
-
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
@@ -194,7 +483,7 @@ router.post('/login', [
 // @access  Private
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id);
 
     res.json({
       success: true,
@@ -224,7 +513,6 @@ router.put('/profile', protect, [
     .withMessage('Please provide a valid 10-digit phone number')
 ], async (req, res) => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -236,14 +524,15 @@ router.put('/profile', protect, [
 
     const { name, phone, address, latitude, longitude } = req.body;
 
-    // Find and update user
-    const user = await User.findById(req.user._id);
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
     if (name) user.name = name;
     if (phone) user.phone = phone;
     if (address !== undefined) user.address = address;
 
-    // Update location if coordinates are provided
     if (latitude !== undefined && longitude !== undefined) {
       user.location = {
         type: 'Point',
@@ -291,7 +580,7 @@ router.get('/verify-token', protect, async (req, res) => {
 });
 
 // @route   POST /api/auth/logout
-// @desc    Logout user (client-side token removal)
+// @desc    Logout user
 // @access  Private
 router.post('/logout', protect, (req, res) => {
   res.json({
@@ -314,7 +603,6 @@ router.post('/google', async (req, res) => {
       });
     }
 
-    // Verify Google token
     const { OAuth2Client } = require('google-auth-library');
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -335,13 +623,13 @@ router.post('/google', async (req, res) => {
 
     const { sub: googleId, email, name, picture } = payload;
 
-    // Check if user exists by googleId or email
     let user = await User.findOne({
-      $or: [{ googleId }, { email }]
+      where: {
+        [Op.or]: [{ googleId }, { email }]
+      }
     });
 
     if (user) {
-      // Existing user - update googleId if not set
       if (!user.googleId) {
         user.googleId = googleId;
         user.authProvider = 'google';
@@ -349,8 +637,21 @@ router.post('/google', async (req, res) => {
         await user.save();
       }
 
-      // Generate token
-      const token = generateToken(user._id);
+      const token = generateToken(user.id);
+
+      try {
+        await LoginLog.create({
+          userId: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          authMethod: 'google',
+          latitude: req.body.latitude || null,
+          longitude: req.body.longitude || null
+        });
+      } catch (logError) {
+        console.error('Failed to log Google login event:', logError);
+      }
 
       return res.json({
         success: true,
@@ -359,7 +660,6 @@ router.post('/google', async (req, res) => {
       });
     }
 
-    // New user - check if phone and role are provided
     if (!phone || !role) {
       return res.status(400).json({
         success: false,
@@ -368,8 +668,7 @@ router.post('/google', async (req, res) => {
       });
     }
 
-    // Create new user
-    user = new User({
+    user = await User.create({
       name,
       email,
       googleId,
@@ -379,32 +678,40 @@ router.post('/google', async (req, res) => {
       profilePicture: picture
     });
 
-    await user.save();
-
-    // Create Farmer or Buyer record based on role
     if (role === 'farmer') {
-      const farmer = new Farmer({
-        userId: user._id,
+      await Farmer.create({
+        userId: user.id,
         name,
         email,
         phone,
         farmName: `${name}'s Farm`,
         verificationStatus: false
       });
-      await farmer.save();
     } else if (role === 'buyer') {
-      const buyer = new Buyer({
-        userId: user._id,
+      await Buyer.create({
+        userId: user.id,
         name,
         email,
         phone,
         verificationStatus: false
       });
-      await buyer.save();
     }
 
-    // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
+
+    try {
+      await LoginLog.create({
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        authMethod: 'google',
+        latitude: req.body.latitude || null,
+        longitude: req.body.longitude || null
+      });
+    } catch (logError) {
+      console.error('Failed to log Google registration login event:', logError);
+    }
 
     res.status(201).json({
       success: true,
@@ -434,7 +741,6 @@ router.post('/facebook', async (req, res) => {
       });
     }
 
-    // Verify Facebook token by fetching user data
     const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
     let fbResponse;
 
@@ -466,13 +772,13 @@ router.post('/facebook', async (req, res) => {
     const { id: facebookId, email, name, picture } = fbData;
     const profilePicture = picture?.data?.url;
 
-    // Check if user exists by facebookId or email
     let user = await User.findOne({
-      $or: [{ facebookId }, { email }]
+      where: {
+        [Op.or]: [{ facebookId }, { email }]
+      }
     });
 
     if (user) {
-      // Existing user - update facebookId if not set
       if (!user.facebookId) {
         user.facebookId = facebookId;
         user.authProvider = 'facebook';
@@ -480,8 +786,21 @@ router.post('/facebook', async (req, res) => {
         await user.save();
       }
 
-      // Generate token
-      const token = generateToken(user._id);
+      const token = generateToken(user.id);
+
+      try {
+        await LoginLog.create({
+          userId: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          authMethod: 'facebook',
+          latitude: req.body.latitude || null,
+          longitude: req.body.longitude || null
+        });
+      } catch (logError) {
+        console.error('Failed to log Facebook login event:', logError);
+      }
 
       return res.json({
         success: true,
@@ -490,7 +809,6 @@ router.post('/facebook', async (req, res) => {
       });
     }
 
-    // New user - check if phone and role are provided
     if (!phone || !role) {
       return res.status(400).json({
         success: false,
@@ -499,7 +817,6 @@ router.post('/facebook', async (req, res) => {
       });
     }
 
-    // Facebook might not provide email
     if (!email) {
       return res.status(400).json({
         success: false,
@@ -507,8 +824,7 @@ router.post('/facebook', async (req, res) => {
       });
     }
 
-    // Create new user
-    user = new User({
+    user = await User.create({
       name,
       email,
       facebookId,
@@ -518,32 +834,40 @@ router.post('/facebook', async (req, res) => {
       profilePicture
     });
 
-    await user.save();
-
-    // Create Farmer or Buyer record based on role
     if (role === 'farmer') {
-      const farmer = new Farmer({
-        userId: user._id,
+      await Farmer.create({
+        userId: user.id,
         name,
         email,
         phone,
         farmName: `${name}'s Farm`,
         verificationStatus: false
       });
-      await farmer.save();
     } else if (role === 'buyer') {
-      const buyer = new Buyer({
-        userId: user._id,
+      await Buyer.create({
+        userId: user.id,
         name,
         email,
         phone,
         verificationStatus: false
       });
-      await buyer.save();
     }
 
-    // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
+
+    try {
+      await LoginLog.create({
+        userId: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        authMethod: 'facebook',
+        latitude: req.body.latitude || null,
+        longitude: req.body.longitude || null
+      });
+    } catch (logError) {
+      console.error('Failed to log Facebook registration login event:', logError);
+    }
 
     res.status(201).json({
       success: true,
@@ -569,7 +893,6 @@ router.post('/forgot-password', [
     .withMessage('Please provide a valid email')
 ], async (req, res) => {
   try {
-    // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -580,7 +903,7 @@ router.post('/forgot-password', [
     }
 
     const { email } = req.body;
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
 
     if (!user) {
       return res.status(404).json({
@@ -589,19 +912,13 @@ router.post('/forgot-password', [
       });
     }
 
-    // Generate Random 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-    // Hash OTP before saving
     const salt = await bcrypt.genSalt(10);
     user.resetPasswordOtp = await bcrypt.hash(otp, salt);
+    user.resetPasswordOtpExpire = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Set expiration (10 minutes)
-    user.resetPasswordOtpExpire = Date.now() + 10 * 60 * 1000;
+    await user.save();
 
-    await user.save({ validateBeforeSave: false });
-
-    // Create reset message
     const message = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Password Reset Request</h2>
@@ -621,7 +938,7 @@ router.post('/forgot-password', [
         message
       });
 
-      console.log(`OTP sent to ${user.email}: ${otp}`); // For debugging
+      console.log(`OTP sent to ${user.email}: ${otp}`);
 
       res.status(200).json({
         success: true,
@@ -629,9 +946,6 @@ router.post('/forgot-password', [
       });
     } catch (err) {
       console.error('Email sending failed (Dev Mode - Continuing):', err.message);
-
-      // In development, we don't want to block the flow if email fails.
-      // We keep the OTP saved in the DB so you can use the one logged in console.
       return res.status(200).json({
         success: true,
         message: 'OTP generated (Check backend console)',
@@ -656,7 +970,6 @@ router.post('/reset-password', [
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
 ], async (req, res) => {
   try {
-    // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -668,22 +981,21 @@ router.post('/reset-password', [
 
     const { email, otp, password } = req.body;
 
-    // Get user with valid expiration
     const user = await User.findOne({
-      email,
-      resetPasswordOtpExpire: { $gt: Date.now() }
-    }).select('+password +resetPasswordOtp'); // Explicitly select resetPasswordOtp
+      where: {
+        email,
+        resetPasswordOtpExpire: { [Op.gt]: new Date() }
+      }
+    });
 
-    if (!user) {
+    if (!user || !user.resetPasswordOtp) {
       return res.status(400).json({
         success: false,
         message: 'Invalid email or OTP has expired'
       });
     }
 
-    // Verify OTP
     const isMatch = await bcrypt.compare(otp, user.resetPasswordOtp);
-
     if (!isMatch) {
       return res.status(400).json({
         success: false,
@@ -691,10 +1003,9 @@ router.post('/reset-password', [
       });
     }
 
-    // Set new password
     user.password = password;
-    user.resetPasswordOtp = undefined;
-    user.resetPasswordOtpExpire = undefined;
+    user.resetPasswordOtp = null;
+    user.resetPasswordOtpExpire = null;
 
     await user.save();
 

@@ -1,55 +1,76 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { protect, authorize } = require('../middleware/auth');
-const Order = require('../models/Order');
-const Product = require('../models/Product');
+const { Order, OrderItem, Product, User } = require('../models');
 
 const router = express.Router();
+
+// Helper to format order for response
+const formatOrder = (order) => {
+  if (!order) return null;
+  const json = order.toJSON();
+  json.buyer = json.buyer || (order.buyer ? order.buyer.toJSON() : null);
+  json.farmer = json.farmer || (order.farmer ? order.farmer.toJSON() : null);
+  if (order.items) {
+    json.items = order.items.map(item => {
+      const itemJson = item.toJSON();
+      itemJson.product = item.product ? item.product.toJSON() : null;
+      return itemJson;
+    });
+  }
+  return json;
+};
 
 // @route   GET /api/orders
 // @desc    Get orders (buyer's orders or farmer's orders)
 // @access  Private
 router.get('/', protect, async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
 
-    let filter = {};
+    const where = {};
 
-    // Filter by user role
     if (req.user.role === 'buyer') {
-      filter.buyer = req.user._id;
+      where.buyerId = req.user.id;
     } else if (req.user.role === 'farmer') {
-      filter.farmer = req.user._id;
+      where.farmerId = req.user.id;
     }
 
-    // Additional filters
     if (req.query.status) {
-      filter.status = req.query.status;
+      where.status = req.query.status;
     }
 
     if (req.query.paymentStatus) {
-      filter.paymentStatus = req.query.paymentStatus;
+      where.paymentStatus = req.query.paymentStatus;
     }
 
-    const orders = await Order.find(filter)
-      .populate('buyer', 'name email phone')
-      .populate('farmer', 'name email phone')
-      .populate('items.product', 'name price images')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const { count, rows: orders } = await Order.findAndCountAll({
+      where,
+      include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name', 'email', 'phone'] },
+        { model: User, as: 'farmer', attributes: ['id', 'name', 'email', 'phone'] },
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'pricePerKg', 'images', 'category'] }]
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
 
-    const total = await Order.countDocuments(filter);
+    const formattedOrders = orders.map(formatOrder);
 
     res.json({
       success: true,
-      count: orders.length,
-      total,
+      count: formattedOrders.length,
+      total: count,
       page,
-      pages: Math.ceil(total / limit),
-      data: orders
+      pages: Math.ceil(count / limit),
+      data: formattedOrders
     });
   } catch (error) {
     console.error('Get orders error:', error);
@@ -65,10 +86,17 @@ router.get('/', protect, async (req, res) => {
 // @access  Private
 router.get('/:id', protect, async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id)
-      .populate('buyer', 'name email phone address')
-      .populate('farmer', 'name email phone address')
-      .populate('items.product', 'name price images category');
+    const order = await Order.findByPk(req.params.id, {
+      include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name', 'email', 'phone', 'address'] },
+        { model: User, as: 'farmer', attributes: ['id', 'name', 'email', 'phone', 'address'] },
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'pricePerKg', 'images', 'category'] }]
+        }
+      ]
+    });
 
     if (!order) {
       return res.status(404).json({
@@ -77,10 +105,7 @@ router.get('/:id', protect, async (req, res) => {
       });
     }
 
-    // Check if user is authorized to view this order
-    if (order.buyer._id.toString() !== req.user._id.toString() &&
-      order.farmer._id.toString() !== req.user._id.toString() &&
-      req.user.role !== 'admin') {
+    if (order.buyerId !== req.user.id && order.farmerId !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to view this order'
@@ -89,7 +114,7 @@ router.get('/:id', protect, async (req, res) => {
 
     res.json({
       success: true,
-      data: { order }
+      data: { order: formatOrder(order) }
     });
   } catch (error) {
     console.error('Get order error:', error);
@@ -107,33 +132,14 @@ router.post('/', protect, authorize('buyer'), [
   body('items')
     .isArray({ min: 1 })
     .withMessage('At least one item is required'),
-  body('items.*.product')
-    .isMongoId()
-    .withMessage('Valid product ID is required'),
   body('items.*.quantity')
     .isInt({ min: 1 })
     .withMessage('Quantity must be at least 1'),
   body('shippingAddress')
     .isObject()
-    .withMessage('Shipping address is required'),
-  body('shippingAddress.street')
-    .notEmpty()
-    .withMessage('Street address is required'),
-  body('shippingAddress.city')
-    .notEmpty()
-    .withMessage('City is required'),
-  body('shippingAddress.state')
-    .notEmpty()
-    .withMessage('State is required'),
-  body('shippingAddress.pincode')
-    .notEmpty()
-    .withMessage('Pincode is required'),
-  body('shippingAddress.phone')
-    .notEmpty()
-    .withMessage('Phone number is required')
+    .withMessage('Shipping address is required')
 ], async (req, res) => {
   try {
-    // Check for validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -145,25 +151,18 @@ router.post('/', protect, authorize('buyer'), [
 
     const { items, shippingAddress, notes, paymentMethod } = req.body;
 
-    // Validate products and calculate totals
     let subtotal = 0;
-    const orderItems = [];
-    let farmerId = null;
+    const validatedItems = [];
+    let detectedFarmerId = null;
 
     for (const item of items) {
-      const product = await Product.findById(item.product);
+      const productId = item.product || item.productId;
+      const product = await Product.findByPk(productId);
 
       if (!product) {
         return res.status(404).json({
           success: false,
-          message: `Product ${item.product} not found`
-        });
-      }
-
-      if (!product.isAvailable) {
-        return res.status(400).json({
-          success: false,
-          message: `Product ${product.name} is not available`
+          message: `Product not found`
         });
       }
 
@@ -174,69 +173,68 @@ router.post('/', protect, authorize('buyer'), [
         });
       }
 
-      if (item.quantity < product.minOrderQuantity) {
-        return res.status(400).json({
-          success: false,
-          message: `Minimum order quantity for ${product.name} is ${product.minOrderQuantity}`
-        });
+      if (!detectedFarmerId) {
+        detectedFarmerId = product.farmerId;
       }
 
-      // Set farmer ID (all products should be from same farmer for simplicity)
-      if (!farmerId) {
-        farmerId = product.farmer;
-      } else if (farmerId.toString() !== product.farmer.toString()) {
-        return res.status(400).json({
-          success: false,
-          message: 'All products must be from the same farmer'
-        });
-      }
-
-      const itemTotal = product.price * item.quantity;
+      const price = product.pricePerKg;
+      const itemTotal = price * item.quantity;
       subtotal += itemTotal;
 
-      orderItems.push({
-        product: product._id,
+      validatedItems.push({
+        productId: product.id,
+        farmerId: product.farmerId,
         quantity: item.quantity,
-        price: product.price,
-        total: itemTotal
+        price
       });
     }
 
-    // Calculate shipping cost (simple calculation)
     const shippingCost = subtotal > 1000 ? 0 : 100;
     const totalAmount = subtotal + shippingCost;
 
-    // Create order
-    const order = new Order({
-      buyer: req.user._id,
-      farmer: farmerId,
-      items: orderItems,
-      subtotal,
-      shippingCost,
+    const order = await Order.create({
+      buyerId: req.user.id,
+      farmerId: detectedFarmerId,
       totalAmount,
       shippingAddress,
       notes,
-      paymentMethod: paymentMethod || 'online'
+      paymentMethod: paymentMethod || 'cod',
+      paymentStatus: 'pending',
+      status: 'pending'
     });
 
-    await order.save();
-
-    // Update product quantities
-    for (const item of items) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { quantity: -item.quantity }
+    for (const item of validatedItems) {
+      await OrderItem.create({
+        orderId: order.id,
+        productId: item.productId,
+        farmerId: item.farmerId,
+        quantity: item.quantity,
+        price: item.price
       });
+
+      // Deduct product quantity
+      const prod = await Product.findByPk(item.productId);
+      if (prod) {
+        await prod.update({ quantity: Math.max(0, prod.quantity - item.quantity) });
+      }
     }
 
-    const populatedOrder = await Order.findById(order._id)
-      .populate('buyer', 'name email phone')
-      .populate('farmer', 'name email phone')
-      .populate('items.product', 'name price images');
+    const populatedOrder = await Order.findByPk(order.id, {
+      include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name', 'email', 'phone'] },
+        { model: User, as: 'farmer', attributes: ['id', 'name', 'email', 'phone'] },
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'pricePerKg', 'images'] }]
+        }
+      ]
+    });
 
     res.status(201).json({
       success: true,
       message: 'Order created successfully',
-      data: { order: populatedOrder }
+      data: { order: formatOrder(populatedOrder) }
     });
   } catch (error) {
     console.error('Create order error:', error);
@@ -252,7 +250,7 @@ router.post('/', protect, authorize('buyer'), [
 // @access  Private (Order participants or admin)
 router.put('/:id/status', protect, [
   body('status')
-    .isIn(['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'])
+    .isIn(['pending', 'confirmed', 'delivered', 'cancelled'])
     .withMessage('Invalid status')
 ], async (req, res) => {
   try {
@@ -265,7 +263,9 @@ router.put('/:id/status', protect, [
       });
     }
 
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findByPk(req.params.id, {
+      include: [{ model: OrderItem, as: 'items' }]
+    });
 
     if (!order) {
       return res.status(404).json({
@@ -274,10 +274,9 @@ router.put('/:id/status', protect, [
       });
     }
 
-    // Check authorization
     const isAuthorized =
-      order.buyer.toString() === req.user._id.toString() ||
-      order.farmer.toString() === req.user._id.toString() ||
+      order.buyerId === req.user.id ||
+      order.farmerId === req.user.id ||
       req.user.role === 'admin';
 
     if (!isAuthorized) {
@@ -288,36 +287,39 @@ router.put('/:id/status', protect, [
     }
 
     const { status, notes } = req.body;
+    const oldStatus = order.status;
 
-    // Update order status
     order.status = status;
     if (notes) order.notes = notes;
 
-    // Handle cancellation
-    if (status === 'cancelled' && order.status !== 'cancelled') {
-      order.isCancelled = true;
-      order.cancelledBy = req.user.role === 'admin' ? 'admin' :
-        order.buyer.toString() === req.user._id.toString() ? 'buyer' : 'farmer';
-
-      // Restore product quantities
+    // Restore stock if cancelled
+    if (status === 'cancelled' && oldStatus !== 'cancelled' && order.items) {
       for (const item of order.items) {
-        await Product.findByIdAndUpdate(item.product, {
-          $inc: { quantity: item.quantity }
-        });
+        const prod = await Product.findByPk(item.productId);
+        if (prod) {
+          await prod.update({ quantity: prod.quantity + item.quantity });
+        }
       }
     }
 
     await order.save();
 
-    const updatedOrder = await Order.findById(order._id)
-      .populate('buyer', 'name email phone')
-      .populate('farmer', 'name email phone')
-      .populate('items.product', 'name price images');
+    const updatedOrder = await Order.findByPk(order.id, {
+      include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name', 'email', 'phone'] },
+        { model: User, as: 'farmer', attributes: ['id', 'name', 'email', 'phone'] },
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'pricePerKg', 'images'] }]
+        }
+      ]
+    });
 
     res.json({
       success: true,
       message: 'Order status updated successfully',
-      data: { order: updatedOrder }
+      data: { order: formatOrder(updatedOrder) }
     });
   } catch (error) {
     console.error('Update order status error:', error);

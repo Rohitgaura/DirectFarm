@@ -1,35 +1,63 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const locationSchema = new mongoose.Schema({
-    state: {
-        type: String,
-        required: true,
-        trim: true,
-        index: true
-    },
-    district: {
-        type: String,
-        required: true,
-        trim: true,
-        index: true
-    },
-    subdistrict: {
-        type: String,
-        required: true,
-        trim: true,
-        index: true
-    },
-    village: {
-        type: String,
-        required: true,
-        trim: true,
-        index: true
+const Location = sequelize.define('Location', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
     }
+  },
+  state: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  },
+  district: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  },
+  subdistrict: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  },
+  village: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  }
 }, {
-    timestamps: true
+  tableName: 'locations',
+  timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['state', 'district', 'subdistrict', 'village']
+    },
+    { fields: ['state'] },
+    { fields: ['district'] },
+    { fields: ['subdistrict'] },
+    { fields: ['village'] }
+  ]
 });
 
-// Compound index for efficient hierarchical queries
-locationSchema.index({ state: 1, district: 1, subdistrict: 1, village: 1 }, { unique: true });
+Location.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  return values;
+};
 
-module.exports = mongoose.model('Location', locationSchema);
+// Helper for distinct query compatible with Mongoose
+Location.distinct = async function (field, where = {}) {
+  const rows = await Location.findAll({
+    attributes: [[sequelize.fn('DISTINCT', sequelize.col(field)), field]],
+    where,
+    raw: true
+  });
+  return rows.map(r => r[field]).filter(Boolean);
+};
+
+module.exports = Location;

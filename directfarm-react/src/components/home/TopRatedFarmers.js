@@ -77,7 +77,7 @@ const TopRatedFarmers = () => {
                             className="farmer-card"
                             variants={itemVariants}
                             whileHover={{ y: -10, boxShadow: '0 10px 20px rgba(0,0,0,0.1)' }}
-                            onClick={() => navigate(`/farmer/${farmer.userId?._id || farmer._id}`)}
+                            onClick={() => navigate(`/farmer/${farmer.userId?.id || farmer.userId?._id || farmer.id || farmer._id}`)}
                             style={{
                                 background: 'white',
                                 padding: '2rem',

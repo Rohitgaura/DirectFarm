@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 import apiService from '../../services/api';
 import '../../styles/CropsHistory.css';
 
 import authUtils from '../../utils/auth';
 
 const CropsHistory = () => {
+    const navigate = useNavigate();
     const [crops, setCrops] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'unsold', 'sold'
 
     useEffect(() => {
         loadCrops();
@@ -42,6 +45,20 @@ const CropsHistory = () => {
             }
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleToggleStatus = async (cropId, currentStatus) => {
+        const isCurrentlySold = (currentStatus || '').toLowerCase() === 'sold';
+        const newStatus = isCurrentlySold ? 'active' : 'sold';
+        try {
+            const response = await apiService.updateProductStatus(cropId, { status: newStatus });
+            if (response.success) {
+                toast.success(isCurrentlySold ? 'Crop marked as Active & relisted!' : 'Crop marked as Sold Out & unlisted from public store!');
+                setCrops(prev => prev.map(c => (c.id === cropId || c._id === cropId) ? { ...c, status: newStatus } : c));
+            }
+        } catch (error) {
+            toast.error('Failed to update product status');
         }
     };
 
@@ -81,8 +98,65 @@ const CropsHistory = () => {
                         <i className="fas fa-history"></i>
                         Crops Upload History
                     </h1>
-                    <p>View all your uploaded crops sorted by date</p>
+                    <p>View all your uploaded crops sorted by date with instant sold/unsold filters</p>
                 </motion.div>
+
+                {/* Status Filter Toolbar */}
+                {!isLoading && crops.length > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                        <button
+                            type="button"
+                            onClick={() => setStatusFilter('all')}
+                            style={{
+                                padding: '0.5rem 1.1rem',
+                                borderRadius: '25px',
+                                border: '1px solid #cbd5e1',
+                                background: statusFilter === 'all' ? '#0f172a' : '#ffffff',
+                                color: statusFilter === 'all' ? '#ffffff' : '#475569',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                fontSize: '0.88rem',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                            }}
+                        >
+                            All ({crops.length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setStatusFilter('unsold')}
+                            style={{
+                                padding: '0.5rem 1.1rem',
+                                borderRadius: '25px',
+                                border: '1px solid #a7f3d0',
+                                background: statusFilter === 'unsold' ? '#10b981' : '#ecfdf5',
+                                color: statusFilter === 'unsold' ? '#ffffff' : '#047857',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                fontSize: '0.88rem',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                            }}
+                        >
+                            🟢 Unsold / Active ({crops.filter(c => c.status !== 'sold').length})
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setStatusFilter('sold')}
+                            style={{
+                                padding: '0.5rem 1.1rem',
+                                borderRadius: '25px',
+                                border: '1px solid #fca5a5',
+                                background: statusFilter === 'sold' ? '#ef4444' : '#fef2f2',
+                                color: statusFilter === 'sold' ? '#ffffff' : '#b91c1c',
+                                fontWeight: '700',
+                                cursor: 'pointer',
+                                fontSize: '0.88rem',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
+                            }}
+                        >
+                            🔴 Sold Out ({crops.filter(c => c.status === 'sold').length})
+                        </button>
+                    </div>
+                )}
 
                 {isLoading ? (
                     <div className="loading-container">
@@ -102,7 +176,11 @@ const CropsHistory = () => {
                     </motion.div>
                 ) : (
                     <div className="crops-timeline">
-                        {crops.map((crop, index) => (
+                        {crops.filter(crop => {
+                            if (statusFilter === 'unsold') return crop.status !== 'sold';
+                            if (statusFilter === 'sold') return crop.status === 'sold';
+                            return true;
+                        }).map((crop, index) => (
                             <motion.div
                                 key={crop._id || index}
                                 className="crop-timeline-item"
@@ -125,9 +203,40 @@ const CropsHistory = () => {
                                                 {crop.status?.toUpperCase() || 'AVAILABLE'}
                                             </span>
                                         </div>
-                                        <div className="upload-date">
-                                            <i className="fas fa-calendar-alt"></i>
-                                            {formatDate(crop.uploadDate || crop.createdAt)}
+                                        <div className="header-actions">
+                                            <button
+                                                className="toggle-status-btn"
+                                                onClick={() => handleToggleStatus(crop.id || crop._id, crop.status)}
+                                                title={crop.status === 'sold' ? 'Mark as Available' : 'Mark as Sold Out'}
+                                                style={{
+                                                    background: crop.status === 'sold' ? '#10b981' : '#f59e0b',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    padding: '0.4rem 0.85rem',
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: '700',
+                                                    cursor: 'pointer',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.4rem',
+                                                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                                }}
+                                            >
+                                                <i className={`fas fa-${crop.status === 'sold' ? 'check-circle' : 'tag'}`}></i>
+                                                {crop.status === 'sold' ? 'Mark Available' : 'Mark Sold'}
+                                            </button>
+                                            <button
+                                                className="edit-icon-btn"
+                                                onClick={() => navigate('/farmer-dashboard', { state: { editCrop: crop } })}
+                                                title="Edit Crop"
+                                            >
+                                                <i className="fas fa-edit"></i>
+                                            </button>
+                                            <div className="upload-date">
+                                                <i className="fas fa-calendar-alt"></i>
+                                                {formatDate(crop.uploadDate || crop.createdAt)}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -152,7 +261,20 @@ const CropsHistory = () => {
                                             <i className="fas fa-calculator"></i>
                                             <div className="detail-content">
                                                 <span className="detail-label">Total Value</span>
-                                                <span className="detail-value">₹{crop.totalRate || (crop.quantity * crop.ratePerKg)}</span>
+                                                <span className="detail-value">
+                                                    ₹{(Number(crop.quantity || 0) * Number(crop.pricePerKg || 0)).toFixed(2)}
+                                                </span>
+
+                                            </div>
+                                        </div>
+
+                                        <div className="detail-box">
+                                            <i className="fas fa-hourglass-half" style={{ color: '#d97706' }}></i>
+                                            <div className="detail-content">
+                                                <span className="detail-label">Auto-Removal</span>
+                                                <span className="detail-value" style={{ color: '#059669', fontSize: '0.85rem' }}>
+                                                    {crop.expiryDuration || 7} {crop.expiryUnit === 'hours' ? 'Hours' : 'Days'}
+                                                </span>
                                             </div>
                                         </div>
 

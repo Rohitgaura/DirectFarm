@@ -1,61 +1,68 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const FeedbackSchema = new mongoose.Schema({
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: false
+const Feedback = sequelize.define('Feedback', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
+    }
+  },
+  userId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   },
   name: {
-    type: String,
-    required: false
+    type: DataTypes.STRING(100),
+    allowNull: true
   },
   email: {
-    type: String,
-    required: false
+    type: DataTypes.STRING(255),
+    allowNull: true
   },
   phone: {
-    type: String,
-    required: false
+    type: DataTypes.STRING(20),
+    allowNull: true
   },
   type: {
-    type: String,
-    enum: ['feedback', 'complaint', 'suggestion'],
-    default: 'feedback'
+    type: DataTypes.ENUM('feedback', 'complaint', 'suggestion'),
+    defaultValue: 'feedback'
   },
   priority: {
-    type: String,
-    enum: ['low', 'medium', 'high', 'urgent'],
-    default: 'medium'
+    type: DataTypes.ENUM('low', 'medium', 'high', 'urgent'),
+    defaultValue: 'medium'
   },
   subject: {
-    type: String,
-    required: [true, 'Please add a subject'],
-    trim: true,
-    maxlength: [100, 'Subject can not be more than 100 characters']
+    type: DataTypes.STRING(200),
+    allowNull: false
   },
   message: {
-    type: String,
-    required: [true, 'Please add a message'],
-    maxlength: [1000, 'Message can not be more than 1000 characters']
+    type: DataTypes.TEXT,
+    allowNull: false
   },
   status: {
-    type: String,
-    enum: ['new', 'read', 'in-progress', 'resolved'],
-    default: 'new'
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
+    type: DataTypes.ENUM('new', 'read', 'in-progress', 'resolved'),
+    defaultValue: 'new'
   }
+}, {
+  tableName: 'feedbacks',
+  timestamps: true
 });
 
-// Validate that contact info is present if user is not logged in
-FeedbackSchema.pre('save', function (next) {
-  if (!this.user && (!this.email || !this.phone)) {
-    return next(new Error('Email and Phone are required for guest feedback'));
-  }
-  next();
-});
+Feedback.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  values.user = values.userId;
+  return values;
+};
 
-module.exports = mongoose.model('Feedback', FeedbackSchema);
+module.exports = Feedback;

@@ -1,29 +1,52 @@
-// models/Transaction.js
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const transactionSchema = new mongoose.Schema({
-  order: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Order',
-    required: true
+const Transaction = sequelize.define('Transaction', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
+    }
+  },
+  orderId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'orders',
+      key: 'id'
+    }
   },
   paymentMethod: {
-    type: String,
-    enum: ['online', 'cod', 'bank_transfer'],
-    required: true
+    type: DataTypes.ENUM('online', 'cod', 'bank_transfer'),
+    allowNull: false
   },
   transactionAmount: {
-    type: Number,
-    required: true
+    type: DataTypes.FLOAT,
+    allowNull: false
   },
   transactionStatus: {
-    type: String,
-    enum: ['success', 'failed', 'pending', 'refunded'],
-    default: 'pending'
+    type: DataTypes.ENUM('success', 'failed', 'pending', 'refunded'),
+    defaultValue: 'pending'
   },
   transactionId: {
-    type: String
+    type: DataTypes.STRING(100),
+    allowNull: true
   }
-}, { timestamps: true });
+}, {
+  tableName: 'transactions',
+  timestamps: true
+});
 
-module.exports = mongoose.model('Transaction', transactionSchema);
+Transaction.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  values.order = values.orderId;
+  return values;
+};
+
+module.exports = Transaction;

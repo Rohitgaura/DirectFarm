@@ -1,33 +1,60 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const notificationSchema = new mongoose.Schema({
-    recipientId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    type: {
-        type: String,
-        required: true
-    },
-    message: {
-        type: String,
-        required: true
-    },
-    read: {
-        type: Boolean,
-        default: false
-    },
-    relatedId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: false
-    },
-    metadata: {
-        type: mongoose.Schema.Types.Mixed,
-        required: false
+const Notification = sequelize.define('Notification', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
     }
+  },
+  recipientId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
+  },
+  type: {
+    type: DataTypes.STRING(50),
+    allowNull: false
+  },
+  message: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  },
+  read: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  relatedId: {
+    type: DataTypes.UUID,
+    allowNull: true
+  },
+  metadata: {
+    type: DataTypes.JSONB,
+    allowNull: true
+  }
 }, {
-    timestamps: true
+  tableName: 'notifications',
+  timestamps: true
 });
 
-module.exports = mongoose.model('Notification', notificationSchema);
+Notification.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  return values;
+};
+
+Notification.findById = function (id) {
+  return Notification.findByPk(id);
+};
+
+module.exports = Notification;

@@ -1,42 +1,77 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const ratingSchema = new mongoose.Schema({
-    orderId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Order',
-        required: [true, 'Order ID is required']
-    },
-    ratedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: [true, 'Rater ID is required']
-    },
-    ratedUser: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: [true, 'Rated user ID is required']
-    },
-    rating: {
-        type: Number,
-        required: [true, 'Rating is required'],
-        min: 1,
-        max: 5
-    },
-    review: {
-        type: String,
-        trim: true,
-        maxlength: [500, 'Review cannot exceed 500 characters']
-    },
-    role: {
-        type: String,
-        enum: ['farmer', 'buyer'],
-        required: true
+const Rating = sequelize.define('Rating', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
     }
+  },
+  orderId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'orders',
+      key: 'id'
+    }
+  },
+  ratedBy: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  ratedUser: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  rating: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+    validate: {
+      min: 1,
+      max: 5
+    }
+  },
+  review: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  role: {
+    type: DataTypes.ENUM('farmer', 'buyer'),
+    allowNull: false
+  }
 }, {
-    timestamps: true
+  tableName: 'ratings',
+  timestamps: true,
+  indexes: [
+    {
+      unique: true,
+      fields: ['orderId', 'ratedBy']
+    }
+  ]
 });
 
-// Prevent duplicate ratings for the same order by the same user
-ratingSchema.index({ orderId: 1, ratedBy: 1 }, { unique: true });
+Rating.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  return values;
+};
 
-module.exports = mongoose.model('Rating', ratingSchema);
+Rating.findById = function (id) {
+  return Rating.findByPk(id);
+};
+
+module.exports = Rating;

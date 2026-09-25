@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import apiService from '../../services/api'; // ✅ Import apiService
+import socketService from '../../services/socket'; // ✅ Import socketService
+import syncManager from '../../services/sync'; // ✅ Import syncManager
 import authUtils from '../../utils/auth';
 import '../../styles/Navbar.css';
 import ChatModal from '../chat/ChatModal';
-import { toast } from 'react-toastify';
+// toast removed as it is unused
 
 
 const Navbar = () => {
@@ -31,11 +33,26 @@ const Navbar = () => {
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifFilter, setNotifFilter] = useState('unread_first'); // 'all', 'unread_first', 'unread'
 
   // Chat modal state
   const [showChat, setShowChat] = useState(false);
   const [chatPartner, setChatPartner] = useState(null);
   const [chatProduct, setChatProduct] = useState(null);
+
+  const displayedNotifications = React.useMemo(() => {
+    let list = [...notifications];
+    if (notifFilter === 'unread') {
+      list = list.filter(n => !n.read);
+    } else if (notifFilter === 'unread_first') {
+      list.sort((a, b) => {
+        if (!a.read && b.read) return -1;
+        if (a.read && !b.read) return 1;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+    }
+    return list;
+  }, [notifications, notifFilter]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -62,8 +79,11 @@ const Navbar = () => {
     };
   }, [isOpen, showNotifications, menuOpen]);
 
-  const loadNotifications = async () => {
-    if (user) {
+  // Stabilize user ID to prevent unnecessary re-renders
+  const userId = user?._id || user?.id;
+
+  const loadNotifications = useCallback(async () => {
+    if (userId) {
       try {
         const response = await apiService.getNotifications();
         if (response.success) {
@@ -74,11 +94,11 @@ const Navbar = () => {
         console.error('Error loading notifications:', error);
       }
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     // Only load notifications if user is logged in
-    if (!user) {
+    if (!userId) {
       setNotifications([]);
       setUnreadCount(0);
       return;
@@ -91,9 +111,9 @@ const Navbar = () => {
     const interval = setInterval(loadNotifications, 60000); // Poll every 60s
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]); // Only re-run when user ID changes, not on every user object change
+  }, [userId, loadNotifications]);
 
+  // eslint-disable-next-line no-unused-vars
   const markAsRead = async (id) => {
     try {
       await apiService.markNotificationRead(id);
@@ -104,9 +124,13 @@ const Navbar = () => {
   };
 
 
-  // ✅ Load user from authUtils immediately
+  // ✅ Initial Load & Event Listeners
   useEffect(() => {
     let isMounted = true;
+
+    // Initialize SyncManager
+    syncManager.init();
+
     let verifyTimeout = null;
     let isVerifying = false;
 
@@ -165,21 +189,12 @@ const Navbar = () => {
     // Load user immediately on mount
     loadUser();
 
-    // ✅ Sync across tabs & components - reload on storage change (debounced)
-    const handleStorageChange = (e) => {
-      if (e.key === 'user' || e.key === null) {
-        clearTimeout(verifyTimeout);
-        verifyTimeout = setTimeout(loadUser, 300);
-      }
-    };
-
     // ✅ Handle custom userChanged event (same tab) - debounced to prevent rapid calls
     const handleUserChanged = () => {
       clearTimeout(verifyTimeout);
       verifyTimeout = setTimeout(loadUser, 300);
     };
 
-    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('userChanged', handleUserChanged);
 
     // Also listen for focus event (when user returns to tab) - debounced
@@ -189,14 +204,52 @@ const Navbar = () => {
     };
     window.addEventListener('focus', handleFocus);
 
+    // ✅ Handle notification updates immediately
+    const handleNotificationUpdate = () => {
+      loadNotifications();
+    };
+    window.addEventListener('notificationUpdated', handleNotificationUpdate);
+
     return () => {
       isMounted = false;
       clearTimeout(verifyTimeout);
-      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('userChanged', handleUserChanged);
       window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('notificationUpdated', handleNotificationUpdate);
     };
-  }, []);
+  }, [loadNotifications]);
+
+  // ✅ Initialize socket and handle global message delivery
+  useEffect(() => {
+    if (user) {
+      const socket = socketService.connect();
+      socketService.join(user.id || user._id);
+
+      const handleNewMessage = (message) => {
+        // If message is for me, acknowledge delivery
+        // Check if I am the recipient (e.g. message.recipientId or inferred)
+        // The server emits 'newMessage' to the room which is usually user's room or private chat
+        // In this app, we join user's ID room. So any message sent to my ID room is for me.
+
+        const myId = user?.id || user?._id;
+        const senderId = typeof message.senderId === 'object' ? (message.senderId.id || message.senderId._id) : message.senderId;
+
+        if (String(senderId) !== String(myId)) {
+          socket.emit('messageDelivered', {
+            messageId: message.id || message._id,
+            senderId: senderId,
+            roomId: message.roomId
+          });
+        }
+      };
+
+      socket.on('newMessage', handleNewMessage);
+
+      return () => {
+        socket.off('newMessage', handleNewMessage);
+      };
+    }
+  }, [user]);
 
   // ✅ Re-check user state when location changes (after navigation)
   useEffect(() => {
@@ -212,15 +265,29 @@ const Navbar = () => {
         // Always update state from authUtils after navigation
         console.log('✅ Navbar: Syncing user state from authUtils after navigation');
         setUser(userData);
+        loadNotifications(); // Reload fresh notification read statuses on route change
       } catch (error) {
         console.error('❌ Navbar: Error parsing user after navigation:', error);
       }
     } else {
       console.log('ℹ️ Navbar: No auth found, clearing user state');
       setUser(null);
+      setNotifications([]);
+      setUnreadCount(0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname]); // Only re-run when location changes, not when user changes
+  }, [location.pathname]); // ✅ Run only on navigation change
+
+  const handleMarkAllRead = async () => {
+    try {
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+      await apiService.markAllNotificationsRead();
+      loadNotifications();
+    } catch (err) {
+      console.error('Error marking all notifications read:', err);
+    }
+  };
 
   // ✅ Menu toggle controls for mobile navigation
   const toggleMenu = () => setMenuOpen(!menuOpen);
@@ -395,45 +462,202 @@ const Navbar = () => {
                     position: 'absolute',
                     top: '40px',
                     right: '0',
-                    width: '300px',
+                    width: '320px',
                     backgroundColor: 'white',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                    borderRadius: '8px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                    borderRadius: '12px',
                     zIndex: 1000,
-                    maxHeight: '400px',
-                    overflowY: 'auto'
+                    maxHeight: '420px',
+                    overflowY: 'auto',
+                    border: '1px solid #e2e8f0'
                   }}>
-                    <div className="notification-header" style={{ padding: '12px', borderBottom: '1px solid #eee', fontWeight: 'bold' }}>
-                      Notifications
+                    <div className="notification-header" style={{
+                      padding: '12px 14px',
+                      borderBottom: '1px solid #e2e8f0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      background: '#f8fafc'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontWeight: '700', fontSize: '0.92rem', color: '#0f172a' }}>Notifications</span>
+                        {unreadCount > 0 ? (
+                          <span style={{ background: '#ef4444', color: 'white', fontSize: '0.72rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
+                            {unreadCount} new
+                          </span>
+                        ) : (
+                          <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: '600' }}>
+                            ✓ All read
+                          </span>
+                        )}
+                      </div>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMarkAllRead();
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#10b981',
+                            fontSize: '0.78rem',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            padding: '2px 6px',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          Mark all read
+                        </button>
+                      )}
                     </div>
-                    {notifications.length === 0 ? (
-                      <div className="no-notifications" style={{ padding: '20px', textAlign: 'center', color: '#666' }}>
-                        No notifications
+
+                    {/* Filter toolbar */}
+                    {notifications.length > 0 && (
+                      <div style={{
+                        display: 'flex',
+                        gap: '4px',
+                        padding: '6px 10px',
+                        background: '#f1f5f9',
+                        borderBottom: '1px solid #e2e8f0',
+                        fontSize: '0.78rem'
+                      }}>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setNotifFilter('unread_first'); }}
+                          style={{
+                            flex: 1,
+                            padding: '4px 6px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: notifFilter === 'unread_first' ? '#10b981' : '#ffffff',
+                            color: notifFilter === 'unread_first' ? '#ffffff' : '#475569',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          🔝 Unread First
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setNotifFilter('all'); }}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: notifFilter === 'all' ? '#10b981' : '#ffffff',
+                            color: notifFilter === 'all' ? '#ffffff' : '#475569',
+                            fontWeight: '600',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          All ({notifications.length})
+                        </button>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setNotifFilter('unread'); }}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              background: notifFilter === 'unread' ? '#ef4444' : '#ffffff',
+                              color: notifFilter === 'unread' ? '#ffffff' : '#ef4444',
+                              fontWeight: '700',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Unread ({unreadCount})
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {displayedNotifications.length === 0 ? (
+                      <div className="no-notifications" style={{ padding: '24px 16px', textAlign: 'center', color: '#64748b', fontSize: '0.9rem' }}>
+                        <i className="fas fa-bell-slash" style={{ fontSize: '1.5rem', color: '#cbd5e1', marginBottom: '8px', display: 'block' }}></i>
+                        {notifFilter === 'unread' ? 'No unread notifications' : 'No notifications'}
                       </div>
                     ) : (
-                      notifications.slice(0, 4).map(notification => (
+                      displayedNotifications.slice(0, 6).map(notification => (
                         <div
-                          key={notification._id}
-                          className={`notification-item ${!notification.read ? 'unread' : ''}`}
+                          key={notification.id || notification._id}
+                          className={`notification-item ${!notification.read ? 'unread' : 'read'}`}
                           style={{
-                            padding: '12px',
-                            borderBottom: '1px solid #eee',
-                            backgroundColor: notification.read ? 'white' : '#f0f7ff',
+                            padding: '12px 14px',
+                            borderBottom: '1px solid #f1f5f9',
+                            backgroundColor: notification.read ? '#ffffff' : '#f0f9ff',
                             cursor: 'pointer',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '5px'
+                            gap: '4px',
+                            transition: 'background-color 0.15s ease'
                           }}
                           onClick={() => {
-                            if (window.confirm("Mark as read?")) {
-                              markAsRead(notification._id);
+                            const notifId = notification.id || notification._id;
+                            const productId = notification.metadata?.productId || (notification.relatedId && notification.relatedId.productId);
+
+                            setShowNotifications(false);
+
+                            const currentUser = authUtils.getUser() || user;
+                            const userRole = currentUser?.role;
+
+                            if (productId && userRole === 'farmer') {
+                              setNotifications(prev => prev.map(n => {
+                                const nPid = n.metadata?.productId || (n.relatedId && n.relatedId.productId);
+                                if (String(nPid) === String(productId)) return { ...n, read: true };
+                                return n;
+                              }));
+                              const matchingUnread = notifications.filter(n => !n.read && (String(n.metadata?.productId) === String(productId) || String(n.relatedId && n.relatedId.productId) === String(productId))).length;
+                              setUnreadCount(prev => Math.max(0, prev - (matchingUnread || 1)));
+
+                              apiService.markProductNotificationsRead(productId).then(() => {
+                                loadNotifications();
+                              }).catch(console.error);
+                            } else if (notifId) {
+                              setNotifications(prev => prev.map(n => (n.id === notifId || n._id === notifId) ? { ...n, read: true } : n));
+                              setUnreadCount(prev => Math.max(0, prev - 1));
+                              apiService.markNotificationRead(notifId).then(() => {
+                                loadNotifications();
+                              }).catch(console.error);
+                            }
+
+                            if (notification.type === 'negotiation' || notification.type === 'negotiation_update') {
+                              if (userRole === 'farmer') {
+                                if (productId) {
+                                  navigate(`/farmer/product-bids/${productId}`);
+                                } else if (notification.relatedId) {
+                                  navigate(`/farmer/bids/${notification.relatedId}`);
+                                } else {
+                                  navigate('/farmer-dashboard');
+                                }
+                              } else {
+                                navigate('/negotiations');
+                              }
+                            } else if (notification.type === 'chat') {
+                              navigate('/messages');
+                            } else {
+                              if (userRole === 'farmer') {
+                                navigate('/farmer-dashboard');
+                              } else {
+                                navigate('/notifications');
+                              }
                             }
                           }}
                         >
-                          <p style={{ margin: '0', fontSize: '0.9rem' }}>{notification.message}</p>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.75rem', color: '#888' }}>
-                              {new Date(notification.createdAt).toLocaleDateString()}
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
+                            <p style={{ margin: '0', fontSize: '0.88rem', fontWeight: notification.read ? 'normal' : '600', color: notification.read ? '#475569' : '#0f172a', lineHeight: '1.4' }}>
+                              {notification.message}
+                            </p>
+                            {!notification.read && (
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6', flexShrink: 0, marginTop: '4px' }}></span>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px' }}>
+                            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                              {new Date(notification.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: notification.read ? '#10b981' : '#3b82f6', fontWeight: '600' }}>
+                              {notification.read ? '✓ Read' : '● New'}
                             </span>
                           </div>
                         </div>

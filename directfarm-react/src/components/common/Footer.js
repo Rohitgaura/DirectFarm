@@ -1,11 +1,34 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import socketService from '../../services/socket';
 import '../../styles/Footer.css';
 
 const Footer = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [liveUsers, setLiveUsers] = useState(1);
+
+  useEffect(() => {
+    // Connect to Socket.io service
+    const socket = socketService.connect();
+
+    if (socket) {
+      // Listen for the activeUsersCount broadcast event
+      socket.on('activeUsersCount', (count) => {
+        setLiveUsers(count);
+      });
+
+      // Request immediate count in case we missed the broadcast
+      socket.emit('getActiveUsersCount');
+    }
+
+    return () => {
+      if (socket) {
+        socket.off('activeUsersCount');
+      }
+    };
+  }, []);
 
   const scrollToSection = (sectionId) => {
     if (location.pathname === '/') {
@@ -90,6 +113,12 @@ const Footer = () => {
         </div>
         <div className="footer-bottom">
           <p>&copy; 2024 DirectFarm. All rights reserved.</p>
+          <div className="live-users-footer">
+            <span className="live-pulse-dot"></span>
+            <span className="live-users-text">
+              <strong>{liveUsers}</strong> {liveUsers === 1 ? 'user' : 'users'} online now
+            </span>
+          </div>
           <button onClick={scrollToTop} className="back-to-top">
             <i className="fas fa-arrow-up"></i>
             Back to Top

@@ -1,69 +1,85 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const orderSchema = new mongoose.Schema({
-  buyerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Buyer ID is required']
+const Order = sequelize.define('Order', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
   },
-  items: [{
-    productId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product',
-      required: true
-    },
-    quantity: {
-      type: Number,
-      required: true,
-      min: [1, 'Quantity must be at least 1']
-    },
-    price: {
-      type: Number,
-      required: true,
-      min: [0, 'Price cannot be negative']
-    },
-    farmerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: true
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
     }
-  }],
+  },
+  buyerId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
+  },
+  farmerId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
   totalAmount: {
-    type: Number,
-    required: [true, 'Total amount is required'],
-    min: [0, 'Total amount cannot be negative']
+    type: DataTypes.FLOAT,
+    allowNull: false,
+    defaultValue: 0
   },
   status: {
-    type: String,
-    enum: ['pending', 'confirmed', 'delivered', 'cancelled'],
-    default: 'pending'
+    type: DataTypes.ENUM('pending', 'confirmed', 'delivered', 'cancelled'),
+    defaultValue: 'pending'
+  },
+  shippingAddress: {
+    type: DataTypes.JSONB,
+    allowNull: true
+    // { street, city, state, pincode, phone }
+  },
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  paymentMethod: {
+    type: DataTypes.STRING(50),
+    defaultValue: 'cod'
+  },
+  paymentStatus: {
+    type: DataTypes.STRING(50),
+    defaultValue: 'pending'
   },
   isRatedByBuyer: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   isRatedBySeller: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   }
 }, {
-  timestamps: true,
-  createdAt: 'createdAt',
-  updatedAt: false // Only createdAt, no updatedAt
+  tableName: 'orders',
+  timestamps: true
 });
 
-// Calculate totalAmount before saving
-orderSchema.pre('save', function (next) {
-  if (this.items && this.items.length > 0 && !this.totalAmount) {
-    this.totalAmount = this.items.reduce((sum, item) => {
-      return sum + (item.price * item.quantity);
-    }, 0);
-  }
-  next();
-});
+Order.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  // Aliases for compatibility
+  values.buyer = values.Buyer || values.buyerId;
+  values.farmer = values.Farmer || values.farmerId;
+  return values;
+};
 
-// Index for faster queries
-orderSchema.index({ buyerId: 1 });
-orderSchema.index({ status: 1 });
-orderSchema.index({ createdAt: -1 });
+Order.findById = function (id) {
+  return Order.findByPk(id);
+};
 
-module.exports = mongoose.model('Order', orderSchema);
+module.exports = Order;

@@ -1,5 +1,3 @@
-import Cookies from 'js-cookie';
-
 const TOKEN_KEY = 'token';
 const USER_KEY = 'user';
 const LOGIN_TIME_KEY = 'loginTime';
@@ -8,25 +6,22 @@ const SESSION_DURATION = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
 export const authUtils = {
     // Set authentication data
     setAuth: (token, user) => {
-        // Set token in session cookie (no expires option means it's a session cookie)
-        Cookies.set(TOKEN_KEY, token);
+        // Use sessionStorage instead of Cookies/localStorage to isolate session to this tab
+        sessionStorage.setItem(TOKEN_KEY, token);
+        sessionStorage.setItem(USER_KEY, JSON.stringify(user));
+        sessionStorage.setItem(LOGIN_TIME_KEY, Date.now().toString());
 
-        // Set user data and login time in localStorage
-        localStorage.setItem(USER_KEY, JSON.stringify(user));
-        localStorage.setItem(LOGIN_TIME_KEY, Date.now().toString());
-
-        // Dispatch event for UI updates
+        // Dispatch event for UI updates within the SAME tab
         window.dispatchEvent(new Event('userChanged'));
-        window.dispatchEvent(new Event('storage'));
     },
 
     // Get authentication data
     getAuth: () => {
-        const token = Cookies.get(TOKEN_KEY);
-        const storedUser = localStorage.getItem(USER_KEY);
-        const loginTime = localStorage.getItem(LOGIN_TIME_KEY);
+        const token = sessionStorage.getItem(TOKEN_KEY);
+        const storedUser = sessionStorage.getItem(USER_KEY);
+        const loginTime = sessionStorage.getItem(LOGIN_TIME_KEY);
 
-        // If no token (browser closed) or no user data, return null
+        // If no token or no user data, return null
         if (!token || !storedUser || !loginTime) {
             return null;
         }
@@ -64,13 +59,12 @@ export const authUtils = {
 
     // Clear authentication data (logout)
     clearAuth: () => {
-        Cookies.remove(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-        localStorage.removeItem(LOGIN_TIME_KEY);
+        sessionStorage.removeItem(TOKEN_KEY);
+        sessionStorage.removeItem(USER_KEY);
+        sessionStorage.removeItem(LOGIN_TIME_KEY);
 
-        // Dispatch event for UI updates
+        // Dispatch event for UI updates within the SAME tab
         window.dispatchEvent(new Event('userChanged'));
-        window.dispatchEvent(new Event('storage'));
     },
 
     // Check if authenticated
@@ -81,9 +75,8 @@ export const authUtils = {
     // Update user data without changing token/session
     updateUser: (user) => {
         if (authUtils.isAuthenticated()) {
-            localStorage.setItem(USER_KEY, JSON.stringify(user));
+            sessionStorage.setItem(USER_KEY, JSON.stringify(user));
             window.dispatchEvent(new Event('userChanged'));
-            window.dispatchEvent(new Event('storage'));
         }
     }
 };

@@ -549,6 +549,104 @@
   font-size: 1.2rem;
 }
 
+/* ============ Live Stats Styles ============ */
+
+.live-stats-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.live-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.live-stat-icon-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  transition: transform 0.4s ease, box-shadow 0.4s ease;
+}
+
+.live-stat-card:hover .live-stat-icon-wrapper {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+}
+
+.live-stat-icon-wrapper i {
+  font-size: 2rem;
+  color: white;
+  filter: drop-shadow(1px 1px 3px rgba(0, 0, 0, 0.3));
+}
+
+.live-stat-number {
+  font-size: 3.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #fff 0%, #ffd700 50%, #ff6b6b 100%);
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: statTextShine 4s ease-in-out infinite;
+  text-shadow: none;
+  margin-bottom: 0.5rem;
+}
+
+@keyframes statTextShine {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Loading Skeleton Styles */
+
+.skeleton-pulse {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.18) 50%,
+    rgba(255, 255, 255, 0.08) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 12px;
+}
+
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-icon {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+}
+
+.skeleton-number {
+  width: 120px;
+  height: 40px;
+  margin: 1rem auto 0.5rem;
+}
+
+.skeleton-title {
+  width: 160px;
+  height: 22px;
+  margin: 0.5rem auto;
+}
+
+.skeleton-desc {
+  width: 200px;
+  height: 16px;
+  margin: 0.3rem auto;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .hero-title {
@@ -576,6 +674,10 @@
   .highlights-grid,
   .impact-grid {
     grid-template-columns: 1fr;
+  }
+
+  .live-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .highlight-card,
@@ -606,6 +708,14 @@
   .btn {
     padding: 1rem 2rem;
     font-size: 1rem;
+  }
+
+  .live-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .live-stat-number {
+    font-size: 2.5rem;
   }
 }
 

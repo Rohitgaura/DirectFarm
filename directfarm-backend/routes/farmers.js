@@ -1,34 +1,48 @@
 const express = require('express');
-const { protect, authorize } = require('../middleware/auth');
-const User = require('../models/User');
-const Product = require('../models/Product');
-const Order = require('../models/Order');
+const { Op } = require('sequelize');
+const { protect } = require('../middleware/auth');
+const { User, Product, Order, OrderItem } = require('../models');
 
 const router = express.Router();
+
+// Helper to format order for response
+const formatOrder = (order) => {
+  if (!order) return null;
+  const json = order.toJSON();
+  json.buyer = json.buyer || (order.buyer ? order.buyer.toJSON() : null);
+  if (order.items) {
+    json.items = order.items.map(item => {
+      const itemJson = item.toJSON();
+      itemJson.product = item.product ? item.product.toJSON() : null;
+      return itemJson;
+    });
+  }
+  return json;
+};
 
 // @route   GET /api/farmers
 // @desc    Get all farmers
 // @access  Public
 router.get('/', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
 
-    const farmers = await User.find({ role: 'farmer' })
-      .select('name email phone address isVerified createdAt')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    const total = await User.countDocuments({ role: 'farmer' });
+    const { count, rows: farmers } = await User.findAndCountAll({
+      where: { role: 'farmer' },
+      attributes: ['id', 'name', 'email', 'phone', 'address', 'averageRating', 'totalRatings', 'experienceYears', 'createdAt'],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
 
     res.json({
       success: true,
       count: farmers.length,
-      total,
+      total: count,
       page,
-      pages: Math.ceil(total / limit),
+      pages: Math.ceil(count / limit),
       data: farmers
     });
   } catch (error) {
@@ -45,49 +59,41 @@ router.get('/', async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
   try {
-    console.log(`🔍 [DEBUG] Fetching farmer profile for ID: ${req.params.id}`);
-
-    const userCheck = await User.findById(req.params.id);
-    console.log(`🔍 [DEBUG] User check: ${userCheck ? `Found, Role: ${userCheck.role}` : 'Not Found'}`);
-
     const farmer = await User.findOne({
-      _id: req.params.id,
-      role: 'farmer'
-    }).select('-password');
+      where: {
+        id: req.params.id,
+        role: 'farmer'
+      }
+    });
 
     if (!farmer) {
-      console.log('❌ [DEBUG] Farmer not found query returned null');
       return res.status(404).json({
         success: false,
         message: 'Farmer not found'
       });
     }
 
-    // Get farmer's products
-    const products = await Product.find({
-      farmerId: req.params.id,
-      quantity: { $gt: 0 }
-    }).sort({ createdAt: -1 });
+    const products = await Product.findAll({
+      where: {
+        farmerId: req.params.id,
+        quantity: { [Op.gt]: 0 }
+      },
+      order: [['createdAt', 'DESC']]
+    });
 
-    // Get farmer's order statistics
-    const orderStats = await Order.aggregate([
-      { $match: { 'items.farmerId': farmer._id } },
-      {
-        $group: {
-          _id: null,
-          totalOrders: { $sum: 1 },
-          totalRevenue: { $sum: '$totalAmount' },
-          completedOrders: {
-            $sum: { $cond: [{ $eq: ['$status', 'delivered'] }, 1, 0] }
-          }
-        }
-      }
-    ]);
+    // Orders statistics
+    const orders = await Order.findAll({
+      where: { farmerId: farmer.id }
+    });
 
-    const stats = orderStats[0] || {
-      totalOrders: 0,
-      totalRevenue: 0,
-      completedOrders: 0
+    const totalOrders = orders.length;
+    const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+    const completedOrders = orders.filter(o => o.status === 'delivered').length;
+
+    const stats = {
+      totalOrders,
+      totalRevenue,
+      completedOrders
     };
 
     res.json({
@@ -115,29 +121,26 @@ router.get('/:id', async (req, res) => {
 // @access  Public
 router.get('/:id/products', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
 
-    const products = await Product.find({
-      farmerId: req.params.id,
-      quantity: { $gt: 0 }
-    })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    const total = await Product.countDocuments({
-      farmerId: req.params.id,
-      quantity: { $gt: 0 }
+    const { count, rows: products } = await Product.findAndCountAll({
+      where: {
+        farmerId: req.params.id,
+        quantity: { [Op.gt]: 0 }
+      },
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
     });
 
     res.json({
       success: true,
       count: products.length,
-      total,
+      total: count,
       page,
-      pages: Math.ceil(total / limit),
+      pages: Math.ceil(count / limit),
       data: products
     });
   } catch (error) {
@@ -154,34 +157,41 @@ router.get('/:id/products', async (req, res) => {
 // @access  Private
 router.get('/:id/orders', protect, async (req, res) => {
   try {
-    // Check if user is the farmer or admin
-    if (req.params.id !== req.user._id.toString() && req.user.role !== 'admin') {
+    if (req.params.id !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to view these orders'
       });
     }
 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
 
-    const orders = await Order.find({ farmer: req.params.id })
-      .populate('buyer', 'name email phone')
-      .populate('items.product', 'name price images')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const { count, rows: orders } = await Order.findAndCountAll({
+      where: { farmerId: req.params.id },
+      include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name', 'email', 'phone'] },
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'pricePerKg', 'images'] }]
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset
+    });
 
-    const total = await Order.countDocuments({ farmer: req.params.id });
+    const formattedOrders = orders.map(formatOrder);
 
     res.json({
       success: true,
-      count: orders.length,
-      total,
+      count: formattedOrders.length,
+      total: count,
       page,
-      pages: Math.ceil(total / limit),
-      data: orders
+      pages: Math.ceil(count / limit),
+      data: formattedOrders
     });
   } catch (error) {
     console.error('Get farmer orders error:', error);
@@ -197,81 +207,51 @@ router.get('/:id/orders', protect, async (req, res) => {
 // @access  Private (Farmer only)
 router.get('/:id/dashboard', protect, async (req, res) => {
   try {
-    // Check if user is the farmer
-    if (req.params.id !== req.user._id.toString()) {
+    if (req.params.id !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Not authorized to access this dashboard'
       });
     }
 
-    // Get recent orders
-    const recentOrders = await Order.find({ farmer: req.params.id })
-      .populate('buyer', 'name email phone')
-      .populate('items.product', 'name price images')
-      .sort({ createdAt: -1 })
-      .limit(5);
-
-    // Get product statistics
-    const productStats = await Product.aggregate([
-      { $match: { farmer: req.user._id } },
-      {
-        $group: {
-          _id: null,
-          totalProducts: { $sum: 1 },
-          availableProducts: { $sum: { $cond: ['$isAvailable', 1, 0] } },
-          totalValue: { $sum: { $multiply: ['$price', '$quantity'] } }
+    const recentOrders = await Order.findAll({
+      where: { farmerId: req.params.id },
+      include: [
+        { model: User, as: 'buyer', attributes: ['id', 'name', 'email', 'phone'] },
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [{ model: Product, as: 'product', attributes: ['id', 'name', 'pricePerKg', 'images'] }]
         }
-      }
-    ]);
+      ],
+      order: [['createdAt', 'DESC']],
+      limit: 5
+    });
 
-    // Get order statistics
-    const orderStats = await Order.aggregate([
-      { $match: { farmer: req.user._id } },
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 },
-          revenue: { $sum: '$totalAmount' }
-        }
-      }
-    ]);
+    const products = await Product.findAll({ where: { farmerId: req.params.id } });
+    const totalProducts = products.length;
+    const availableProducts = products.filter(p => p.quantity > 0).length;
+    const totalValue = products.reduce((sum, p) => sum + (p.pricePerKg * p.quantity), 0);
 
-    // Get monthly revenue for the last 6 months
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-
-    const monthlyRevenue = await Order.aggregate([
-      {
-        $match: {
-          farmer: req.user._id,
-          createdAt: { $gte: sixMonthsAgo },
-          status: 'delivered'
-        }
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' }
-          },
-          revenue: { $sum: '$totalAmount' }
-        }
-      },
-      { $sort: { '_id.year': 1, '_id.month': 1 } }
-    ]);
+    const allOrders = await Order.findAll({ where: { farmerId: req.params.id } });
+    const orderStats = [
+      { _id: 'pending', count: allOrders.filter(o => o.status === 'pending').length },
+      { _id: 'confirmed', count: allOrders.filter(o => o.status === 'confirmed').length },
+      { _id: 'delivered', count: allOrders.filter(o => o.status === 'delivered').length },
+      { _id: 'cancelled', count: allOrders.filter(o => o.status === 'cancelled').length }
+    ];
 
     res.json({
       success: true,
       data: {
-        recentOrders,
-        productStats: productStats[0] || {
-          totalProducts: 0,
-          availableProducts: 0,
-          totalValue: 0
+        recentOrders: recentOrders.map(formatOrder),
+        productStats: {
+          totalProducts,
+          availableProducts,
+          totalValue
         },
         orderStats,
-        monthlyRevenue
+        monthlyRevenue: []
       }
     });
   } catch (error) {

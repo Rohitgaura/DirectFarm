@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
 import '../../styles/HelpFeedback.css';
+import { ComplaintTrackingModal } from './ComplaintTrackingModal';
 
 const HelpFeedback = () => {
   const [user, setUser] = useState(null);
@@ -20,6 +21,8 @@ const HelpFeedback = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [lastRequestId, setLastRequestId] = useState(null);
+  const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
 
   useEffect(() => {
     const currentUser = authUtils.getUser();
@@ -78,24 +81,39 @@ const HelpFeedback = () => {
     }
 
     setIsSubmitting(true);
+    setLastRequestId(null);
 
     try {
       const submissionData = {
         ...formData,
-        user: user?._id || user?.id
+        user: user?._id || user?.id,
+        // Ensure description field matches what backend expects for complaints
+        description: formData.message
       };
 
-      const response = await apiService.submitFeedback(submissionData);
+      let response;
+      if (formData.type === 'complaint') {
+        response = await apiService.submitComplaint(submissionData);
+      } else {
+        response = await apiService.submitFeedback(submissionData);
+      }
 
-      if (response.success) {
+      if (response.success || (formData.type === 'complaint' && response.requestId)) {
         setSubmitSuccess(true);
-        toast.success('Thank you for your feedback!');
 
-        // Reset form after delay
+        if (formData.type === 'complaint' && response.requestId) {
+          setLastRequestId(response.requestId);
+          toast.success(`Complaint Submitted! Request ID: ${response.requestId}`);
+        } else {
+          toast.success('Thank you for your feedback!');
+        }
+
+        // Reset form after delay (longer delay if there is a request ID to read)
         setTimeout(() => {
           setSubmitSuccess(false);
+          setLastRequestId(null);
           setFormData({
-            type: 'feedback',
+            type: 'feedback', // Reset to default
             subject: '',
             message: '',
             email: '',
@@ -103,14 +121,14 @@ const HelpFeedback = () => {
             priority: 'medium',
             name: ''
           });
-        }, 3000);
+        }, 8000);
       } else {
         throw new Error(response.message || 'Submission failed');
       }
 
     } catch (error) {
-      console.error('Error submitting feedback:', error);
-      toast.error(error.message || 'Failed to submit feedback. Please try again.');
+      console.error('Error submitting form:', error);
+      toast.error(error.message || 'Failed to submit. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -124,12 +142,20 @@ const HelpFeedback = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="page-header">
-          <h1>
-            <i className="fas fa-headset"></i>
-            Help & Feedback
-          </h1>
-          <p>We'd love to hear from you! Send us your feedback, complaints, or suggestions.</p>
+        <div className="page-header d-flex justify-content-between align-items-center">
+          <div>
+            <h1>
+              <i className="fas fa-headset"></i>
+              Help & Feedback
+            </h1>
+            <p>We'd love to hear from you! Send us your feedback, complaints, or suggestions.</p>
+          </div>
+          <button
+            className="btn btn-outline-primary"
+            onClick={() => setIsTrackingModalOpen(true)}
+          >
+            Track Complaint Status
+          </button>
         </div>
 
         <div className="content-body">
@@ -142,12 +168,22 @@ const HelpFeedback = () => {
               <div className="success-icon">
                 <i className="fas fa-check-circle"></i>
               </div>
-              <h2>Feedback Received!</h2>
-              <p>Thank you for helping us improve DirectFarm. We will review your message shortly.</p>
+              <h2>{lastRequestId ? 'Complaint Submitted!' : 'Feedback Received!'}</h2>
+
+              {lastRequestId && (
+                <div className="alert alert-info my-3">
+                  <strong>Your Request ID is: {lastRequestId}</strong>
+                  <p className="mb-0 mt-1 small">Please save this ID to track your complaint status.</p>
+                </div>
+              )}
+
+              <p>{lastRequestId ? 'We will process your complaint shortly.' : 'Thank you for helping us improve DirectFarm. We will review your message shortly.'}</p>
+
               <button
                 className="submit-another-btn"
                 onClick={() => {
                   setSubmitSuccess(false);
+                  setLastRequestId(null);
                   setFormData({
                     type: 'feedback',
                     subject: '',
@@ -305,6 +341,14 @@ const HelpFeedback = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Tracking Modal */}
+      {isTrackingModalOpen && (
+        <ComplaintTrackingModal
+          isOpen={isTrackingModalOpen}
+          onClose={() => setIsTrackingModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

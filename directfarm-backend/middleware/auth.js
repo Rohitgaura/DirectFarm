@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { User } = require('../models');
 
 // Protect routes - require authentication
 const protect = async (req, res, next) => {
@@ -15,8 +15,7 @@ const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret');
 
       // Get user from token
-      req.user = await User.findById(decoded.id).select('-password');
-      
+      req.user = await User.findByPk(decoded.id);
 
       if (!req.user) {
         return res.status(401).json({
@@ -27,7 +26,7 @@ const protect = async (req, res, next) => {
 
       next();
     } catch (error) {
-      console.error('Token verification error:', error);
+      console.error('Token verification error:', error.message);
       return res.status(401).json({
         success: false,
         message: 'Not authorized, token failed'

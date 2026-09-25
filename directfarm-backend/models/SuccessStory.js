@@ -1,76 +1,87 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const successStorySchema = new mongoose.Schema({
-    farmerId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: [true, 'Farmer ID is required']
-    },
-    farmerName: {
-        type: String,
-        required: [true, 'Farmer name is required'],
-        trim: true
-    },
-    location: {
-        village: String,
-        district: String,
-        state: String
-    },
-    story: {
-        type: String,
-        required: [true, 'Story is required'],
-        minlength: [50, 'Story must be at least 50 characters'],
-        maxlength: [1000, 'Story cannot exceed 1000 characters']
-    },
-    beforeIncome: {
-        type: Number,
-        required: [true, 'Before income is required'],
-        min: [0, 'Income cannot be negative']
-    },
-    currentIncome: {
-        type: Number,
-        required: [true, 'Current income is required'],
-        min: [0, 'Income cannot be negative']
-    },
-    improvements: [{
-        type: String,
-        trim: true
-    }],
-    cropTypes: [{
-        type: String,
-        trim: true
-    }],
-    yearsWithPlatform: {
-        type: Number,
-        default: 0,
-        min: [0, 'Years cannot be negative']
-    },
-    isApproved: {
-        type: Boolean,
-        default: false
-    },
-    isFeatured: {
-        type: Boolean,
-        default: false
+const SuccessStory = sequelize.define('SuccessStory', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
     }
+  },
+  farmerId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  farmerName: {
+    type: DataTypes.STRING(100),
+    allowNull: false
+  },
+  location: {
+    type: DataTypes.JSONB,
+    allowNull: true
+    // { village, district, state }
+  },
+  story: {
+    type: DataTypes.TEXT,
+    allowNull: false
+  },
+  beforeIncome: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+    defaultValue: 0
+  },
+  currentIncome: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+    defaultValue: 0
+  },
+  improvements: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  cropTypes: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  yearsWithPlatform: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  isApproved: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  },
+  isFeatured: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  }
 }, {
-    timestamps: true
+  tableName: 'success_stories',
+  timestamps: true
 });
 
-// Virtual for income improvement percentage
-successStorySchema.virtual('incomeImprovement').get(function () {
-    if (this.beforeIncome === 0) return 0;
-    return Math.round(((this.currentIncome - this.beforeIncome) / this.beforeIncome) * 100);
-});
+SuccessStory.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  if (values.beforeIncome > 0) {
+    values.incomeImprovement = Math.round(((values.currentIncome - values.beforeIncome) / values.beforeIncome) * 100);
+  } else {
+    values.incomeImprovement = 0;
+  }
+  return values;
+};
 
-// Index for faster queries
-successStorySchema.index({ farmerId: 1 });
-successStorySchema.index({ isApproved: 1 });
-successStorySchema.index({ isFeatured: 1 });
-successStorySchema.index({ createdAt: -1 });
+SuccessStory.findById = function (id) {
+  return SuccessStory.findByPk(id);
+};
 
-// Ensure virtuals are included in JSON
-successStorySchema.set('toJSON', { virtuals: true });
-successStorySchema.set('toObject', { virtuals: true });
-
-module.exports = mongoose.model('SuccessStory', successStorySchema);
+module.exports = SuccessStory;

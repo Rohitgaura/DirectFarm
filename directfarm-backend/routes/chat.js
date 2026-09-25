@@ -1,189 +1,155 @@
 const express = require('express');
 const router = express.Router();
-const Message = require('../models/Message');
-const Notification = require('../models/Notification');
-const User = require('../models/User');
-const Product = require('../models/Product');
+const { Op } = require('sequelize');
+const { ChatRoom, Message, User } = require('../models');
 const { protect } = require('../middleware/auth');
 
-// Send a message
-router.post('/send', protect, async (req, res) => {
-    try {
-        const { recipientId, productId, message } = req.body;
-        const senderId = req.user.id;
+// POST /chat/room -> find or create a chat room
+router.post('/room', protect, async (req, res) => {
+  try {
+    const { targetUserId } = req.body;
+    const currentUserId = req.user.id;
 
-        // Validate recipient exists
-        const recipient = await User.findById(recipientId);
-        if (!recipient) {
-            return res.status(404).json({ success: false, message: 'Recipient not found' });
-        }
-
-        // Create message
-        const newMessage = new Message({
-            senderId,
-            recipientId,
-            productId: productId || null,
-            message
-        });
-
-        await newMessage.save();
-
-        // Get product info for notification context
-        let productInfo = null;
-        if (productId) {
-            productInfo = await Product.findById(productId).select('name');
-        }
-
-        // Create notification for recipient
-        const notificationMessage = productInfo
-            ? `New message from ${req.user.name} about ${productInfo.name}`
-            : `New message from ${req.user.name}`;
-
-        const notification = new Notification({
-            recipientId,
-            type: 'chat',
-            message: notificationMessage,
-            relatedId: newMessage._id,
-            metadata: {
-                senderId,
-                senderName: req.user.name,
-                productId: productId || null,
-                productName: productInfo?.name || null
-            }
-        });
-
-        await notification.save();
-
-        // Populate sender info before returning
-        await newMessage.populate('senderId', 'name email role');
-
-        res.status(201).json({ success: true, data: newMessage });
-    } catch (error) {
-        console.error('Error sending message:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
+    if (!targetUserId) {
+      return res.status(400).json({ success: false, message: 'Target user ID is required' });
     }
+
+    const id1 = currentUserId.toString();
+    const id2 = targetUserId.toString();
+
+    if (id1 === id2) {
+      return res.status(400).json({ success: false, message: 'Cannot chat with yourself' });
+    }
+
+    const smallId = id1 < id2 ? id1 : id2;
+    const largeId = id1 > id2 ? id1 : id2;
+
+    let chatRoom = await ChatRoom.findOne({
+      where: { user1: smallId, user2: largeId }
+    });
+
+    if (chatRoom) {
+      return res.json({ success: true, roomId: chatRoom.id, chatRoom });
+    }
+
+    chatRoom = await ChatRoom.create({
+      user1: smallId,
+      user2: largeId,
+      lastMessage: '',
+      lastTime: new Date()
+    });
+
+    res.status(201).json({ success: true, roomId: chatRoom.id, chatRoom });
+  } catch (error) {
+    console.error('Error in /chat/room:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
 });
 
-// Get conversation with a specific user
-router.get('/conversation/:userId', protect, async (req, res) => {
-    try {
-        const currentUserId = req.user.id;
-        const otherUserId = req.params.userId;
+// POST /chat/message -> send message
+router.post('/message', protect, async (req, res) => {
+  try {
+    const { roomId, text } = req.body;
+    const senderId = req.user.id;
 
-        // Get all messages between these two users
-        const messages = await Message.find({
-            $or: [
-                { senderId: currentUserId, recipientId: otherUserId },
-                { senderId: otherUserId, recipientId: currentUserId }
-            ]
-        })
-            .populate('senderId', 'name email role')
-            .populate('recipientId', 'name email role')
-            .populate('productId', 'name')
-            .sort({ createdAt: 1 }); // Oldest first
-
-        // Mark messages from other user as read
-        await Message.updateMany(
-            {
-                senderId: otherUserId,
-                recipientId: currentUserId,
-                read: false
-            },
-            { read: true }
-        );
-
-        res.json({ success: true, data: messages });
-    } catch (error) {
-        console.error('Error fetching conversation:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
+    if (!roomId || !text) {
+      return res.status(400).json({ success: false, message: 'roomId and text are required' });
     }
+
+    const newMessage = await Message.create({
+      roomId,
+      senderId,
+      text,
+      time: new Date()
+    });
+
+    await ChatRoom.update(
+      {
+        lastMessage: text,
+        lastMessageStatus: 'sent',
+        lastMessageSenderId: senderId,
+        lastTime: new Date()
+      },
+      { where: { id: roomId } }
+    );
+
+    const chatRoom = await ChatRoom.findByPk(roomId);
+
+    if (chatRoom && req.io && req.onlineUsers) {
+      const recipientId = chatRoom.user1 === senderId ? chatRoom.user2 : chatRoom.user1;
+      const recipientSocketId = req.onlineUsers.get(recipientId);
+
+      if (recipientSocketId) {
+        req.io.to(recipientSocketId).emit('newMessage', newMessage.toJSON());
+      }
+    }
+
+    res.status(201).json({ success: true, data: newMessage });
+  } catch (error) {
+    console.error('Error in /chat/message:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
 });
 
-// Get all conversations (list of users you've chatted with)
-router.get('/conversations', protect, async (req, res) => {
-    try {
-        const userId = req.user.id;
+// GET /chat/rooms/:userId -> get chat history list
+router.get('/rooms/:userId', protect, async (req, res) => {
+  try {
+    const userId = req.user.id;
 
-        // Get all unique users who have exchanged messages with current user
-        const messages = await Message.find({
-            $or: [
-                { senderId: userId },
-                { recipientId: userId }
-            ]
-        })
-            .populate('senderId', 'name email role')
-            .populate('recipientId', 'name email role')
-            .populate('productId', 'name')
-            .sort({ createdAt: -1 });
+    const rooms = await ChatRoom.findAll({
+      where: {
+        [Op.or]: [{ user1: userId }, { user2: userId }]
+      },
+      include: [
+        { model: User, as: 'User1', attributes: ['id', 'name', 'email', 'role'] },
+        { model: User, as: 'User2', attributes: ['id', 'name', 'email', 'role'] }
+      ],
+      order: [['lastTime', 'DESC']]
+    });
 
-        // Group by conversation partner
-        const conversations = {};
+    const formattedRooms = rooms.map(room => {
+      const json = room.toJSON();
+      json.user1 = room.User1 ? room.User1.toJSON() : json.user1;
+      json.user2 = room.User2 ? room.User2.toJSON() : json.user2;
+      return json;
+    });
 
-        messages.forEach(msg => {
-            // Skip if sender or recipient user no longer exists (was deleted)
-            if (!msg.senderId || !msg.recipientId) {
-                return;
-            }
-
-            const partnerId = msg.senderId._id.toString() === userId
-                ? msg.recipientId._id.toString()
-                : msg.senderId._id.toString();
-
-            if (!conversations[partnerId]) {
-                const partner = msg.senderId._id.toString() === userId
-                    ? msg.recipientId
-                    : msg.senderId;
-
-                conversations[partnerId] = {
-                    user: partner,
-                    lastMessage: msg,
-                    unreadCount: 0
-                };
-            }
-        });
-
-
-        // Count unread messages for each conversation
-        for (const partnerId in conversations) {
-            const unreadCount = await Message.countDocuments({
-                senderId: partnerId,
-                recipientId: userId,
-                read: false
-            });
-            conversations[partnerId].unreadCount = unreadCount;
-        }
-
-        const conversationList = Object.values(conversations);
-
-        res.json({ success: true, data: conversationList });
-    } catch (error) {
-        console.error('Error fetching conversations:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    res.json({ success: true, data: formattedRooms });
+  } catch (error) {
+    console.error('Error in /chat/rooms:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
 });
 
-// Mark message as read
-router.put('/:messageId/read', protect, async (req, res) => {
-    try {
-        const message = await Message.findById(req.params.messageId);
+// GET /chat/messages/:roomId -> get messages for a room (with pagination)
+router.get('/messages/:roomId', protect, async (req, res) => {
+  try {
+    const { roomId } = req.params;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 50;
+    const offset = (page - 1) * limit;
 
-        if (!message) {
-            return res.status(404).json({ success: false, message: 'Message not found' });
-        }
+    const messages = await Message.findAll({
+      where: { roomId },
+      include: [{ model: User, as: 'sender', attributes: ['id', 'name'] }],
+      order: [['time', 'DESC']],
+      limit,
+      offset
+    });
 
-        // Only recipient can mark as read
-        if (message.recipientId.toString() !== req.user.id) {
-            return res.status(403).json({ success: false, message: 'Not authorized' });
-        }
+    const formattedMessages = messages.map(m => {
+      const json = m.toJSON();
+      if (m.sender) {
+        json.senderId = m.sender.toJSON();
+      }
+      return json;
+    }).reverse();
 
-        message.read = true;
-        await message.save();
-
-        res.json({ success: true, data: message });
-    } catch (error) {
-        console.error('Error marking message as read:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
-    }
+    res.json({ success: true, count: formattedMessages.length, data: formattedMessages });
+  } catch (error) {
+    console.error('Error in /chat/messages:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
 });
 
 module.exports = router;

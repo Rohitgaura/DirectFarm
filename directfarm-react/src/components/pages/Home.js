@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import apiService from '../../services/api'; // ✅ import apiService
+import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
-import TopRatedFarmers from '../home/TopRatedFarmers';
+import AnimatedCounter from '../common/AnimatedCounter';
 import '../../styles/Home.css';
 
 const Home = () => {
   const [user, setUser] = useState(null);
+  const [liveStats, setLiveStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   // ✅ Load and validate user from localStorage
   useEffect(() => {
@@ -79,6 +81,30 @@ const Home = () => {
     };
   }, []);
 
+  // ✅ Fetch live platform stats
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchStats = async () => {
+      try {
+        const response = await apiService.getPublicStats();
+        if (isMounted && response.success) {
+          setLiveStats(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching public stats:', error);
+        // Fallback handled in render
+      } finally {
+        if (isMounted) {
+          setStatsLoading(false);
+        }
+      }
+    };
+
+    fetchStats();
+    return () => { isMounted = false; };
+  }, []);
+
   // ✅ Highlights & Impact data
   const highlights = [
     {
@@ -103,23 +129,25 @@ const Home = () => {
     }
   ];
 
-  const impactMetrics = [
-    {
-      number: '30-50%',
-      title: 'Increase in Farmer Income',
-      description: 'Direct market access eliminates middlemen margins'
-    },
-    {
-      number: '40%',
-      title: 'Reduction in Food Wastage',
-      description: 'Faster sales cycles and better market reach'
-    },
-    {
-      number: '1000+',
-      title: 'Farmers Connected',
-      description: 'Growing network across Bihar and neighboring states'
+  // Live stats cards config — driven by API data when available
+  const getLiveStatsCards = () => {
+    if (!liveStats) {
+      // Fallback to hardcoded values if API failed
+      return [
+        { icon: 'fas fa-users', value: 1000, suffix: '+', title: 'Farmers Connected', description: 'Growing network across Bihar and neighboring states', color: '#4CAF50' },
+        { icon: 'fas fa-store', value: 500, suffix: '+', title: 'Active Buyers', description: 'Retailers and wholesalers on the platform', color: '#2196F3' },
+        { icon: 'fas fa-seedling', value: 2000, suffix: '+', title: 'Products Listed', description: 'Fresh produce available for direct purchase', color: '#FF9800' },
+        { icon: 'fas fa-shopping-bag', value: 5000, suffix: '+', title: 'Orders Completed', description: 'Successful transactions on the platform', color: '#E91E63' },
+      ];
     }
-  ];
+
+    return [
+      { icon: 'fas fa-users', value: liveStats.totalFarmers, suffix: '+', title: 'Farmers Connected', description: 'Growing network across Bihar and neighboring states', color: '#4CAF50' },
+      { icon: 'fas fa-store', value: liveStats.totalBuyers, suffix: '+', title: 'Active Buyers', description: 'Retailers and wholesalers on the platform', color: '#2196F3' },
+      { icon: 'fas fa-seedling', value: liveStats.totalProducts, suffix: '+', title: 'Products Listed', description: 'Fresh produce available for direct purchase', color: '#FF9800' },
+      { icon: 'fas fa-shopping-bag', value: liveStats.totalOrders, suffix: '+', title: 'Orders Completed', description: 'Successful transactions on the platform', color: '#E91E63' },
+    ];
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -249,9 +277,6 @@ const Home = () => {
         </motion.div>
       </motion.section>
 
-      {/* Top Rated Farmers Section */}
-      <TopRatedFarmers />
-
       {/* Highlights Section */}
       <motion.section
         id="highlights"
@@ -322,7 +347,7 @@ const Home = () => {
         </div>
       </motion.section>
 
-      {/* Impact Section */}
+      {/* Live Stats / Impact Section */}
       <motion.section
         id="impact"
         className="testimonials"
@@ -335,19 +360,43 @@ const Home = () => {
           <motion.h2 className="section-title" variants={itemVariants}>
             Our Impact
           </motion.h2>
-          <div className="impact-grid">
-            {impactMetrics.map((metric, index) => (
-              <motion.div
-                key={index}
-                className="impact-card"
-                variants={itemVariants}
-                whileHover={{ y: -8, scale: 1.03, transition: { duration: 0.3 } }}
-              >
-                <div className="impact-number">{metric.number}</div>
-                <h3>{metric.title}</h3>
-                <p>{metric.description}</p>
-              </motion.div>
-            ))}
+          <div className="impact-grid live-stats-grid">
+            {statsLoading ? (
+              // Loading skeleton
+              [1, 2, 3, 4].map((i) => (
+                <motion.div key={i} className="impact-card live-stat-card" variants={itemVariants}>
+                  <div className="live-stat-icon-wrapper skeleton-pulse">
+                    <div className="skeleton-icon"></div>
+                  </div>
+                  <div className="skeleton-number skeleton-pulse"></div>
+                  <div className="skeleton-title skeleton-pulse"></div>
+                  <div className="skeleton-desc skeleton-pulse"></div>
+                </motion.div>
+              ))
+            ) : (
+              getLiveStatsCards().map((stat, index) => (
+                <motion.div
+                  key={index}
+                  className="impact-card live-stat-card"
+                  variants={itemVariants}
+                  whileHover={{ y: -8, scale: 1.03, transition: { duration: 0.3 } }}
+                >
+                  <div className="live-stat-icon-wrapper" style={{ background: `linear-gradient(135deg, ${stat.color}, ${stat.color}88)` }}>
+                    <i className={stat.icon}></i>
+                  </div>
+                  <div className="impact-number live-stat-number">
+                    <AnimatedCounter
+                      end={stat.value}
+                      duration={2500}
+                      suffix={stat.suffix}
+                      separator=","
+                    />
+                  </div>
+                  <h3>{stat.title}</h3>
+                  <p>{stat.description}</p>
+                </motion.div>
+              ))
+            )}
           </div>
         </div>
       </motion.section>

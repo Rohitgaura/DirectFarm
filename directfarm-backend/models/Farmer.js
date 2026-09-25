@@ -1,89 +1,89 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const farmerSchema = new mongoose.Schema({
+const Farmer = sequelize.define('Farmer', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
+    }
+  },
   userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'User ID is required'],
-    unique: true
+    type: DataTypes.UUID,
+    allowNull: false,
+    unique: true,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
   },
   name: {
-    type: String,
-    required: [true, 'Farmer name is required'],
-    trim: true,
-    maxlength: [100, 'Farmer name cannot exceed 100 characters']
+    type: DataTypes.STRING(100),
+    allowNull: false
   },
   email: {
-    type: String,
-    required: [true, 'Email is required'],
-    lowercase: true
+    type: DataTypes.STRING(255),
+    allowNull: false
   },
   phone: {
-    type: String,
-    required: [true, 'Phone number is required']
+    type: DataTypes.STRING(20),
+    allowNull: false
   },
   address: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true
   },
   location: {
-    type: {
-      type: String,
-      enum: ['Point']
-    },
-    coordinates: {
-      type: [Number],
-      index: '2dsphere'
-    },
-    formattedAddress: String
+    type: DataTypes.JSONB,
+    allowNull: true
   },
   farmName: {
-    type: String,
-    trim: true,
-    maxlength: [100, 'Farm name cannot exceed 100 characters']
+    type: DataTypes.STRING(100),
+    allowNull: true
   },
   experienceYears: {
-    type: Number,
-    required: [true, 'Experience years is required'],
-    min: [0, 'Experience years must be at least 0'],
-    max: [50, 'Experience years must be at most 50']
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
   verificationStatus: {
-    type: Boolean,
-    default: false
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
   },
   totalProducts: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   },
   totalRevenue: {
-    type: Number,
-    default: 0
+    type: DataTypes.FLOAT,
+    defaultValue: 0
   },
   averageRating: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 5
+    type: DataTypes.FLOAT,
+    defaultValue: 0
   },
   totalRatings: {
-    type: Number,
-    default: 0
+    type: DataTypes.INTEGER,
+    defaultValue: 0
   }
 }, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  tableName: 'farmers',
+  timestamps: true
 });
 
-// Virtual for uploaded products
-farmerSchema.virtual('products', {
-  ref: 'Product',
-  localField: 'userId',
-  foreignField: 'farmerId'
-});
+Farmer.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  return values;
+};
 
-// Index on userId for faster lookups
-farmerSchema.index({ userId: 1 });
+Farmer.findById = function (id) {
+  return Farmer.findByPk(id);
+};
 
-module.exports = mongoose.model('Farmer', farmerSchema);
+module.exports = Farmer;

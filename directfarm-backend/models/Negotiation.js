@@ -1,42 +1,73 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const negotiationSchema = new mongoose.Schema({
-    buyerId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    farmerId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    productId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Product',
-        required: true
-    },
-    offeredPrice: {
-        type: Number,
-        required: true,
-        min: 0
-    },
-    quantity: {
-        type: Number,
-        required: true,
-        min: 1
-    },
-    status: {
-        type: String,
-        enum: ['pending', 'accepted', 'rejected'],
-        default: 'pending'
-    },
-    counterOfferPrice: {
-        type: Number,
-        min: 0
+const Negotiation = sequelize.define('Negotiation', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
     }
+  },
+  buyerId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  farmerId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
+  },
+  productId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'products',
+      key: 'id'
+    }
+  },
+  offeredPrice: {
+    type: DataTypes.FLOAT,
+    allowNull: false
+  },
+  quantity: {
+    type: DataTypes.FLOAT,
+    allowNull: false,
+    defaultValue: 1
+  },
+  status: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    defaultValue: 'pending'
+  },
+  counterOfferPrice: {
+    type: DataTypes.FLOAT,
+    allowNull: true
+  }
 }, {
-    timestamps: true
+  tableName: 'negotiations',
+  timestamps: true
 });
 
-module.exports = mongoose.model('Negotiation', negotiationSchema);
+Negotiation.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  return values;
+};
+
+Negotiation.findById = function (id) {
+  return Negotiation.findByPk(id);
+};
+
+module.exports = Negotiation;

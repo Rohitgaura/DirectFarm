@@ -1,154 +1,125 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const productSchema = new mongoose.Schema({
+const Product = sequelize.define('Product', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true
+  },
+  _id: {
+    type: DataTypes.VIRTUAL,
+    get() {
+      return this.getDataValue('id');
+    }
+  },
   farmerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: [true, 'Farmer ID is required']
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    },
+    onDelete: 'CASCADE'
   },
   name: {
-    type: String,
-    required: [true, 'Product name is required'],
-    trim: true,
-    maxlength: [100, 'Product name cannot exceed 100 characters']
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    validate: {
+      notEmpty: { msg: 'Product name is required' }
+    }
   },
   category: {
-    type: String,
-    required: [true, 'Product category is required'],
-    trim: true,
-    index: true
+    type: DataTypes.STRING(100),
+    allowNull: false
   },
   quantity: {
-    type: Number,
-    required: [true, 'Quantity is required'],
-    min: [0, 'Quantity cannot be negative']
+    type: DataTypes.FLOAT,
+    allowNull: false,
+    defaultValue: 0,
+    validate: {
+      min: 0
+    }
   },
   pricePerKg: {
-    type: Number,
-    required: [true, 'Price per kg is required'],
-    min: [0, 'Price per kg cannot be negative']
+    type: DataTypes.FLOAT,
+    allowNull: false,
+    defaultValue: 0,
+    validate: {
+      min: 0
+    }
   },
   harvestingDate: {
-    type: Date
+    type: DataTypes.DATE,
+    allowNull: true
   },
   description: {
-    type: String,
-    trim: true
+    type: DataTypes.TEXT,
+    allowNull: true
   },
-  images: [{
-    type: String
-  }],
+  images: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+    // Array of { url: string, public_id: string }
+  },
   location: {
-    state: {
-      type: String,
-      trim: true
-    },
-    district: {
-      type: String,
-      trim: true
-    },
-    subdistrict: {
-      type: String,
-      trim: true
-    },
-    village: {
-      type: String,
-      trim: true
-    },
-    coordinates: {
-      type: [Number], // [longitude, latitude]
-      index: '2dsphere'
-    }
+    type: DataTypes.JSONB,
+    allowNull: true,
+    defaultValue: null
+    // { coordinates: [lng, lat] }
+  },
+  expiryDuration: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 7
+  },
+  expiryUnit: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    defaultValue: 'days'
+  },
+  expiryDate: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  status: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    defaultValue: 'active'
+    // 'active', 'sold', 'expired'
+  },
+  autoRemoveEnabled: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: true
   }
 }, {
-  timestamps: true,
-  createdAt: 'createdAt',
-  updatedAt: false // Only createdAt, no updatedAt
+  tableName: 'products',
+  timestamps: true
 });
 
-// Index for search functionality
-productSchema.index({ name: 'text', description: 'text' });
-productSchema.index({ farmerId: 1 });
-// productSchema.index({ 'location.coordinates': '2dsphere' }); // Already defined in schema option
+Product.prototype.toJSON = function () {
+  const values = { ...this.get() };
+  values._id = values.id;
+  return values;
+};
 
-// Geocode location logic
-productSchema.pre('save', async function (next) {
-  if (!this.location) {
-    return next();
-  }
+Product.findById = function (id) {
+  return Product.findByPk(id);
+};
 
-  const geocoder = require('../utils/geocoder');
+Product.findByIdAndUpdate = async function (id, updateData) {
+  const product = await Product.findByPk(id);
+  if (!product) return null;
+  await product.update(updateData);
+  return product;
+};
 
-  // Case 1: Coordinates exist but address is missing -> Reverse Geocode
-  if (this.location.coordinates && this.location.coordinates.length === 2 &&
-    (!this.location.state || !this.location.district)) {
+Product.findByIdAndDelete = async function (id) {
+  const product = await Product.findByPk(id);
+  if (!product) return null;
+  await product.destroy();
+  return product;
+};
 
-    try {
-      const [lng, lat] = this.location.coordinates;
-      const results = await geocoder.reverse({ lat, lon: lng });
-
-      if (results && results.length > 0) {
-        const loc = results[0];
-
-        // Robust extraction
-        let state = loc.state || loc.administrativeLevels?.level1long;
-        let district = loc.district || loc.city || loc.administrativeLevels?.level2long;
-        let subdistrict = loc.county || loc.administrativeLevels?.level3long;
-        let village = loc.streetName || loc.neighbourhood;
-
-        // Fallback: Parse formatted address if fields are missing
-        // Format usually: "Street, Suburb, City, State, Zip, Country"
-        if ((!state || !district) && loc.formattedAddress) {
-          const parts = loc.formattedAddress.split(',').map(p => p.trim());
-          if (parts.length >= 3) {
-            // Try to map from end: Country, Zip, State, City...
-            // This is heuristic and depends on the provider format
-            const countryIndex = parts.length - 1; // Assuming last is Country
-            // Check if zip is second to last
-            const hasZip = /^\d+$/.test(parts[parts.length - 2]);
-            const stateIndex = hasZip ? parts.length - 3 : parts.length - 2;
-
-            if (!state && stateIndex >= 0) state = parts[stateIndex];
-            if (!district && stateIndex - 1 >= 0) district = parts[stateIndex - 1];
-          }
-        }
-
-        this.location.state = state || '';
-        this.location.district = district || '';
-        this.location.subdistrict = subdistrict || '';
-        this.location.village = village || loc.formattedAddress?.split(',')[0] || '';
-
-        console.log('Reverse geocoded location:', this.location);
-      }
-    } catch (err) {
-      console.error('Product reverse geocoding error:', err);
-    }
-  }
-
-  // Case 2: Address exists but coordinates are missing -> Forward Geocode
-  else if ((!this.location.coordinates || this.location.coordinates.length === 0) &&
-    (this.location.village || this.location.subdistrict || this.location.district || this.location.state)) {
-
-    const locParts = [];
-    if (this.location.village) locParts.push(this.location.village);
-    if (this.location.subdistrict) locParts.push(this.location.subdistrict);
-    if (this.location.district) locParts.push(this.location.district);
-    if (this.location.state) locParts.push(this.location.state);
-
-    if (locParts.length > 0) {
-      const address = locParts.join(', ');
-      try {
-        const loc = await geocoder.geocode(address);
-        if (loc && loc.length > 0) {
-          this.location.coordinates = [loc[0].longitude, loc[0].latitude];
-        }
-      } catch (err) {
-        console.error('Product geocoding error:', err);
-      }
-    }
-  }
-
-  next();
-});
-
-module.exports = mongoose.model('Product', productSchema);
+module.exports = Product;

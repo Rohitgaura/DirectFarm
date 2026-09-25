@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
+import { useLocation, useNavigate } from 'react-router-dom';
 import 'react-toastify/dist/ReactToastify.css';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
@@ -10,6 +11,7 @@ import LocationSelector from './LocationSelector';
 import '../../styles/FarmerDashboard.css';
 
 const FarmerDashboard = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     category: '',
     vegetableType: '',
@@ -17,8 +19,13 @@ const FarmerDashboard = () => {
     ratePerKg: '',
     harvestingDate: '',
     description: '',
+    expiryDuration: '7',
+    expiryUnit: 'days',
+    status: 'active',
     images: []
   });
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'unsold', 'sold'
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   // ... (location state remains same)
 
@@ -61,33 +68,72 @@ const FarmerDashboard = () => {
     const loadUserAndProducts = async () => {
       try {
         // Get user from authUtils
-        const userData = authUtils.getUser();
+        let userData = authUtils.getUser();
         console.log('🌾 FarmerDashboard: Loaded user data:', userData);
         if (userData) {
           setUser(userData);
           console.log('🌾 FarmerDashboard: User state set');
 
+          // Fetch fresh profile from backend to get up-to-date location
+          try {
+            const profileResponse = await apiService.getProfile();
+            if (profileResponse.success && profileResponse.data) {
+              const freshUser = { ...userData, ...profileResponse.data };
+              setUser(freshUser);
+              authUtils.updateUser(freshUser);
+              userData = freshUser;
+              console.log('🌾 FarmerDashboard: Updated user with fresh profile data');
+            }
+          } catch (profileError) {
+            console.error('Error fetching fresh profile:', profileError);
+          }
+
           // Fetch products for this farmer - use either _id or id
           const userId = userData._id || userData.id;
           if (userId) {
             try {
-              const productsResponse = await apiService.getProducts({ farmerId: userId });
+              const productsResponse = await apiService.getProducts({ farmerId: userId, includeSold: 'true', includeExpired: 'true' });
               console.log('🌾 FarmerDashboard: Products response:', productsResponse);
               if (productsResponse.success && productsResponse.data) {
                 // Transform products to match the display format
-                const transformedProducts = productsResponse.data.map(product => ({
-                  id: product._id,
-                  category: product.category || 'Vegetables', // Default back to Vegetables if missing
-                  vegetableType: product.name,
-                  quantity: product.quantity,
-                  ratePerKg: product.price || product.pricePerKg,
-                  totalRate: (product.quantity * (product.price || product.pricePerKg)).toFixed(2),
-                  description: product.description || '',
-                  images: product.images || [],
-                  uploadingDate: product.createdAt,
-                  harvestingDate: product.harvestingDate,
-                  location: product.location // Keep location for display if available
-                }));
+                const transformedProducts = productsResponse.data.map(product => {
+                  const qty = parseFloat(product.quantity);
+                  const price = parseFloat(product.price || product.pricePerKg);
+
+                  // Debug log for NaN investigation
+                  if (isNaN(qty) || isNaN(price)) {
+                    console.log('⚠️ Found NaN source:', {
+                      id: product._id,
+                      rawQty: product.quantity,
+                      parsedQty: qty,
+                      rawPrice: product.price,
+                      rawPricePerKg: product.pricePerKg,
+                      parsedPrice: price
+                    });
+                  }
+
+                  const safeQty = isNaN(qty) ? 0 : qty;
+                  const safePrice = isNaN(price) ? 0 : price;
+
+                  return {
+                    id: product.id || product._id,
+                    _id: product.id || product._id,
+                    category: product.category || 'Vegetables',
+                    vegetableType: product.name,
+                    quantity: product.quantity,
+                    ratePerKg: product.pricePerKg || product.price,
+                    totalRate: (safeQty * safePrice).toFixed(2),
+                    description: product.description || '',
+                    images: product.images || [],
+                    uploadingDate: product.createdAt,
+                    harvestingDate: product.harvestingDate,
+                    location: product.location,
+                    status: product.status || (product.quantity > 0 ? 'active' : 'sold'),
+                    expiryDuration: product.expiryDuration || 7,
+                    expiryUnit: product.expiryUnit || 'days',
+                    autoRemoveEnabled: product.autoRemoveEnabled !== false
+                  };
+                });
 
                 setUploadedCrops(transformedProducts);
               }
@@ -103,6 +149,43 @@ const FarmerDashboard = () => {
 
     loadUserAndProducts();
   }, []);
+
+  // Check for edit crop data from navigation (e.g. from CropsHistory)
+  const locationState = useLocation(); // Hook usage
+  useEffect(() => {
+    if (locationState.state && locationState.state.editCrop) {
+      // We have a crop to edit!
+      const cropToEdit = locationState.state.editCrop;
+      // Need to wait for products to load? Or just set it directly?
+      // Since handleEdit works with the crop object, we can just call it or set the state.
+      // However, handleEdit relies on scrolling to form, so let's use that if possible.
+      // But handleEdit is defined later. We should move this effect or call a function.
+
+      // Better: Set a flag or call handleEdit after definition.
+      // Since we are inside the component, we can't call handleEdit before it's defined.
+      // Let's defer this check or move handleEdit definition up (not easy with state dependencies).
+
+      // Alternative: Just set the editing state directly here, replicating handleEdit logic.
+      console.log("🌾 Received crop to edit from history:", cropToEdit);
+      setEditingCropId(cropToEdit._id || cropToEdit.id);
+      setFormData({
+        category: cropToEdit.category || 'Vegetables',
+        vegetableType: cropToEdit.vegetableType || cropToEdit.name,
+        quantity: cropToEdit.quantity,
+        ratePerKg: cropToEdit.ratePerKg || cropToEdit.price || cropToEdit.pricePerKg, // Handle different field names
+        harvestingDate: cropToEdit.harvestingDate ? new Date(cropToEdit.harvestingDate).toISOString().split('T')[0] : '',
+        description: cropToEdit.description || '',
+        images: cropToEdit.images || []
+      });
+
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // Clear state so it doesn't re-trigger on refresh (optional, but good practice)
+      // clean up state history... hard to do in React Router v6 without navigating again. 
+      // We can just rely on the fact that this effect runs on mount/update. 
+    }
+  }, [locationState]);
 
   // ... (location effects remain same)
 
@@ -155,21 +238,38 @@ const FarmerDashboard = () => {
     }
   }, [location.coordinates, user]);
 
-  // Calculate total rate automatically
+  // Calculate total rate automatically with safety checks
   const calculateTotalRate = () => {
-    const quantity = parseFloat(formData.quantity) || 0;
-    const rate = parseFloat(formData.ratePerKg) || 0;
+    const quantity = parseFloat(formData.quantity);
+    const rate = parseFloat(formData.ratePerKg);
+    if (isNaN(quantity) || isNaN(rate)) return '0.00';
     return (quantity * rate).toFixed(2);
+  };
+
+  const handleToggleStatus = async (cropId, currentStatus) => {
+    const isCurrentlySold = (currentStatus || '').toLowerCase() === 'sold';
+    const newStatus = isCurrentlySold ? 'active' : 'sold';
+    try {
+      const response = await apiService.updateProductStatus(cropId, { status: newStatus });
+      if (response.success) {
+        toast.success(isCurrentlySold ? 'Crop marked as Active & relisted!' : 'Crop marked as Sold Out & unlisted from public store!');
+        setUploadedCrops(prev => prev.map(c => (c.id === cropId || c._id === cropId) ? { ...c, status: newStatus } : c));
+      }
+    } catch (error) {
+      toast.error('Failed to update product status');
+    }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
     if (name === 'category') {
+      const isLongLifeCategory = ['grains', 'pulses', 'seeds', 'spices', 'dry fruits'].some(c => value.toLowerCase().includes(c));
       setFormData(prev => ({
         ...prev,
         category: value,
-        vegetableType: '' // Reset item type when category changes
+        vegetableType: '', // Reset item type when category changes
+        expiryUnit: isLongLifeCategory ? 'never' : 'days'
       }));
     } else {
       setFormData(prev => ({
@@ -293,6 +393,7 @@ const FarmerDashboard = () => {
           ...prev,
           images: [...prev.images, ...base64Images]
         }));
+        setSelectedFiles(prev => [...prev, ...imageFiles]);
         toast.success(`${imageFiles.length} image(s) added successfully!`, {
           position: "top-right",
           autoClose: 2000,
@@ -309,6 +410,7 @@ const FarmerDashboard = () => {
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const validateForm = () => {
@@ -340,6 +442,45 @@ const FarmerDashboard = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const [editingCropId, setEditingCropId] = useState(null);
+
+  // ... (existing effects)
+
+  const handleEdit = (crop) => {
+    setEditingCropId(crop.id);
+    setFormData({
+      category: crop.category,
+      vegetableType: crop.vegetableType,
+      quantity: crop.quantity,
+      ratePerKg: crop.ratePerKg,
+      harvestingDate: crop.harvestingDate ? new Date(crop.harvestingDate).toISOString().split('T')[0] : '',
+      description: crop.description,
+      expiryDuration: crop.expiryDuration ? String(crop.expiryDuration) : '7',
+      expiryUnit: crop.expiryUnit || 'days',
+      status: crop.status || 'active',
+      images: crop.images.map(img => typeof img === 'string' ? img : img.url) // For preview
+    });
+    // Scroll to form
+    document.querySelector('.dashboard-header').scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingCropId(null);
+    setFormData({
+      category: '',
+      vegetableType: '',
+      quantity: '',
+      ratePerKg: '',
+      harvestingDate: '',
+      description: '',
+      expiryDuration: '7',
+      expiryUnit: 'days',
+      status: 'active',
+      images: []
+    });
+    setSelectedFiles([]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -360,81 +501,93 @@ const FarmerDashboard = () => {
 
     const userId = currentUser?._id || currentUser?.id;
     if (!userId) {
-      toast.error('Please login to upload products');
+      toast.error('Please login to manage products');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Prepare product data
-      const productData = {
-        farmerId: userId,
-        name: formData.vegetableType,
-        quantity: parseFloat(formData.quantity),
-        price: parseFloat(formData.ratePerKg),
-        harvestingDate: formData.harvestingDate,
-        description: formData.description || '',
-        images: formData.images || [],
-        location: {
-          // Send empty strings for address fields as we don't have them anymore
-          state: '',
-          district: '',
-          subdistrict: '',
-          village: '',
-          coordinates: location.coordinates ? [
-            location.coordinates.longitude,
-            location.coordinates.latitude
-          ] : undefined
-        }
-      };
+      // Prepare product data using FormData
+      const data = new FormData();
+      if (!editingCropId) {
+        data.append('farmerId', userId);
+      }
 
-      // Call API to create product
-      const response = await apiService.createProduct(productData);
+      data.append('category', formData.category);
+      data.append('name', formData.vegetableType);
+      data.append('quantity', formData.quantity);
+      data.append('price', formData.ratePerKg);
+      if (formData.harvestingDate) data.append('harvestingDate', formData.harvestingDate);
+      data.append('description', formData.description || '');
+      data.append('expiryDuration', formData.expiryDuration || '7');
+      data.append('expiryUnit', formData.expiryUnit || 'days');
+      data.append('status', formData.status || 'active');
+
+      // Append location as JSON string
+      const locationData = {
+        coordinates: location.coordinates ? [
+          location.coordinates.longitude,
+          location.coordinates.latitude
+        ] : undefined
+      };
+      data.append('location', JSON.stringify(locationData));
+
+      // Append images
+      selectedFiles.forEach(file => {
+        data.append('images', file);
+      });
+
+      let response;
+      if (editingCropId) {
+        response = await apiService.updateProduct(editingCropId, data);
+      } else {
+        response = await apiService.createProduct(data);
+      }
 
       if (response.success) {
-        // Add to uploaded crops list
+        // Construct displayed crop object
+        const responseData = response.data.product || response.data || {}; // Handle variations in backend response
         const newProduct = {
-          id: response.data._id || response.data.product?._id,
-          vegetableType: response.data.name || response.data.product?.name,
-          quantity: response.data.quantity || response.data.product?.quantity,
-          ratePerKg: response.data.price || response.data.pricePerKg || response.data.product?.price || response.data.product?.pricePerKg,
-          totalRate: calculateTotalRate(),
-          description: response.data.description || response.data.product?.description || '',
-          images: response.data.images || response.data.product?.images || [],
-          uploadingDate: response.data.createdAt || response.data.product?.createdAt,
-          harvestingDate: response.data.harvestingDate || response.data.product?.harvestingDate,
-          location: response.data.location || response.data.product?.location
+          id: responseData._id || responseData.id,
+          vegetableType: responseData.name,
+          quantity: responseData.quantity,
+          ratePerKg: responseData.price || responseData.pricePerKg,
+          totalRate: (responseData.quantity * (responseData.price || responseData.pricePerKg)).toFixed(2),
+          description: responseData.description || '',
+          images: responseData.images || [], // Contains {url, public_id} objects
+          uploadingDate: responseData.createdAt,
+          harvestingDate: responseData.harvestingDate,
+          location: responseData.location
         };
 
-        const updatedCrops = [newProduct, ...uploadedCrops];
-        setUploadedCrops(updatedCrops);
+        if (editingCropId) {
+          setUploadedCrops(prev => prev.map(crop => crop.id === editingCropId ? newProduct : crop));
+          toast.success('Product updated successfully!');
+          cancelEdit();
+        } else {
+          setUploadedCrops(prev => [newProduct, ...prev]);
+          toast.success('Product uploaded successfully!');
+          // Reset form
+          setFormData({
+            category: '',
+            vegetableType: '',
+            quantity: '',
+            ratePerKg: '',
+            harvestingDate: '',
+            description: '',
+            images: []
+          });
+          setSelectedFiles([]);
+        }
 
-        // Reset form
-        setFormData({
-          vegetableType: '',
-          quantity: '',
-          ratePerKg: '',
-          harvestingDate: '',
-          description: '',
-          images: []
-        });
-
-        toast.success('Product uploaded successfully!', {
-          position: "top-right",
-          autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
       } else {
-        throw new Error(response.message || 'Failed to upload product');
+        throw new Error(response.message || `Failed to ${editingCropId ? 'update' : 'upload'} product`);
       }
 
     } catch (error) {
-      console.error('Error uploading product:', error);
-      toast.error(error.message || 'Failed to upload product. Please try again.');
+      console.error(`Error ${editingCropId ? 'updating' : 'uploading'} product:`, error);
+      toast.error(error.message || `Failed to ${editingCropId ? 'update' : 'upload'} product. Please try again.`);
     } finally {
       setIsLoading(false);
     }
@@ -511,22 +664,23 @@ const FarmerDashboard = () => {
           )}
         </motion.div>
 
-        {/* View Public Profile Button */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+        {/* Quick Action Navigation Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
           <button
-            onClick={() => window.location.href = `/farmer/${user._id || user.id}`}
+            onClick={() => navigate(`/farmer/${user._id || user.id}`)}
             style={{
               background: 'white',
               color: '#27ae60',
               border: '2px solid #27ae60',
-              padding: '0.5rem 1.5rem',
+              padding: '0.55rem 1.5rem',
               borderRadius: '25px',
-              fontWeight: '600',
+              fontWeight: '700',
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.5rem',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.background = '#27ae60';
@@ -538,6 +692,34 @@ const FarmerDashboard = () => {
             }}
           >
             <i className="fas fa-eye"></i> View Public Profile
+          </button>
+
+          <button
+            onClick={() => navigate('/farmer-analytics')}
+            style={{
+              background: '#10b981',
+              color: '#ffffff',
+              border: '2px solid #10b981',
+              padding: '0.55rem 1.5rem',
+              borderRadius: '25px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = '#059669';
+              e.currentTarget.style.borderColor = '#059669';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = '#10b981';
+              e.currentTarget.style.borderColor = '#10b981';
+            }}
+          >
+            <i className="fas fa-chart-pie"></i> Crop & Quantity Analytics
           </button>
         </div>
 
@@ -637,6 +819,109 @@ const FarmerDashboard = () => {
           )}
         </AnimatePresence>
 
+        {/* Live Crop Inventory & Quantity Analytics Strip */}
+        {uploadedCrops.length > 0 && (
+          <motion.div
+            className="analytics-summary-strip"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              padding: '1.25rem 1.5rem',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
+              border: '1px solid #e2e8f0',
+              marginBottom: '2rem'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fas fa-chart-pie" style={{ color: '#10b981', fontSize: '1.25rem' }}></i>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: '800' }}>
+                  Live Crop Inventory & Quantity Analytics
+                </h3>
+              </div>
+              <button
+                onClick={() => navigate('/farmer-analytics')}
+                style={{
+                  background: '#ecfdf5',
+                  border: '1px solid #a7f3d0',
+                  color: '#059669',
+                  padding: '5px 14px',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}
+              >
+                <span>View Full Analytics & Charts</span> <i className="fas fa-arrow-right"></i>
+              </button>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '1rem'
+            }}>
+              {/* Total Crops */}
+              <div style={{ background: '#f8fafc', padding: '0.9rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Active Uploaded Crops</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
+                  {uploadedCrops.length} Crops
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: '600' }}>Listed in marketplace</span>
+              </div>
+
+              {/* Total Quantity */}
+              <div style={{ background: '#f8fafc', padding: '0.9rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Total Available Quantity</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
+                  {uploadedCrops.reduce((sum, c) => sum + (parseFloat(c.quantity) || 0), 0).toLocaleString()} kg
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: '600' }}>Ready for trade/dispatch</span>
+              </div>
+
+              {/* Total Valuation */}
+              <div style={{ background: '#f8fafc', padding: '0.9rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Inventory Valuation</span>
+                <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
+                  ₹{uploadedCrops.reduce((sum, c) => sum + ((parseFloat(c.quantity) || 0) * (parseFloat(c.ratePerKg) || 0)), 0).toLocaleString()}
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#d97706', fontWeight: '600' }}>Total estimated value</span>
+              </div>
+
+              {/* Uploaded Today */}
+              <div style={{ background: '#f8fafc', padding: '0.9rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Uploaded Today</span>
+                {(() => {
+                  const today = new Date();
+                  const isT = (d) => {
+                    if (!d) return false;
+                    const date = new Date(d);
+                    return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+                  };
+                  const todayCrops = uploadedCrops.filter(c => isT(c.uploadingDate || c.createdAt));
+                  const todayQty = todayCrops.reduce((sum, c) => sum + (parseFloat(c.quantity) || 0), 0);
+                  return (
+                    <>
+                      <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
+                        {todayCrops.length} Crops
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: '#8b5cf6', fontWeight: '600' }}>
+                        +{todayQty.toLocaleString()} kg added today
+                      </span>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
         <div className="dashboard-content">
           {/* Upload Form Section */}
           <motion.div
@@ -645,7 +930,17 @@ const FarmerDashboard = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <h2>Upload New Crop</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+              <h2>{editingCropId ? 'Edit Product' : 'Upload New Crop'}</h2>
+              {editingCropId && (
+                <button
+                  onClick={cancelEdit}
+                  style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '5px', cursor: 'pointer' }}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
             <form onSubmit={handleSubmit} className="crop-form">
               <div className="form-row">
                 <div className="form-group">
@@ -756,6 +1051,132 @@ const FarmerDashboard = () => {
               </div>
 
 
+              {/* Product Listing Status Option (Active / Unsold vs Sold Out) */}
+              <div className="form-group" style={{ background: '#f8fafc', padding: '1rem 1.2rem', borderRadius: '14px', border: '1px solid #e2e8f0', margin: '0.75rem 0' }}>
+                <label style={{ fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
+                  <i className="fas fa-store" style={{ color: '#3b82f6' }}></i>
+                  Product Listing Status
+                </label>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 700, color: '#166534', background: formData.status === 'active' ? '#dcfce7' : 'white', padding: '0.5rem 0.85rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <input
+                      type="radio"
+                      name="status"
+                      value="active"
+                      checked={formData.status === 'active'}
+                      onChange={handleChange}
+                      style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
+                    />
+                    <span>🟢 Active / Unsold (Visible to Buyers)</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 700, color: '#991b1b', background: formData.status === 'sold' ? '#fee2e2' : 'white', padding: '0.5rem 0.85rem', borderRadius: '8px', border: '1px solid #fca5a5' }}>
+                    <input
+                      type="radio"
+                      name="status"
+                      value="sold"
+                      checked={formData.status === 'sold'}
+                      onChange={handleChange}
+                      style={{ width: '18px', height: '18px', accentColor: '#ef4444' }}
+                    />
+                    <span>🔴 Sold Out (Hidden from Buyers)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Auto-Remove Unsold Crop Duration Settings */}
+              <div className="form-group expiry-card-container" style={{
+                background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                border: '1px solid #a7f3d0',
+                borderRadius: '14px',
+                padding: '1.2rem',
+                margin: '0.75rem 0'
+              }}>
+                <label style={{ fontWeight: '700', color: '#065f46', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', margin: '0 0 0.25rem 0' }}>
+                  <i className="fas fa-hourglass-half" style={{ color: '#059669' }}></i>
+                  Auto-Remove Listing If Unsold
+                </label>
+                <p style={{ fontSize: '0.8rem', color: '#047857', margin: '0 0 0.85rem 0', lineHeight: '1.4' }}>
+                  Specify after how long this crop will automatically unlist if not completely sold.
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: formData.expiryUnit === 'never' ? '1fr' : '1fr 1fr', gap: '1rem' }}>
+                  {formData.expiryUnit !== 'never' && (
+                    <div className="form-group" style={{ margin: 0 }}>
+                      <label htmlFor="expiryDuration" style={{ fontSize: '0.8rem', color: '#065f46', fontWeight: 600 }}>
+                        Duration Value
+                      </label>
+                      <input
+                        type="number"
+                        id="expiryDuration"
+                        name="expiryDuration"
+                        min="1"
+                        max="365"
+                        value={formData.expiryDuration}
+                        onChange={handleChange}
+                        placeholder="e.g. 7"
+                        style={{
+                          width: '100%',
+                          padding: '0.65rem 0.85rem',
+                          borderRadius: '10px',
+                          border: '1px solid #6ee7b7',
+                          background: '#ffffff',
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          color: '#064e3b'
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label htmlFor="expiryUnit" style={{ fontSize: '0.8rem', color: '#065f46', fontWeight: 600 }}>
+                      Time Unit & Setting
+                    </label>
+                    <select
+                      id="expiryUnit"
+                      name="expiryUnit"
+                      value={formData.expiryUnit}
+                      onChange={handleChange}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 0.85rem',
+                        borderRadius: '10px',
+                        border: '1px solid #6ee7b7',
+                        background: '#ffffff',
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                        color: '#064e3b'
+                      }}
+                    >
+                      <option value="days">Days (Default)</option>
+                      <option value="hours">Hours</option>
+                      <option value="never">No Auto-Removal (Keep Listed for Grains/Spices)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{
+                  marginTop: '0.85rem',
+                  fontSize: '0.8rem',
+                  color: '#047857',
+                  background: '#ffffff',
+                  padding: '0.5rem 0.85rem',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontWeight: 600,
+                  border: '1px solid #a7f3d0'
+                }}>
+                  <i className="fas fa-clock" style={{ color: '#10b981' }}></i>
+                  {formData.expiryUnit === 'never' ? (
+                    <span>🌾 <strong>No Auto-Removal:</strong> Long shelf-life produce (Grains/Seeds/Spices) will stay listed until marked as <strong>Sold Out</strong>.</span>
+                  ) : (
+                    <span>Product will auto-remove after <strong>{formData.expiryDuration || '7'} {formData.expiryUnit === 'hours' ? 'Hours' : 'Days'}</strong> if unsold.</span>
+                  )}
+                </div>
+              </div>
+
               <div className="form-group">
                 <label htmlFor="description">
                   <i className="fas fa-align-left"></i>
@@ -809,17 +1230,17 @@ const FarmerDashboard = () => {
                 disabled={isLoading || !location.coordinates}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                title={!location.coordinates ? "Please enable location first" : "Upload Product"}
+                title={!location.coordinates ? "Please enable location first" : (editingCropId ? "Update Product" : "Upload Product")}
               >
                 {isLoading ? (
                   <>
                     <i className="fas fa-spinner fa-spin"></i>
-                    Uploading...
+                    {editingCropId ? 'Updating...' : 'Uploading...'}
                   </>
                 ) : (
                   <>
-                    <i className="fas fa-upload"></i>
-                    Upload Crop
+                    <i className={editingCropId ? "fas fa-save" : "fas fa-upload"}></i>
+                    {editingCropId ? 'Update Crop' : 'Upload Crop'}
                   </>
                 )}
               </motion.button>
@@ -834,6 +1255,58 @@ const FarmerDashboard = () => {
             transition={{ duration: 0.6, delay: 0.4 }}
           >
             <h2>Your Items</h2>
+            {/* Status Filter Tabs (All, Unsold, Sold Out) */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('all')}
+                style={{
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '20px',
+                  border: '1px solid #cbd5e1',
+                  background: statusFilter === 'all' ? '#0f172a' : '#ffffff',
+                  color: statusFilter === 'all' ? '#ffffff' : '#475569',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                All ({uploadedCrops.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('unsold')}
+                style={{
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '20px',
+                  border: '1px solid #a7f3d0',
+                  background: statusFilter === 'unsold' ? '#10b981' : '#ecfdf5',
+                  color: statusFilter === 'unsold' ? '#ffffff' : '#047857',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                🟢 Unsold ({uploadedCrops.filter(c => c.status !== 'sold').length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusFilter('sold')}
+                style={{
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '20px',
+                  border: '1px solid #fca5a5',
+                  background: statusFilter === 'sold' ? '#ef4444' : '#fef2f2',
+                  color: statusFilter === 'sold' ? '#ffffff' : '#b91c1c',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem'
+                }}
+              >
+                🔴 Sold Out ({uploadedCrops.filter(c => c.status === 'sold').length})
+              </button>
+            </div>
+
             {uploadedCrops.length === 0 ? (
               <div className="no-items">
                 <i className="fas fa-seedling"></i>
@@ -841,7 +1314,11 @@ const FarmerDashboard = () => {
               </div>
             ) : (
               <div className="crops-grid">
-                {uploadedCrops.map((crop) => (
+                {uploadedCrops.filter(crop => {
+                  if (statusFilter === 'unsold') return crop.status !== 'sold';
+                  if (statusFilter === 'sold') return crop.status === 'sold';
+                  return true;
+                }).map((crop) => (
                   <motion.div
                     key={crop.id}
                     className="crop-card"
@@ -850,8 +1327,16 @@ const FarmerDashboard = () => {
                     transition={{ duration: 0.4 }}
                   >
                     <div className="crop-images">
-                      {crop.images.length > 0 ? (
-                        <img src={crop.images[0]} alt={crop.vegetableType} />
+                      {crop.images && crop.images.length > 0 ? (
+                        <img
+                          src={(() => {
+                            const img = crop.images[0];
+                            if (!img) return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect fill='%23f0f0f0' width='300' height='200'/%3E%3Ctext fill='%23888888' font-family='sans-serif' font-size='20' dy='7' font-weight='bold' x='50%25' y='50%25' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+                            return typeof img === 'string' ? img : (img.url || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect fill='%23f0f0f0' width='300' height='200'/%3E%3Ctext fill='%23888888' font-family='sans-serif' font-size='20' dy='7' font-weight='bold' x='50%25' y='50%25' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E");
+                          })()}
+                          alt={crop.vegetableType}
+                          onError={(e) => { e.target.onerror = null; e.target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='200' viewBox='0 0 300 200'%3E%3Crect fill='%23f0f0f0' width='300' height='200'/%3E%3Ctext fill='%23888888' font-family='sans-serif' font-size='20' dy='7' font-weight='bold' x='50%25' y='50%25' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E"; }}
+                        />
                       ) : (
                         <div className="no-image">
                           <i className="fas fa-image"></i>
@@ -863,29 +1348,101 @@ const FarmerDashboard = () => {
                       <div className="crop-details">
                         <span className="quantity">Quantity: {crop.quantity} kg</span>
                         <span className="rate">Rate: ₹{crop.ratePerKg}/kg</span>
-                        <span className="total">Total: ₹{crop.totalRate}</span>
+                        <span className="total">Total: ₹{(parseFloat(crop.ratePerKg || 0) * parseFloat(crop.quantity || 0)).toLocaleString()}</span>
                       </div>
                       {crop.description && (
                         <p className="description">Description: {crop.description}</p>
                       )}
 
-                      <div className="crop-meta">
+                      <div className="crop-meta" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.5rem' }}>
                         <span className="upload-date">
                           <i className="fas fa-calendar"></i>
-                          Uploading Date: {formatDate(crop.uploadingDate)}
+                          Uploaded: {formatDate(crop.uploadingDate)}
+                        </span>
+
+                        <span className="expiry-date-pill" style={{
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          color: '#047857',
+                          background: '#ecfdf5',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '6px',
+                          border: '1px solid #a7f3d0',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}>
+                          <i className="fas fa-hourglass-half" style={{ color: '#d97706' }}></i>
+                          Auto-removes in {crop.expiryDuration || 7} {crop.expiryUnit === 'hours' ? 'Hours' : 'Days'} if unsold
                         </span>
 
                         <span className={`status ${(crop.status ?? "").toLowerCase()}`}>
-                          {crop.status ?? "Pending"}
+                          {crop.status ?? "Active"}
                         </span>
                       </div>
-                      <button
-                        onClick={() => deleteCrop(crop.id)}
-                        className="delete-btn"
-                      >
-                        <i className="fas fa-trash"></i>
-                        Delete
-                      </button>
+                      <div className="card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
+                        <button
+                          onClick={() => navigate(`/farmer/product-bids/${crop.id || crop._id}`)}
+                          className="bids-btn"
+                          style={{
+                            width: '100%',
+                            background: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.6rem',
+                            borderRadius: '6px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.4rem',
+                            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.2)'
+                          }}
+                        >
+                          <i className="fas fa-gavel"></i>
+                          View Bids & Offers
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(crop.id || crop._id, crop.status)}
+                          style={{
+                            width: '100%',
+                            background: crop.status === 'sold' ? '#10b981' : '#f59e0b',
+                            color: 'white',
+                            border: 'none',
+                            padding: '0.55rem',
+                            borderRadius: '6px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.4rem',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          <i className={`fas fa-${crop.status === 'sold' ? 'check-circle' : 'tag'}`}></i>
+                          {crop.status === 'sold' ? 'Mark as Available (Relist)' : 'Mark as Sold Out'}
+                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button
+                            onClick={() => handleEdit(crop)}
+                            className="edit-btn"
+                            style={{ flex: 1, background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                          >
+                            <i className="fas fa-edit"></i>
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteCrop(crop.id)}
+                            className="delete-btn"
+                            style={{ flex: 1 }}
+                          >
+                            <i className="fas fa-trash"></i>
+                            Delete
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
                 ))}

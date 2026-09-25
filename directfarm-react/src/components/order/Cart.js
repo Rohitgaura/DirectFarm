@@ -10,6 +10,16 @@ const Cart = () => {
 
     useEffect(() => {
         loadCart();
+
+        const handleStorageChange = () => {
+            loadCart();
+        }
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        }
     }, []);
 
     const loadCart = () => {

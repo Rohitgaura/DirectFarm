@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Navbar from './components/common/Navbar';
@@ -43,159 +43,187 @@ import SellerVerificationPolicy from './components/policies/SellerVerificationPo
 import DisclaimerPolicy from './components/policies/DisclaimerPolicy';
 import FarmerProfile from './components/profile/FarmerProfile';
 import Notifications from './components/common/Notifications';
+import Complaints from './components/pages/Complaints';
+import ProductBidsPage from './components/negotiation/ProductBidsPage';
+
+function AppContent() {
+  const location = useLocation();
+  const isAdminPage = location.pathname === '/admin-dashboard';
+
+  return (
+    <div className="App">
+      {!isAdminPage && <Navbar />}
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/business-model" element={<BusinessModel />} />
+        <Route path="/market-opportunity" element={<MarketOpportunity />} />
+        <Route path="/competitive-advantage" element={<CompetitiveAdvantage />} />
+        <Route path="/implementation" element={<Implementation />} />
+        <Route path="/social-impact" element={<SocialImpact />} />
+        <Route
+          path="/login"
+          element={
+            <GuestRoute type="login">
+              <Login />
+            </GuestRoute>
+          }
+        />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+
+        <Route
+          path="/register"
+          element={
+            <GuestRoute type="register">
+              <Register />
+            </GuestRoute>
+          }
+        />
+        <Route
+          path="/farmer-dashboard"
+          element={
+            <ProtectedRoute requiredRole="farmer">
+              <FarmerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/buyer-dashboard"
+          element={
+            <ProtectedRoute requiredRole="buyer">
+              <BuyerDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/farmer/:id" element={<FarmerProfile />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route
+          path="/admin-dashboard"
+          element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cart"
+          element={
+            <ProtectedRoute requiredRole="buyer">
+              <Cart />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute requiredRole="buyer">
+              <Checkout />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/orders"
+          element={
+            <ProtectedRoute requiredRole="buyer">
+              <OrderHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/negotiations"
+          element={
+            <ProtectedRoute>
+              <NegotiationHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/negotiation/:id"
+          element={
+            <ProtectedRoute requiredRole="farmer">
+              <FarmerNegotiationPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/farmer/bids/:productId"
+          element={
+            <ProtectedRoute requiredRole="farmer">
+              <ProductBidsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/farmer/product-bids/:productId"
+          element={
+            <ProtectedRoute requiredRole="farmer">
+              <ProductBidsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/messages"
+          element={
+            <ProtectedRoute>
+              <ChatHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/crops-history"
+          element={
+            <ProtectedRoute requiredRole="farmer">
+              <CropsHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/career" element={<Career />} />
+        <Route path="/complaints" element={<Complaints />} />
+        <Route path="/help" element={<HelpFeedback />} />
+        <Route path="/success-stories" element={<SuccessStories />} />
+        <Route
+          path="/farmer-analytics"
+          element={
+            <ProtectedRoute requiredRole="farmer">
+              <FarmerAnalytics />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/buyer-analytics"
+          element={
+            <ProtectedRoute requiredRole="buyer">
+              <BuyerAnalytics />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/terms-conditions" element={<TermsConditions />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="/delivery-policy" element={<DeliveryPolicy />} />
+        <Route path="/data-protection-policy" element={<DataProtectionPolicy />} />
+        <Route path="/seller-verification-policy" element={<SellerVerificationPolicy />} />
+        <Route path="/disclaimer-policy" element={<DisclaimerPolicy />} />
+      </Routes>
+      {!isAdminPage && <Footer />}
+      <ToastContainer />
+    </div>
+  );
+}
 
 function App() {
   return (
     <Router>
-      <div className="App">
-        <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/features" element={<Features />} />
-          <Route path="/business-model" element={<BusinessModel />} />
-          <Route path="/market-opportunity" element={<MarketOpportunity />} />
-          <Route path="/competitive-advantage" element={<CompetitiveAdvantage />} />
-          <Route path="/implementation" element={<Implementation />} />
-          <Route path="/social-impact" element={<SocialImpact />} />
-          <Route
-            path="/login"
-            element={
-              <GuestRoute type="login">
-                <Login />
-              </GuestRoute>
-            }
-          />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-
-          <Route
-            path="/register"
-            element={
-              <GuestRoute type="register">
-                <Register />
-              </GuestRoute>
-            }
-          />
-          <Route
-            path="/farmer-dashboard"
-            element={
-              <ProtectedRoute requiredRole="farmer">
-                <FarmerDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/buyer-dashboard"
-            element={
-              <ProtectedRoute requiredRole="buyer">
-                <BuyerDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/farmer/:id" element={<FarmerProfile />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route
-            path="/admin-dashboard"
-            element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cart"
-            element={
-              <ProtectedRoute requiredRole="buyer">
-                <Cart />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/checkout"
-            element={
-              <ProtectedRoute requiredRole="buyer">
-                <Checkout />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/orders"
-            element={
-              <ProtectedRoute requiredRole="buyer">
-                <OrderHistory />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/negotiations"
-            element={
-              <ProtectedRoute requiredRole="buyer">
-                <NegotiationHistory />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/negotiation/:id"
-            element={
-              <ProtectedRoute requiredRole="farmer">
-                <FarmerNegotiationPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/messages"
-            element={
-              <ProtectedRoute>
-                <ChatHistory />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/crops-history"
-            element={
-              <ProtectedRoute requiredRole="farmer">
-                <CropsHistory />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/career" element={<Career />} />
-          <Route path="/help" element={<HelpFeedback />} />
-          <Route path="/success-stories" element={<SuccessStories />} />
-          <Route
-            path="/farmer-analytics"
-            element={
-              <ProtectedRoute requiredRole="farmer">
-                <FarmerAnalytics />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/buyer-analytics"
-            element={
-              <ProtectedRoute requiredRole="buyer">
-                <BuyerAnalytics />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/terms-conditions" element={<TermsConditions />} />
-          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-          <Route path="/refund-policy" element={<RefundPolicy />} />
-          <Route path="/delivery-policy" element={<DeliveryPolicy />} />
-          <Route path="/data-protection-policy" element={<DataProtectionPolicy />} />
-          <Route path="/seller-verification-policy" element={<SellerVerificationPolicy />} />
-          <Route path="/disclaimer-policy" element={<DisclaimerPolicy />} />
-        </Routes>
-        <Footer />
-        <ToastContainer />
-      </div>
+      <AppContent />
     </Router>
   );
 }

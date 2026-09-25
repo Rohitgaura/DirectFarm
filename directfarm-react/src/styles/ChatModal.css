@@ -199,12 +199,40 @@
     line-height: 1.4;
 }
 
+/* Message Meta (Time + Status) */
+.message-meta {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+    margin-top: 0.25rem;
+}
+
 .message-time {
     font-size: 0.7rem;
     opacity: 0.7;
-    display: block;
-    margin-top: 0.25rem;
-    text-align: right;
+}
+
+.status-icon {
+    font-size: 0.5rem;
+    /* margin-left: 4px; -> Handled by gap in parent */
+    color: rgba(255, 255, 255, 0.7);
+    /* Light for own messages */
+}
+
+.message.other .status-icon {
+    display: none;
+    /* Don't show status on received messages */
+}
+
+/* Specific status colors */
+.status-icon.read {
+    color: #4fc3f7;
+    /* Light blue for read */
+}
+
+.status-icon[title="Sending"] {
+    color: rgba(255, 255, 255, 0.5);
 }
 
 /* Input Area */
