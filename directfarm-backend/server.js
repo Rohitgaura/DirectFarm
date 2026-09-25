@@ -225,7 +225,7 @@ if (fs.existsSync(buildPath)) {
 
 const PORT = process.env.PORT || 5001;
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 DirectFarm server running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🐘 Database: PostgreSQL (${process.env.DB_NAME || 'directfarm'})`);
