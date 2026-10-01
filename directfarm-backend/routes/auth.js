@@ -112,11 +112,15 @@ router.post('/register/initiate', [
       });
       console.log(`📧 Email OTP sent to ${email}: ${emailOtp}`);
     } catch (err) {
-      console.error('Email sending failed (Dev Mode):', err.message);
-      console.log(`📧 Email OTP for ${email}: ${emailOtp} (email delivery failed, use this OTP)`);
+      console.error('Email sending failed:', err);
+
+      return res.status(500).json({
+        success: false,
+        message: 'Unable to send OTP email. Please try again later.'
+      });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'OTP sent to your email address',
       data: {

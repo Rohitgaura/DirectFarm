@@ -11,6 +11,8 @@ const sendEmail = async (options) => {
         },
     });
 
+    console.log("sendEmail object is created ....");
+
     const mailOptions = {
         from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
         to: options.email,
