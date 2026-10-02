@@ -16,3 +16,7 @@ dist/
 # Logs
 *.log
 npm-debug.log*
+.env
+utils/generate-refresh-token.js
+
+directfarm-backend/utils/generate-refresh-token.js
