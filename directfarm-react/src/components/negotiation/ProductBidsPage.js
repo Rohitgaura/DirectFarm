@@ -214,7 +214,7 @@ const ProductBidsPage = () => {
                         <i className="fas fa-arrow-left"></i> {t('productBids.backToDashboard')}
                     </button>
                     <div className="breadcrumbs">
-                        <span>{t('farmerDashboard.title')}</span> / <span>{t('productBids.title')}</span> / <span className="active">{product.name}</span>
+                        <span>{t('farmerDashboard.title')}</span> / <span>{t('productBids.title')}</span> / <span className="active">{t(`items.${product.name}`) !== `items.${product.name}` ? t(`items.${product.name}`) : product.name}</span>
                     </div>
                 </div>
 
@@ -291,9 +291,9 @@ const ProductBidsPage = () => {
 
                     <div className="product-details-summary">
                         <div className="title-row">
-                            <h1>{product.name}</h1>
+                            <h1>{t(`items.${product.name}`) !== `items.${product.name}` ? t(`items.${product.name}`) : product.name}</h1>
                             {product.category && (
-                                <span className="badge-category">{product.category}</span>
+                                <span className="badge-category">{t(`categories.${product.category}`) || product.category}</span>
                             )}
                         </div>
 

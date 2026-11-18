@@ -308,7 +308,14 @@ const translations = {
     "markSoldOut": "बिक चुका चिह्नित करें",
     "deleteCrop": "हटाएं",
     "edit": "संपादित करें",
-    "bidsReceived": "प्राप्त बोलियां (Bids):"
+    "bidsReceived": "प्राप्त बोलियां (Bids):",
+    "categoryRequired": "कृपया एक श्रेणी चुनें",
+    "cropTypeRequired": "कृपया फसल या उत्पाद का प्रकार चुनें",
+    "quantityRequired": "मात्रा दर्ज करना आवश्यक है",
+    "quantityPositive": "मात्रा शून्य से अधिक होनी चाहिए",
+    "rateRequired": "प्रति किलो दर आवश्यक है",
+    "ratePositive": "दर शून्य से अधिक होनी चाहिए",
+    "locationRequired": "उत्पाद अपलोड करने के लिए कृपया स्थान अनुमति सक्षम करें"
   },
   "productDetails": {
     "title": "उत्पाद विवरण",
@@ -715,14 +722,14 @@ const translations = {
     }
   },
   "categories": {
-    "Vegetables": "सब्जियां",
-    "Fruits": "फल",
-    "Dairy": "डेयरी उत्पाद",
-    "Grains": "अनाज",
-    "Pulses": "दालें",
-    "Spices": "मसाले",
-    "Flowers": "फूल",
-    "Others": "अन्य उत्पाद"
+    "Vegetables": "सब्जियां (Vegetables)",
+    "Fruits": "फल (Fruits)",
+    "Dairy": "डेयरी उत्पाद (Dairy)",
+    "Grains": "अनाज (Grains)",
+    "Pulses": "दालें (Pulses)",
+    "Spices": "मसाले (Spices)",
+    "Flowers": "फूल (Flowers)",
+    "Others": "अन्य उत्पाद (Others)"
   },
   "items": {
     "Tomato": "टमाटर (Tomato)",
@@ -1171,7 +1178,14 @@ const translations = {
     "markSoldOut": "Mark as Sold Out",
     "deleteCrop": "Delete",
     "edit": "Edit",
-    "bidsReceived": "Bids Received:"
+    "bidsReceived": "Bids Received:",
+    "categoryRequired": "Please select a category",
+    "cropTypeRequired": "Please select a crop type",
+    "quantityRequired": "Quantity is required",
+    "quantityPositive": "Quantity must be greater than 0",
+    "rateRequired": "Rate per kg is required",
+    "ratePositive": "Rate must be greater than 0",
+    "locationRequired": "Please enable location access to upload products"
   },
   "productDetails": {
     "title": "Product Details",

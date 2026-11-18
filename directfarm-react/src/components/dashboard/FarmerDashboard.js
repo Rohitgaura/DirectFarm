@@ -418,25 +418,29 @@ const FarmerDashboard = () => {
   const validateForm = () => {
     const newErrors = {};
 
+    if (!formData.category) {
+      newErrors.category = t('farmerDashboard.categoryRequired');
+    }
+
     if (!formData.vegetableType) {
-      newErrors.vegetableType = 'Please select a vegetable type';
+      newErrors.vegetableType = t('farmerDashboard.cropTypeRequired');
     }
 
     if (!formData.quantity) {
-      newErrors.quantity = 'Quantity is required';
+      newErrors.quantity = t('farmerDashboard.quantityRequired');
     } else if (parseFloat(formData.quantity) <= 0) {
-      newErrors.quantity = 'Quantity must be greater than 0';
+      newErrors.quantity = t('farmerDashboard.quantityPositive');
     }
 
     if (!formData.ratePerKg) {
-      newErrors.ratePerKg = 'Rate per kg is required';
+      newErrors.ratePerKg = t('farmerDashboard.rateRequired');
     } else if (parseFloat(formData.ratePerKg) <= 0) {
-      newErrors.ratePerKg = 'Rate must be greater than 0';
+      newErrors.ratePerKg = t('farmerDashboard.ratePositive');
     }
 
     // Location validation - check if global location is set
     if (!location.coordinates) {
-      toast.error('Please enable location access to upload products');
+      toast.error(t('farmerDashboard.locationRequired'));
       return false;
     }
 
@@ -980,7 +984,7 @@ const FarmerDashboard = () => {
                   >
                     <option value="">{t('farmerDashboard.selectType')}</option>
                     {formData.category && PRODUCT_CATEGORIES[formData.category]?.map(type => (
-                      <option key={type} value={type}>{type}</option>
+                      <option key={type} value={type}>{t(`items.${type}`) || type}</option>
                     ))}
                   </select>
                   {errors.vegetableType && <span className="error-message">{errors.vegetableType}</span>}
@@ -1346,7 +1350,14 @@ const FarmerDashboard = () => {
                       )}
                     </div>
                     <div className="crop-info">
-                      <h3>{t(`items.${crop.vegetableType}`) !== `items.${crop.vegetableType}` ? t(`items.${crop.vegetableType}`) : crop.vegetableType}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+                        <h3 style={{ margin: 0 }}>{t(`items.${crop.vegetableType}`) !== `items.${crop.vegetableType}` ? t(`items.${crop.vegetableType}`) : crop.vegetableType}</h3>
+                        {crop.category && (
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, background: '#ecfdf5', color: '#059669', padding: '2px 8px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                            {t(`categories.${crop.category}`) || crop.category}
+                          </span>
+                        )}
+                      </div>
                       <div className="crop-details">
                         <span className="quantity">{t('farmerDashboard.quantityLabel')} {crop.quantity} kg</span>
                         <span className="rate">{t('farmerDashboard.rateLabel')} ₹{crop.ratePerKg}/kg</span>

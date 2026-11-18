@@ -197,7 +197,7 @@ const CropsHistory = () => {
                                 <div className="crop-card-history">
                                     <div className="crop-card-header">
                                         <div className="crop-title-section">
-                                            <h3>{crop.vegetableType || crop.name}</h3>
+                                            <h3>{t(`items.${crop.vegetableType || crop.name}`) !== `items.${crop.vegetableType || crop.name}` ? t(`items.${crop.vegetableType || crop.name}`) : (crop.vegetableType || crop.name)}</h3>
                                             <span
                                                 className="crop-status-badge"
                                                 style={{ backgroundColor: getStatusColor(crop.status) }}

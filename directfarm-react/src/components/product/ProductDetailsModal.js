@@ -42,7 +42,8 @@ const ProductDetailsModal = ({ isOpen, onClose, product, onTalkToFarmer, onAddTo
         images = ["data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='400' viewBox='0 0 600 400'%3E%3Crect fill='%23f1f5f9' width='600' height='400'/%3E%3Ctext fill='%2394a3b8' font-family='system-ui, sans-serif' font-size='24' font-weight='600' x='50%25' y='50%25' text-anchor='middle' dy='8'%3ENo Image Uploaded%3C/text%3E%3C/svg%3E"];
     }
 
-    const productName = product.name || product.vegetableType || 'Agricultural Product';
+    const rawName = product.name || product.vegetableType || 'Agricultural Product';
+    const productName = t(`items.${rawName}`) !== `items.${rawName}` ? t(`items.${rawName}`) : rawName;
     const price = product.pricePerKg !== undefined ? product.pricePerKg : (product.ratePerKg !== undefined ? product.ratePerKg : (product.price || 0));
     const availableQty = parseFloat(product.quantity) || 0;
     const farmerName = product.farmerName || (product.farmer && product.farmer.name) || 'DirectFarm Producer';
@@ -131,7 +132,7 @@ const ProductDetailsModal = ({ isOpen, onClose, product, onTalkToFarmer, onAddTo
                                 )}
 
                                 {product.category && (
-                                    <span className="gallery-category-badge">{product.category}</span>
+                                    <span className="gallery-category-badge">{t(`categories.${product.category}`) || product.category}</span>
                                 )}
                             </div>
 

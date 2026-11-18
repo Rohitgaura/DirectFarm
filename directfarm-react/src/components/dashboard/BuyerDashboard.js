@@ -472,7 +472,7 @@ const BuyerDashboard = () => {
       {selectedCropForOffer && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h3>Make an Offer for {selectedCropForOffer.vegetableType}</h3>
+            <h3>{t('productDetails.makeOffer')} - {t(`items.${selectedCropForOffer.vegetableType}`) || selectedCropForOffer.vegetableType}</h3>
             <div className="form-group">
               <label>Quantity (kg):</label>
               <input
@@ -642,7 +642,7 @@ const BuyerDashboard = () => {
                 >
                   <option value="">{t('buyerDashboard.allTypes')}</option>
                   {tempFilters.category && PRODUCT_CATEGORIES[tempFilters.category]?.map(type => (
-                    <option key={type} value={type}>{type}</option>
+                    <option key={type} value={type}>{t(`items.${type}`) || type}</option>
                   ))}
                 </select>
               </div>
@@ -813,7 +813,14 @@ const BuyerDashboard = () => {
 
                     <div className="crop-content">
                       <div className="crop-header">
-                        <h3>{t(`items.${crop.vegetableType}`) !== `items.${crop.vegetableType}` ? t(`items.${crop.vegetableType}`) : crop.vegetableType}</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '4px' }}>
+                          <h3 style={{ margin: 0 }}>{t(`items.${crop.vegetableType}`) !== `items.${crop.vegetableType}` ? t(`items.${crop.vegetableType}`) : crop.vegetableType}</h3>
+                          {crop.category && (
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, background: '#ecfdf5', color: '#059669', padding: '2px 8px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                              {t(`categories.${crop.category}`) || crop.category}
+                            </span>
+                          )}
+                        </div>
                         <div className="farmer-info">
                           <i className="fas fa-user"></i>
                           <span
