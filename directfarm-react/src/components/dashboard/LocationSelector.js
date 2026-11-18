@@ -47,11 +47,11 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
                 setStates(response.data);
             } else {
                 console.error('Failed to fetch states - response not successful:', response);
-                toast.error('Failed to load states');
+                toast.error(t('locationSelector.failedStates'));
             }
         } catch (error) {
             console.error('Error fetching states:', error);
-            toast.error('Failed to load states');
+            toast.error(t('locationSelector.failedStates'));
         }
     };
 
@@ -67,7 +67,7 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
                 const response = await apiService.getDistricts(state);
                 if (response.success) setDistricts(response.data);
             } catch (error) {
-                toast.error('Failed to load districts');
+                toast.error(t('locationSelector.failedDistricts'));
             }
         }
     };
@@ -83,7 +83,7 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
                 const response = await apiService.getSubdistricts(district);
                 if (response.success) setSubdistricts(response.data);
             } catch (error) {
-                toast.error('Failed to load subdistricts');
+                toast.error(t('locationSelector.failedSubdistricts'));
             }
         }
     };
@@ -98,7 +98,7 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
                 const response = await apiService.getVillages(subdistrict);
                 if (response.success) setVillages(response.data);
             } catch (error) {
-                toast.error('Failed to load villages');
+                toast.error(t('locationSelector.failedVillages'));
             }
         }
     };
@@ -110,7 +110,7 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
     const handleCurrentLocation = () => {
         setLoading(true);
         if (!navigator.geolocation) {
-            toast.error('Geolocation is not supported by your browser');
+            toast.error(t('locationSelector.geoNotSupported'));
             setLoading(false);
             return;
         }
@@ -126,7 +126,7 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
             },
             (error) => {
                 console.error('Geolocation error:', error);
-                toast.error('Unable to retrieve your location');
+                toast.error(t('locationSelector.unableLocation'));
                 setLoading(false);
             }
         );
@@ -145,11 +145,11 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
                     details: selectedLocation
                 });
             } else {
-                toast.error('Could not find coordinates for this location');
+                toast.error(t('locationSelector.coordsNotFound'));
             }
         } catch (error) {
             console.error('Geocoding error:', error);
-            toast.error('Failed to process location');
+            toast.error(t('locationSelector.failedProcess'));
         } finally {
             setLoading(false);
         }
@@ -253,7 +253,7 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
                                 className="submit-btn"
                                 disabled={loading}
                             >
-                                {loading ? t('common.loading') : t('locationSelector.findProducts')}
+                                {loading ? t('common.loading') : t('locationSelector.confirmLocation')}
                             </button>
                         </div>
                     </form>

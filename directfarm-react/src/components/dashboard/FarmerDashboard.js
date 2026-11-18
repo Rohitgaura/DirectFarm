@@ -254,11 +254,11 @@ const FarmerDashboard = () => {
     try {
       const response = await apiService.updateProductStatus(cropId, { status: newStatus });
       if (response.success) {
-        toast.success(isCurrentlySold ? 'Crop marked as Active & relisted!' : 'Crop marked as Sold Out & unlisted from public store!');
+        toast.success(isCurrentlySold ? t('farmerDashboard.toastRelisted') : t('farmerDashboard.toastSoldOut'));
         setUploadedCrops(prev => prev.map(c => (c.id === cropId || c._id === cropId) ? { ...c, status: newStatus } : c));
       }
     } catch (error) {
-      toast.error('Failed to update product status');
+      toast.error(t('farmerDashboard.toastStatusFailed'));
     }
   };
 
@@ -292,7 +292,7 @@ const FarmerDashboard = () => {
   // Get current location using geolocation API
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by this browser');
+      toast.error(t('locationSelector.geoNotSupported'));
       return;
     }
 
@@ -306,7 +306,7 @@ const FarmerDashboard = () => {
           coordinates: { latitude, longitude }
         }));
 
-        toast.success('Location captured successfully!', {
+        toast.success(t('farmerDashboard.toastLocationCaptured'), {
           position: "top-right",
           autoClose: 2000,
         });
@@ -314,20 +314,20 @@ const FarmerDashboard = () => {
       },
       (error) => {
         console.error('Error getting location:', error);
-        let errorMessage = 'Unable to get your location';
+        let errorMessage = t('locationSelector.unableLocation');
 
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = 'Location access denied by user';
+            errorMessage = t('farmerDashboard.toastLocationDenied');
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = 'Location information unavailable';
+            errorMessage = t('farmerDashboard.toastLocationUnavailable');
             break;
           case error.TIMEOUT:
-            errorMessage = 'Location request timed out';
+            errorMessage = t('farmerDashboard.toastLocationTimeout');
             break;
           default:
-            errorMessage = 'An unknown error occurred';
+            errorMessage = t('farmerDashboard.toastLocationUnknown');
             break;
         }
 
@@ -356,13 +356,13 @@ const FarmerDashboard = () => {
       // Check file type
       const isImage = allowedTypes.includes(file.type.toLowerCase()) || file.type.startsWith('image/');
       if (!isImage) {
-        toast.error(`${file.name} is not a valid image format. Please use JPG, JPEG, PNG, GIF, or WebP.`);
+        toast.error(t('farmerDashboard.toastInvalidImage'));
         return false;
       }
 
       // Check file size
       if (file.size > maxSize) {
-        toast.error(`${file.name} is too large. Maximum size is 5MB.`);
+        toast.error(t('farmerDashboard.toastImageTooLarge'));
         return false;
       }
 
@@ -396,14 +396,14 @@ const FarmerDashboard = () => {
           images: [...prev.images, ...base64Images]
         }));
         setSelectedFiles(prev => [...prev, ...imageFiles]);
-        toast.success(`${imageFiles.length} image(s) added successfully!`, {
+        toast.success(t('farmerDashboard.toastImagesAdded'), {
           position: "top-right",
           autoClose: 2000,
         });
       })
       .catch(error => {
         console.error('Error processing images:', error);
-        toast.error('Error processing images. Please try again.');
+        toast.error(t('farmerDashboard.toastImageError'));
       });
   };
 
@@ -491,7 +491,7 @@ const FarmerDashboard = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Please fix the form errors before submitting');
+      toast.error(t('farmerDashboard.toastFixErrors'));
       return;
     }
 
@@ -507,7 +507,7 @@ const FarmerDashboard = () => {
 
     const userId = currentUser?._id || currentUser?.id;
     if (!userId) {
-      toast.error('Please login to manage products');
+      toast.error(t('farmerDashboard.toastLoginRequired'));
       return;
     }
 
@@ -569,11 +569,11 @@ const FarmerDashboard = () => {
 
         if (editingCropId) {
           setUploadedCrops(prev => prev.map(crop => crop.id === editingCropId ? newProduct : crop));
-          toast.success('Product updated successfully!');
+          toast.success(t('farmerDashboard.toastProductUpdated'));
           cancelEdit();
         } else {
           setUploadedCrops(prev => [newProduct, ...prev]);
-          toast.success('Product uploaded successfully!');
+          toast.success(t('farmerDashboard.toastProductUploaded'));
           // Reset form
           setFormData({
             category: '',
@@ -593,7 +593,7 @@ const FarmerDashboard = () => {
 
     } catch (error) {
       console.error(`Error ${editingCropId ? 'updating' : 'uploading'} product:`, error);
-      toast.error(error.message || `Failed to ${editingCropId ? 'update' : 'upload'} product. Please try again.`);
+      toast.error(error.message || t('farmerDashboard.toastProductFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -605,13 +605,13 @@ const FarmerDashboard = () => {
       if (response.success) {
         const updatedCrops = uploadedCrops.filter(crop => crop.id !== cropId);
         setUploadedCrops(updatedCrops);
-        toast.success('Product deleted successfully!');
+        toast.success(t('farmerDashboard.toastProductDeleted'));
       } else {
         throw new Error(response.message || 'Failed to delete product');
       }
     } catch (error) {
       console.error('Error deleting product:', error);
-      toast.error(error.message || 'Failed to delete product. Please try again.');
+      toast.error(error.message || t('farmerDashboard.toastDeleteFailed'));
     }
   };
 
@@ -625,7 +625,7 @@ const FarmerDashboard = () => {
           longitude: locationData.coordinates[0]
         }
       }));
-      toast.success('Location captured successfully!');
+      toast.success(t('farmerDashboard.toastLocationCaptured'));
     } else {
       setLocation(prev => ({
         ...prev,
@@ -634,7 +634,7 @@ const FarmerDashboard = () => {
           longitude: locationData.coordinates[0]
         }
       }));
-      toast.success(`Location set to ${locationData.address}`);
+      toast.success(`${t('farmerDashboard.toastLocationSet')} (${locationData.address || ''})`);
     }
     setShowLocationSelector(false);
   };
@@ -658,13 +658,13 @@ const FarmerDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1>Farmer Dashboard</h1>
-          <p>Upload your crop details and manage your produce</p>
+          <h1>{t('farmerDashboard.title')}</h1>
+          <p>{t('farmerDashboard.subtitle')}</p>
           {user && (
             <div className="dashboard-rating" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '10px', justifyContent: 'center' }}>
               <StarRating rating={user.averageRating || 0} readOnly size="1.5rem" />
               <span style={{ fontSize: '1.1rem', fontWeight: '600', color: '#333' }}>
-                {(user.averageRating || 0).toFixed(1)} ({user.totalRatings || 0} reviews)
+                {(user.averageRating || 0).toFixed(1)} ({user.totalRatings || 0} {t('farmerDashboard.reviews')})
               </span>
             </div>
           )}
@@ -697,7 +697,7 @@ const FarmerDashboard = () => {
               e.currentTarget.style.color = '#27ae60';
             }}
           >
-            <i className="fas fa-eye"></i> View Public Profile
+            <i className="fas fa-eye"></i> {t('farmerDashboard.viewPublicProfile')}
           </button>
 
           <button
@@ -725,7 +725,7 @@ const FarmerDashboard = () => {
               e.currentTarget.style.borderColor = '#10b981';
             }}
           >
-            <i className="fas fa-chart-pie"></i> Crop & Quantity Analytics
+            <i className="fas fa-chart-pie"></i> {t('farmerDashboard.cropAndQtyAnalytics')}
           </button>
         </div>
 
@@ -739,7 +739,7 @@ const FarmerDashboard = () => {
         >
           <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <i className="fas fa-map-marker-alt" style={{ color: '#2ecc71' }}></i>
-            Location Settings
+            {t('locationSelector.locationSettings')}
           </h2>
 
           {location.coordinates ? (
@@ -749,8 +749,8 @@ const FarmerDashboard = () => {
                   <i className="fas fa-check-circle"></i>
                 </div>
                 <div className="status-info">
-                  <h3 style={{ margin: 0, fontSize: '1rem', color: '#166534' }}>Location Active</h3>
-                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: '#15803d' }}>Your products will be shown to nearby buyers</p>
+                  <h3 style={{ margin: 0, fontSize: '1rem', color: '#166534' }}>{t('farmerDashboard.locationActive')}</h3>
+                  <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: '#15803d' }}>{t('farmerDashboard.locationActiveDesc')}</p>
                   {locationAddress && (locationAddress.district || locationAddress.state) ? (
                     <div className="address-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', marginTop: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
                       <i className="fas fa-map-marker-alt"></i>
@@ -773,7 +773,7 @@ const FarmerDashboard = () => {
                 style={{ background: 'white', border: '1px solid #d1d5db', padding: '0.5rem 1rem', borderRadius: '6px', cursor: 'pointer', color: '#4b5563', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
               >
                 <i className="fas fa-sync-alt"></i>
-                Refresh
+                {t('farmerDashboard.refresh')}
               </button>
             </div>
           ) : (
@@ -781,8 +781,8 @@ const FarmerDashboard = () => {
               <div className="location-icon-large" style={{ fontSize: '2rem', color: '#9ca3af', marginBottom: '1rem' }}>
                 <i className="fas fa-map-marked-alt"></i>
               </div>
-              <h3 style={{ margin: '0 0 0.5rem', color: '#374151' }}>Enable Location Access</h3>
-              <p style={{ margin: '0 0 1.5rem', color: '#6b7280' }}>We need your location to show your products to buyers in your area.</p>
+              <h3 style={{ margin: '0 0 0.5rem', color: '#374151' }}>{t('locationSelector.enableLocation')}</h3>
+              <p style={{ margin: '0 0 1.5rem', color: '#6b7280' }}>{t('locationSelector.locationPrompt')}</p>
 
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button
@@ -794,12 +794,12 @@ const FarmerDashboard = () => {
                   {isGettingLocation ? (
                     <>
                       <i className="fas fa-spinner fa-spin"></i>
-                      Detecting...
+                      {t('locationSelector.detecting')}
                     </>
                   ) : (
                     <>
                       <i className="fas fa-location-arrow"></i>
-                      Use Current Location
+                      {t('locationSelector.useCurrentLocation')}
                     </>
                   )}
                 </button>
@@ -809,7 +809,7 @@ const FarmerDashboard = () => {
                   style={{ background: 'white', color: '#2ecc71', border: '2px solid #2ecc71', padding: '0.75rem 1.5rem', borderRadius: '8px', cursor: 'pointer', fontSize: '1rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
                 >
                   <i className="fas fa-map-marked-alt"></i>
-                  Select Location
+                  {t('locationSelector.selectLocationBtn')}
                 </button>
               </div>
             </div>
@@ -886,7 +886,7 @@ const FarmerDashboard = () => {
               <div style={{ background: '#f8fafc', padding: '0.9rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                 <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t('farmerDashboard.totalAvailableQty')}</span>
                 <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
-                  {uploadedCrops.reduce((sum, c) => sum + (parseFloat(c.quantity) || 0), 0).toLocaleString()} kg
+                  {uploadedCrops.reduce((sum, c) => sum + (parseFloat(c.quantity) || 0), 0).toLocaleString()} {t('common.kg')}
                 </div>
                 <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: '600' }}>{t('farmerDashboard.readyToTrade')}</span>
               </div>
@@ -897,7 +897,7 @@ const FarmerDashboard = () => {
                 <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
                   ₹{uploadedCrops.reduce((sum, c) => sum + ((parseFloat(c.quantity) || 0) * (parseFloat(c.ratePerKg) || 0)), 0).toLocaleString()}
                 </div>
-                <span style={{ fontSize: '0.75rem', color: '#d97706', fontWeight: '600' }}>Total</span>
+                <span style={{ fontSize: '0.75rem', color: '#d97706', fontWeight: '600' }}>{t('farmerDashboard.totalListedValuation')}</span>
               </div>
 
               {/* Uploaded Today */}
@@ -918,7 +918,7 @@ const FarmerDashboard = () => {
                         {todayCrops.length}
                       </div>
                       <span style={{ fontSize: '0.75rem', color: '#8b5cf6', fontWeight: '600' }}>
-                        +{todayQty.toLocaleString()} kg
+                        +{todayQty.toLocaleString()} {t('common.kg')}
                       </span>
                     </>
                   );
@@ -1033,7 +1033,7 @@ const FarmerDashboard = () => {
                 <div className="form-group">
                   <label>
                     <i className="fas fa-calculator"></i>
-                    Total (₹)
+                    {t('farmerDashboard.totalRate')}
                   </label>
                   <div className="total-rate-display">
                     ₹{calculateTotalRate()}
@@ -1119,7 +1119,7 @@ const FarmerDashboard = () => {
                         max="365"
                         value={formData.expiryDuration}
                         onChange={handleChange}
-                        placeholder="e.g. 7"
+                        placeholder={t('farmerDashboard.durationPlaceholder')}
                         style={{
                           width: '100%',
                           padding: '0.65rem 0.85rem',
@@ -1359,8 +1359,8 @@ const FarmerDashboard = () => {
                         )}
                       </div>
                       <div className="crop-details">
-                        <span className="quantity">{t('farmerDashboard.quantityLabel')} {crop.quantity} kg</span>
-                        <span className="rate">{t('farmerDashboard.rateLabel')} ₹{crop.ratePerKg}/kg</span>
+                        <span className="quantity">{t('farmerDashboard.quantityLabel')} {crop.quantity} {t('common.kg')}</span>
+                        <span className="rate">{t('farmerDashboard.rateLabel')} ₹{crop.ratePerKg}/{t('common.kg')}</span>
                         <span className="total">{t('farmerDashboard.totalLabel')} ₹{(parseFloat(crop.ratePerKg || 0) * parseFloat(crop.quantity || 0)).toLocaleString()}</span>
                       </div>
                       {crop.description && (

@@ -117,7 +117,7 @@ const FarmerAnalytics = () => {
             }
         } catch (err) {
             console.error('Error in fallback analytics computation:', err);
-            toast.error('Failed to load analytics data');
+            toast.error(t('analytics.failedLoad'));
         }
     };
 
@@ -125,7 +125,7 @@ const FarmerAnalytics = () => {
         return (
             <div className="analytics-loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '1rem', paddingTop: '100px' }}>
                 <i className="fas fa-spinner fa-spin" style={{ fontSize: '2.5rem', color: '#10b981' }}></i>
-                <p style={{ color: '#64748b', fontWeight: '600' }}>Loading Crop & Farm Analytics...</p>
+                <p style={{ color: '#64748b', fontWeight: '600' }}>{t('analytics.loadingAnalytics')}</p>
             </div>
         );
     }
@@ -138,10 +138,10 @@ const FarmerAnalytics = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>
                         <h2 className="analytics-title" style={{ margin: '0 0 0.35rem 0', fontSize: '1.85rem', color: '#0f172a', fontWeight: '800' }}>
-                            🌾 Farm Produce & Quantity Analytics
+                            {t('analytics.farmProduceTitle')}
                         </h2>
                         <p style={{ margin: 0, color: '#64748b', fontSize: '0.95rem' }}>
-                            Live insights into your uploaded crops, available quantities, inventory valuation, and sales
+                            {t('analytics.farmProduceSubtitle')}
                         </p>
                     </div>
 
@@ -232,7 +232,7 @@ const FarmerAnalytics = () => {
                                 {data.totalCrops || 0}
                             </div>
                             <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: '600' }}>
-                                Across {data.categoryQuantityChart?.length || 1} categories
+                                {t('analytics.acrossCategories', { count: data.categoryQuantityChart?.length || 1 })}
                             </span>
                         </div>
                     </div>
@@ -267,10 +267,10 @@ const FarmerAnalytics = () => {
                                 {t('analytics.totalQuantity')}
                             </span>
                             <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a', lineHeight: 1.2, marginTop: '2px' }}>
-                                {(data.totalStockKg || 0).toLocaleString()} kg
+                                {(data.totalStockKg || 0).toLocaleString()} {t('common.kg')}
                             </div>
                             <span style={{ fontSize: '0.78rem', color: '#3b82f6', fontWeight: '600' }}>
-                                Active in warehouse / farm
+                                {t('analytics.activeInWarehouse')}
                             </span>
                         </div>
                     </div>
@@ -308,7 +308,7 @@ const FarmerAnalytics = () => {
                                 ₹{(data.totalStockValue || 0).toLocaleString()}
                             </div>
                             <span style={{ fontSize: '0.78rem', color: '#d97706', fontWeight: '600' }}>
-                                Base market asking value
+                                {t('analytics.baseAskingValue')}
                             </span>
                         </div>
                     </div>
@@ -346,7 +346,7 @@ const FarmerAnalytics = () => {
                                 {data.uploadedTodayCount || 0}
                             </div>
                             <span style={{ fontSize: '0.78rem', color: '#8b5cf6', fontWeight: '600' }}>
-                                +{(data.uploadedTodayKg || 0).toLocaleString()} kg added today
+                                {t('analytics.addedToday', { qty: (data.uploadedTodayKg || 0).toLocaleString() })}
                             </span>
                         </div>
                     </div>
@@ -371,9 +371,9 @@ const FarmerAnalytics = () => {
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                                     <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: '700' }}>
-                                        ⚖️ Crop-wise Uploaded Quantity (kg)
+                                        {t('analytics.cropQuantityChartTitle')}
                                     </h3>
-                                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Stock in kg</span>
+                                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{t('analytics.stockInKg')}</span>
                                 </div>
                                 <div style={{ height: '320px' }}>
                                     <ResponsiveContainer width="100%" height="100%">
@@ -381,9 +381,9 @@ const FarmerAnalytics = () => {
                                             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                             <XAxis type="number" tickFormatter={(val) => `${val}kg`} />
                                             <YAxis dataKey="name" type="category" width={140} tick={{ fontSize: 12, fill: '#334155' }} />
-                                            <Tooltip formatter={(value) => [`${value.toLocaleString()} kg`, 'Available Quantity']} />
+                                            <Tooltip formatter={(value) => [`${value.toLocaleString()} kg`, t('analytics.availableQuantity')]} />
                                             <Legend />
-                                            <Bar dataKey="quantity" fill="#10b981" radius={[0, 6, 6, 0]} name="Quantity (kg)" />
+                                            <Bar dataKey="quantity" fill="#10b981" radius={[0, 6, 6, 0]} name={t('analytics.quantityKgLabel')} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
@@ -399,9 +399,9 @@ const FarmerAnalytics = () => {
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                                     <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: '700' }}>
-                                        🍩 Uploaded Quantity by Category
+                                        {t('analytics.categoryQuantityChartTitle')}
                                     </h3>
-                                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Weight distribution</span>
+                                    <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{t('analytics.weightDistribution')}</span>
                                 </div>
                                 <div style={{ height: '320px' }}>
                                     <ResponsiveContainer width="100%" height="100%">
@@ -421,7 +421,7 @@ const FarmerAnalytics = () => {
                                                     <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
                                                 ))}
                                             </Pie>
-                                            <Tooltip formatter={(value) => [`${value.toLocaleString()} kg`, 'Total Quantity']} />
+                                            <Tooltip formatter={(value) => [`${value.toLocaleString()} kg`, t('analytics.totalQuantityLabel')]} />
                                             <Legend />
                                         </PieChart>
                                     </ResponsiveContainer>
@@ -441,9 +441,9 @@ const FarmerAnalytics = () => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                                 <div>
                                     <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1.15rem', color: '#0f172a', fontWeight: '700' }}>
-                                        📈 Crop Upload Volume History (6 Months)
+                                        {t('analytics.uploadTimelineTitle')}
                                     </h3>
-                                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.85rem' }}>Monthly quantity (kg) of fresh produce uploaded to DirectFarm</p>
+                                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.85rem' }}>{t('analytics.uploadTimelineSubtitle')}</p>
                                 </div>
                             </div>
                             <div style={{ height: '280px' }}>
@@ -452,9 +452,9 @@ const FarmerAnalytics = () => {
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="name" />
                                         <YAxis tickFormatter={(val) => `${val}kg`} />
-                                        <Tooltip formatter={(value, name) => [name === 'quantityKg' ? `${value.toLocaleString()} kg` : value, name === 'quantityKg' ? 'Quantity Uploaded' : 'Crops Uploaded']} />
+                                        <Tooltip formatter={(value, name) => [name === 'quantityKg' ? `${value.toLocaleString()} kg` : value, name === 'quantityKg' ? t('analytics.quantityUploaded') : t('analytics.cropsUploaded')]} />
                                         <Legend />
-                                        <Area type="monotone" dataKey="quantityKg" stroke="#3b82f6" fill="#bfdbfe" fillOpacity={0.6} name="Quantity (kg)" />
+                                        <Area type="monotone" dataKey="quantityKg" stroke="#3b82f6" fill="#bfdbfe" fillOpacity={0.6} name={t('analytics.quantityKgLabel')} />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
@@ -470,10 +470,10 @@ const FarmerAnalytics = () => {
                         }}>
                             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: '700' }}>
-                                    📦 Complete Produce Inventory Breakdown
+                                    {t('analytics.inventoryBreakdownTitle')}
                                 </h3>
                                 <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: '600' }}>
-                                    {data.cropQuantityChart?.length || 0} active listings
+                                    {t('analytics.activeListings', { count: data.cropQuantityChart?.length || 0 })}
                                 </span>
                             </div>
 
@@ -481,12 +481,12 @@ const FarmerAnalytics = () => {
                                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
                                     <thead>
                                         <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', fontWeight: '700' }}>
-                                            <th style={{ padding: '12px 16px' }}>Crop Name</th>
-                                            <th style={{ padding: '12px 16px' }}>Category</th>
-                                            <th style={{ padding: '12px 16px' }}>Upload Status / Date</th>
-                                            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Price / kg</th>
-                                            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Available Qty</th>
-                                            <th style={{ padding: '12px 16px', textAlign: 'right' }}>Asset Valuation</th>
+                                            <th style={{ padding: '12px 16px' }}>{t('analytics.cropNameCol')}</th>
+                                            <th style={{ padding: '12px 16px' }}>{t('analytics.categoryCol')}</th>
+                                            <th style={{ padding: '12px 16px' }}>{t('analytics.uploadStatusCol')}</th>
+                                            <th style={{ padding: '12px 16px', textAlign: 'right' }}>{t('analytics.pricePerKgCol')}</th>
+                                            <th style={{ padding: '12px 16px', textAlign: 'right' }}>{t('analytics.availableQtyCol')}</th>
+                                            <th style={{ padding: '12px 16px', textAlign: 'right' }}>{t('analytics.assetValuationCol')}</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -497,21 +497,21 @@ const FarmerAnalytics = () => {
                                             return (
                                                 <tr key={crop.id} style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.15s ease' }}>
                                                     <td style={{ padding: '14px 16px', fontWeight: '700', color: '#1e293b' }}>
-                                                        {crop.name}
+                                                        {t(`items.${crop.name}`) !== `items.${crop.name}` ? t(`items.${crop.name}`) : crop.name}
                                                     </td>
                                                     <td style={{ padding: '14px 16px' }}>
                                                         <span style={{ background: '#ecfdf5', color: '#059669', padding: '2px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '700' }}>
-                                                            {crop.category}
+                                                            {t(`categories.${crop.category}`) || crop.category}
                                                         </span>
                                                     </td>
                                                     <td style={{ padding: '14px 16px' }}>
                                                         {today ? (
                                                             <span style={{ background: '#10b981', color: '#ffffff', padding: '3px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                                                                🌱 Uploaded Today
+                                                                {t('analytics.uploadedTodayBadge')}
                                                             </span>
                                                         ) : yesterday ? (
                                                             <span style={{ background: '#eff6ff', color: '#2563eb', padding: '3px 8px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '600' }}>
-                                                                📅 Yesterday
+                                                                {t('analytics.yesterdayBadge')}
                                                             </span>
                                                         ) : (
                                                             <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
@@ -520,10 +520,10 @@ const FarmerAnalytics = () => {
                                                         )}
                                                     </td>
                                                     <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '600', color: '#0f172a' }}>
-                                                        ₹{crop.pricePerKg}/kg
+                                                        ₹{crop.pricePerKg}/{t('common.kg')}
                                                     </td>
                                                     <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '800', color: '#10b981' }}>
-                                                        {crop.quantity?.toLocaleString()} kg
+                                                        {crop.quantity?.toLocaleString()} {t('common.kg')}
                                                     </td>
                                                     <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: '800', color: '#0f172a' }}>
                                                         ₹{crop.totalValue?.toLocaleString()}
@@ -547,7 +547,7 @@ const FarmerAnalytics = () => {
                             boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
                         }}>
                             <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#0f172a', fontWeight: '700' }}>
-                                💵 Monthly Sales & Income Trend
+                                {t('analytics.salesIncomeTitle')}
                             </h3>
                             <div style={{ height: '300px' }}>
                                 <ResponsiveContainer width="100%" height="100%">
@@ -555,9 +555,9 @@ const FarmerAnalytics = () => {
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                         <XAxis dataKey="name" />
                                         <YAxis tickFormatter={(val) => `₹${val}`} />
-                                        <Tooltip formatter={(value) => [`₹${value.toLocaleString()}`, 'Income']} />
+                                        <Tooltip formatter={(value) => [`₹${value.toLocaleString()}`, t('analytics.incomeTooltip')]} />
                                         <Legend />
-                                        <Area type="monotone" dataKey="income" stroke="#10b981" fill="#a7f3d0" fillOpacity={0.7} name="Income (₹)" />
+                                        <Area type="monotone" dataKey="income" stroke="#10b981" fill="#a7f3d0" fillOpacity={0.7} name={t('analytics.incomeLabel')} />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </div>
@@ -572,7 +572,7 @@ const FarmerAnalytics = () => {
                                 boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
                             }}>
                                 <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.15rem', color: '#0f172a', fontWeight: '700' }}>
-                                    🏆 Top Selling Products (Units Sold)
+                                    {t('analytics.topSellingTitle')}
                                 </h3>
                                 <div style={{ height: '280px' }}>
                                     <ResponsiveContainer width="100%" height="100%">
@@ -582,7 +582,7 @@ const FarmerAnalytics = () => {
                                             <YAxis dataKey="name" type="category" width={130} />
                                             <Tooltip />
                                             <Legend />
-                                            <Bar dataKey="sales" fill="#8884d8" name="Units Sold" radius={[0, 6, 6, 0]} />
+                                            <Bar dataKey="sales" fill="#8884d8" name={t('analytics.unitsSoldLabel')} radius={[0, 6, 6, 0]} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </div>
