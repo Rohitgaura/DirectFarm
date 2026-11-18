@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import apiService from '../../services/api';
 import { ComplaintTrackingModal } from '../common/ComplaintTrackingModal';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Complaints = () => {
+    const { t } = useLanguage();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -42,17 +44,17 @@ const Complaints = () => {
                     <div className="card shadow-sm">
                         <div className="card-body p-5">
                             <div className="d-flex justify-content-between align-items-center mb-4">
-                                <h2 className="text-primary mb-0">Complaint Redressal</h2>
+                                <h2 className="text-primary mb-0">{t('complaints.title')}</h2>
                                 <button
                                     className="btn btn-outline-secondary"
                                     onClick={() => setIsModalOpen(true)}
                                 >
-                                    Track Complaint
+                                    {t('complaints.trackComplaint')}
                                 </button>
                             </div>
 
                             <p className="lead mb-4">
-                                We take your concerns seriously. Please tell us about the issue you are facing.
+                                {t('complaints.subtitle')}
                             </p>
 
                             {lastRequestId && (
@@ -64,7 +66,7 @@ const Complaints = () => {
 
                             <form onSubmit={onSubmit}>
                                 <div className="mb-3">
-                                    <label htmlFor="name" className="form-label">Name</label>
+                                    <label htmlFor="name" className="form-label">{t('complaints.name')}</label>
                                     <input
                                         type="text"
                                         className="form-control"
@@ -76,7 +78,7 @@ const Complaints = () => {
                                     />
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="email" className="form-label">Email Address</label>
+                                    <label htmlFor="email" className="form-label">{t('complaints.email')}</label>
                                     <input
                                         type="email"
                                         className="form-control"
@@ -88,7 +90,7 @@ const Complaints = () => {
                                     />
                                 </div>
                                 <div className="mb-3">
-                                    <label htmlFor="description" className="form-label">Description of Issue</label>
+                                    <label htmlFor="description" className="form-label">{t('complaints.description')}</label>
                                     <textarea
                                         className="form-control"
                                         id="description"
@@ -97,12 +99,11 @@ const Complaints = () => {
                                         value={description}
                                         onChange={onChange}
                                         required
-                                        placeholder="Please describe your issue in detail..."
                                     ></textarea>
                                 </div>
                                 <div className="d-grid gap-2">
                                     <button type="submit" className="btn btn-primary btn-lg">
-                                        Submit Complaint
+                                        {t('complaints.submitComplaint')}
                                     </button>
                                 </div>
                             </form>

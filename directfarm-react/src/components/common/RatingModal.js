@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import StarRating from './StarRating';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/RatingModal.css';
 
 const RatingModal = ({ isOpen, onClose, onSubmit, orderId, ratedUserName }) => {
+    const { t } = useLanguage();
     const [rating, setRating] = useState(0);
     const [review, setReview] = useState('');
     const [loading, setLoading] = useState(false);
@@ -34,23 +36,23 @@ const RatingModal = ({ isOpen, onClose, onSubmit, orderId, ratedUserName }) => {
         <div className="rating-modal-overlay">
             <div className="rating-modal">
                 <button className="close-btn" onClick={onClose}>&times;</button>
-                <h2>Rate {ratedUserName}</h2>
+                <h2>{t('rating.rateUser')} ({ratedUserName})</h2>
                 <form onSubmit={handleSubmit}>
                     <div className="rating-input">
-                        <label>Rating:</label>
+                        <label>{t('rating.howWasExperience')}</label>
                         <StarRating rating={rating} onRate={setRating} size="2rem" />
                     </div>
                     <div className="review-input">
-                        <label>Review (Optional):</label>
+                        <label>{t('rating.writeReview')}</label>
                         <textarea
                             value={review}
                             onChange={(e) => setReview(e.target.value)}
-                            placeholder="Share your experience..."
+                            placeholder={t('rating.writeReview')}
                             rows="4"
                         />
                     </div>
                     <button type="submit" className="submit-btn" disabled={loading}>
-                        {loading ? 'Submitting...' : 'Submit Rating'}
+                        {loading ? t('rating.submitting') : t('rating.submitRating')}
                     </button>
                 </form>
             </div>

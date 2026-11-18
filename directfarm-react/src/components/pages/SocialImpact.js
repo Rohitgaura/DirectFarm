@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import apiService from '../../services/api';
 import AnimatedCounter from '../common/AnimatedCounter';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/SocialImpact.css';
 
 const SocialImpact = () => {
+  const { t, language } = useLanguage();
   const [liveStats, setLiveStats] = useState(null);
 
   // Fetch live platform stats
@@ -43,23 +45,23 @@ const SocialImpact = () => {
     {
       isStatic: true,
       number: '30-50%',
-      title: 'Income Increase',
-      description: 'Average increase in farmer income through direct market access',
+      title: t('socialImpact.incomeIncrease'),
+      description: t('socialImpact.incomeDesc'),
       icon: 'fas fa-chart-line'
     },
     {
       isStatic: true,
       number: '40%',
-      title: 'Reduced Wastage',
-      description: 'Decrease in food wastage through better market access',
+      title: t('socialImpact.reducedWastage'),
+      description: t('socialImpact.reducedDesc'),
       icon: 'fas fa-leaf'
     },
     {
       isStatic: false,
       value: liveStats?.totalFarmers || 0,
       suffix: '+',
-      title: 'Farmers Connected',
-      description: 'Farmers actively using the DirectFarm platform',
+      title: t('socialImpact.farmersEmpowered'),
+      description: t('socialImpact.farmersEmpoweredDesc'),
       icon: 'fas fa-users'
     },
     {
@@ -68,13 +70,49 @@ const SocialImpact = () => {
       prefix: revenueData.prefix || '',
       suffix: revenueData.suffix || '',
       decimals: revenueData.decimals || 0,
-      title: 'Value Generated',
-      description: 'Total value generated for farming communities',
+      title: t('socialImpact.valueGenerated'),
+      description: t('socialImpact.valueGeneratedDesc'),
       icon: 'fas fa-rupee-sign'
     }
   ];
 
-  const farmerStories = [
+  const isHi = language === 'hi';
+
+  const farmerStories = isHi ? [
+    {
+      name: 'राम कुमार सिंह',
+      location: 'पटना, बिहार',
+      story: 'डायरेक्टफार्म से पहले मैं केवल ₹15,000 प्रति माह कमाता था। अब मैं सीधे खुदरा विक्रेताओं को बेचकर ₹25,000-30,000 महीना कमाता हूँ। अब मैं अपने बच्चों को बेहतर शिक्षा दिला पा रहा हूँ।',
+      image: 'farmer1',
+      crop: 'हरी सब्जियां',
+      income: '₹30,000',
+      improvement: '+100%',
+      icon: 'fas fa-chart-line',
+      color: '#4CAF50'
+    },
+    {
+      name: 'लक्ष्मी देवी',
+      location: 'गया, बिहार',
+      story: 'डायरेक्टफार्म ने मुझे दूसरे राज्यों के खरीदारों से जोड़ा। अब मैं अपनी जैविक उपज प्रीमियम दामों पर बेचती हूँ और अपने गाँव की अन्य महिला किसानों को भी प्रशिक्षित कर रही हूँ।',
+      image: 'farmer2',
+      crop: 'जैविक सब्जियां',
+      income: '₹35,000',
+      improvement: '+150%',
+      icon: 'fas fa-seedling',
+      color: '#FF9800'
+    },
+    {
+      name: 'मोहन प्रसाद',
+      location: 'भागलपुर, बिहार',
+      story: 'इस मंच ने बिचौलियों को खत्म कर दिया जो मेरी कमाई का 40% ले जाते थे। अब मुझे उचित दाम मिलते हैं और बाज़ार की जानकारी से मैं बेहतर फसलों की योजना बना सकता हूँ।',
+      image: 'farmer3',
+      crop: 'फल व बागवानी',
+      income: '₹28,000',
+      improvement: '+87%',
+      icon: 'fas fa-apple-alt',
+      color: '#E91E63'
+    }
+  ] : [
     {
       name: 'Ram Kumar Singh',
       location: 'Patna, Bihar',
@@ -110,7 +148,28 @@ const SocialImpact = () => {
     }
   ];
 
-  const communityBenefits = [
+  const communityBenefits = isHi ? [
+    {
+      icon: 'fas fa-graduation-cap',
+      title: 'शिक्षा तक पहुंच',
+      description: 'किसानों की बढ़ी हुई आय बच्चों को बेहतर शिक्षा दिलाने और गरीबी के चक्र को तोड़ने में सक्षम बनाती है।'
+    },
+    {
+      icon: 'fas fa-heartbeat',
+      title: 'बेहतर स्वास्थ्य सेवाएं',
+      description: 'अच्छी आमदनी से परिवारों को गुणवत्तापूर्ण स्वास्थ्य देखभाल और बेहतर पोषण मिलता है।'
+    },
+    {
+      icon: 'fas fa-home',
+      title: 'बुनियादी ढांचे का विकास',
+      description: 'समुदाय बेहतर आवास, पक्की सड़कों और स्थानीय विकास में निवेश कर पाते हैं।'
+    },
+    {
+      icon: 'fas fa-handshake',
+      title: 'महिला सशक्तिकरण',
+      description: 'महिला किसानों को वित्तीय स्वतंत्रता, सम्मान और निर्णय लेने का अधिकार मिलता है।'
+    }
+  ] : [
     {
       icon: 'fas fa-graduation-cap',
       title: 'Education Access',
@@ -133,7 +192,28 @@ const SocialImpact = () => {
     }
   ];
 
-  const environmentalImpact = [
+  const environmentalImpact = isHi ? [
+    {
+      icon: 'fas fa-recycle',
+      title: 'खाद्य बर्बादी में भारी कमी',
+      description: 'सीधी बाज़ार पहुंच से ढुलाई के समय और फसल खराब होने में भारी कमी आती है।'
+    },
+    {
+      icon: 'fas fa-seedling',
+      title: 'टिकाऊ और जैविक खेती',
+      description: 'बाज़ार की मांग से किसान फसल विविधीकरण और टिकाऊ तरीकों को अपनाते हैं।'
+    },
+    {
+      icon: 'fas fa-truck',
+      title: 'अनुकूलित लॉजिस्टिक्स',
+      description: 'कुशल रूटिंग और सीधी डिलीवरी से कार्बन उत्सर्जन और परिवहन लागत घटती है।'
+    },
+    {
+      icon: 'fas fa-water',
+      title: 'प्राकृतिक संसाधनों का संरक्षण',
+      description: 'उचित योजना से पानी, खाद और रासायनिक उर्वरकों की बर्बादी रुकती है।'
+    }
+  ] : [
     {
       icon: 'fas fa-recycle',
       title: 'Reduced Food Waste',
@@ -156,7 +236,28 @@ const SocialImpact = () => {
     }
   ];
 
-  const futureGoals = [
+  const futureGoals = isHi ? [
+    {
+      year: '2025',
+      target: '10,000+ किसान',
+      description: 'बिहार और पड़ोसी राज्यों में 10,000 से अधिक सक्रिय किसानों तक विस्तार'
+    },
+    {
+      year: '2026',
+      target: '₹50 करोड़+ मूल्य',
+      description: 'किसान समुदायों के लिए ₹50+ करोड़ से अधिक का प्रत्यक्ष आर्थिक मूल्य उत्पन्न करना'
+    },
+    {
+      year: '2027',
+      target: 'अखिल भारतीय विस्तार',
+      description: '5 से अधिक प्रमुख कृषि राज्यों में पूर्ण संचालन शुरू करना'
+    },
+    {
+      year: '2028',
+      target: '10 लाख+ किसान',
+      description: 'पूरे भारत में 10 लाख से अधिक किसानों को डिजिटल रूप से सशक्त बनाना'
+    }
+  ] : [
     {
       year: '2025',
       target: '10,000+ Farmers',
@@ -216,14 +317,14 @@ const SocialImpact = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            Our Social Impact
+            {t('socialImpact.title')}
           </motion.h1>
           <motion.p
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Transforming lives and communities through technology-driven agricultural innovation
+            {t('socialImpact.subtitle')}
           </motion.p>
         </div>
       </motion.section>
@@ -241,7 +342,7 @@ const SocialImpact = () => {
             className="section-title"
             variants={itemVariants}
           >
-            Impact at a Glance
+            {t('socialImpact.impactGlance')}
           </motion.h2>
           <div className="metrics-grid">
             {impactMetrics.map((metric, index) => (
@@ -293,8 +394,8 @@ const SocialImpact = () => {
             className="section-header"
             variants={itemVariants}
           >
-            <h2 className="section-title">Stories of Change</h2>
-            <p className="section-subtitle">Real farmers, real transformations, real impact</p>
+            <h2 className="section-title">{t('socialImpact.storiesTitle')}</h2>
+            <p className="section-subtitle">{t('socialImpact.storiesSubtitle')}</p>
           </motion.div>
 
           <div className="stories-grid">
@@ -320,11 +421,11 @@ const SocialImpact = () => {
                   </div>
                   <div className="story-stats">
                     <div className="stat-item">
-                      <span className="stat-label">Current Income</span>
+                      <span className="stat-label">{t('socialImpact.currentIncome')}</span>
                       <span className="stat-value">{story.income}</span>
                     </div>
                     <div className="stat-item improvement">
-                      <span className="stat-label">Improvement</span>
+                      <span className="stat-label">{t('socialImpact.improvement')}</span>
                       <span className="stat-value">{story.improvement}</span>
                     </div>
                   </div>
@@ -353,7 +454,7 @@ const SocialImpact = () => {
                   <div className="story-footer">
                     <div className="success-badge">
                       <i className="fas fa-check-circle"></i>
-                      Success Story
+                      {t('socialImpact.successStory')}
                     </div>
                   </div>
                 </div>
@@ -368,14 +469,14 @@ const SocialImpact = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.8 }}
           >
-            <p>Join thousands of farmers who have transformed their lives with DirectFarm</p>
+            <p>{t('socialImpact.storiesCtaText')}</p>
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Link to="/success-stories" className="btn btn-primary">
+              <Link to="/register" className="btn btn-primary">
                 <i className="fas fa-star"></i>
-                Start Your Own Story
+                {t('socialImpact.storiesCtaBtn')}
               </Link>
             </motion.div>
           </motion.div>
@@ -395,7 +496,7 @@ const SocialImpact = () => {
             className="section-title"
             variants={itemVariants}
           >
-            Community Transformation
+            {t('socialImpact.communityTitle')}
           </motion.h2>
           <div className="benefits-grid">
             {communityBenefits.map((benefit, index) => (
@@ -433,7 +534,7 @@ const SocialImpact = () => {
             className="section-title"
             variants={itemVariants}
           >
-            Environmental Sustainability
+            {t('socialImpact.environmentalTitle')}
           </motion.h2>
           <div className="environmental-grid">
             {environmentalImpact.map((impact, index) => (
@@ -471,7 +572,7 @@ const SocialImpact = () => {
             className="section-title"
             variants={itemVariants}
           >
-            Our Vision for the Future
+            {t('socialImpact.futureTitle')}
           </motion.h2>
           <div className="goals-timeline">
             {futureGoals.map((goal, index) => (
@@ -511,8 +612,8 @@ const SocialImpact = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.8 }}
           >
-            <h2>Join the Movement</h2>
-            <p>Be part of the transformation in Indian agriculture. Together, we can create a more equitable and sustainable future for farmers.</p>
+            <h2>{t('socialImpact.joinMovementTitle')}</h2>
+            <p>{t('socialImpact.joinMovementDesc')}</p>
             <div className="cta-buttons">
               <motion.div
                 whileHover={{ scale: 1.05 }}
@@ -520,7 +621,7 @@ const SocialImpact = () => {
               >
                 <Link to="/register" className="btn btn-primary">
                   <i className="fas fa-user-plus"></i>
-                  Join as Farmer
+                  {t('socialImpact.joinFarmerBtn')}
                 </Link>
               </motion.div>
               <motion.div
@@ -529,7 +630,7 @@ const SocialImpact = () => {
               >
                 <Link to="/about" className="btn btn-secondary">
                   <i className="fas fa-info-circle"></i>
-                  Learn More
+                  {t('socialImpact.learnMoreBtn')}
                 </Link>
               </motion.div>
             </div>

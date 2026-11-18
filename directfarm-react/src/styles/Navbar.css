@@ -2,7 +2,7 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 80px;
+  scroll-padding-top: 100px;
 }
 
 .navbar {
@@ -12,15 +12,117 @@ html {
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   z-index: 1000;
-  padding: 1rem 0;
+  padding: 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Top Utility Bar for Language Preference */
+.navbar-top-bar {
+  background: linear-gradient(90deg, #1b5e20 0%, #2e7d32 100%);
+  color: #ffffff;
+  padding: 0.35rem 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nav-top-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: #e8f5e9;
+  letter-spacing: 0.2px;
+}
+
+.top-bar-icon {
+  font-size: 0.95rem;
+}
+
+.top-bar-tagline {
+  font-size: 0.82rem;
+  opacity: 0.95;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+}
+
+.top-bar-lang-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lang-globe-icon {
+  color: #a5d6a7;
+  font-size: 0.88rem;
+}
+
+.lang-prompt-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e8f5e9;
+}
+
+.lang-pill-group {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 20px;
+  padding: 2px;
+}
+
+.lang-pill {
+  border: none;
+  background: transparent;
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  outline: none;
+}
+
+.lang-pill:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.lang-pill.active {
+  background: #ffffff;
+  color: #1b5e20;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-weight: 700;
+}
+
+.lang-pill .flag-icon {
+  font-size: 0.85rem;
+}
+
+.mobile-lang-item {
+  display: none;
 }
 
 .nav-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 0 2rem;
+  padding: 0.75rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -175,20 +277,81 @@ html {
 
 /* Mobile Navigation */
 @media (max-width: 768px) {
+  .top-bar-tagline {
+    display: none;
+  }
+
+  .nav-top-container {
+    padding: 0 1rem;
+    justify-content: space-between;
+  }
+
   .nav-menu {
     position: fixed;
     left: 0;
-    top: 70px;
+    top: 92px;
     flex-direction: column;
     background: white;
     width: 100%;
-    height: calc(100vh - 70px);
+    height: calc(100vh - 92px);
     text-align: center;
-    padding: 2rem 0;
-    gap: 1rem;
+    padding: 1rem 0 2rem;
+    gap: 0.5rem;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     transform: translateX(-100%);
     transition: transform 0.3s ease;
+    overflow-y: auto;
+  }
+
+  .mobile-lang-item {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .mobile-lang-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    max-width: 340px;
+    margin: 0 auto;
+  }
+
+  .mobile-lang-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mobile-lang-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mobile-lang-btn {
+    border: 1px solid #cbd5e1;
+    background: white;
+    color: #334155;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-lang-btn.active {
+    background: #2e7d32;
+    color: white;
+    border-color: #2e7d32;
+    box-shadow: 0 2px 6px rgba(46, 125, 50, 0.3);
   }
 
   .nav-menu.active {
@@ -216,7 +379,7 @@ html {
   }
 
   .nav-container {
-    padding: 0 1rem;
+    padding: 0.5rem 1rem;
   }
 }
 

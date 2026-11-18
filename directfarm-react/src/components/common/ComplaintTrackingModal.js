@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiService from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ComplaintTrackingModal = ({ isOpen, onClose }) => {
+    const { t, language } = useLanguage();
     const [requestId, setRequestId] = useState('');
     const [statusData, setStatusData] = useState(null);
     const [loading, setLoading] = useState(false);
 
     const handleTrack = async () => {
-        if (!requestId) return toast.error('Please enter a Request ID');
+        if (!requestId) return toast.error(language === 'hi' ? 'कृपया अनुरोध आईडी दर्ज करें' : 'Please enter a Request ID');
 
         setLoading(true);
         setStatusData(null);
@@ -19,11 +21,11 @@ const ComplaintTrackingModal = ({ isOpen, onClose }) => {
             if (res && res.requestId) {
                 setStatusData(res);
             } else {
-                toast.error(res.message || 'Complaint not found');
+                toast.error(res.message || (language === 'hi' ? 'शिकायत नहीं मिली' : 'Complaint not found'));
             }
         } catch (err) {
             console.error(err);
-            toast.error('Error tracking complaint');
+            toast.error(language === 'hi' ? 'शिकायत ट्रैक करने में त्रुटि' : 'Error tracking complaint');
             setStatusData(null);
         } finally {
             setLoading(false);
@@ -87,7 +89,7 @@ const ComplaintTrackingModal = ({ isOpen, onClose }) => {
                         }}>
                             <h5 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: '#1a1a1a' }}>
                                 <i className="fas fa-search-location" style={{ marginRight: '10px', color: '#2ecc71' }}></i>
-                                Track Complaint
+                                {t('complaints.trackComplaint')}
                             </h5>
                             <button
                                 onClick={onClose}
@@ -108,7 +110,7 @@ const ComplaintTrackingModal = ({ isOpen, onClose }) => {
                         {/* Body */}
                         <div style={{ padding: '24px' }}>
                             <p style={{ color: '#666', marginBottom: '20px', fontSize: '0.95rem' }}>
-                                Enter your Request ID to check the current status of your complaint.
+                                {t('complaints.enterTicketId')}
                             </p>
 
                             <div className="tracking-input-group" style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -142,7 +144,7 @@ const ComplaintTrackingModal = ({ isOpen, onClose }) => {
                                         transition: 'background-color 0.2s'
                                     }}
                                 >
-                                    {loading ? <i className="fas fa-spinner fa-spin"></i> : 'Track'}
+                                    {loading ? <i className="fas fa-spinner fa-spin"></i> : t('complaints.track')}
                                 </button>
                             </div>
 
@@ -199,7 +201,7 @@ const ComplaintTrackingModal = ({ isOpen, onClose }) => {
                                                         fontWeight: isCurrent ? 700 : 500,
                                                         color: isCompleted || isCurrent ? '#1a1a1a' : '#999'
                                                     }}>
-                                                        {step}
+                                                        {language === 'hi' ? (step === 'Received' ? 'प्राप्त हुआ' : step === 'Processing' ? 'प्रक्रियाधीन' : 'समाधान हुआ') : step}
                                                     </span>
                                                 </div>
                                             );
@@ -212,10 +214,10 @@ const ComplaintTrackingModal = ({ isOpen, onClose }) => {
                                         padding: '16px',
                                         borderLeft: '4px solid #2ecc71'
                                     }}>
-                                        <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>REQUEST ID: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{statusData.requestId}</span></div>
-                                        <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '8px' }}>Created: {new Date(statusData.createdAt).toLocaleDateString()}</div>
+                                        <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '4px' }}>{language === 'hi' ? 'अनुरोध आईडी:' : 'REQUEST ID:'} <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{statusData.requestId}</span></div>
+                                        <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '8px' }}>{language === 'hi' ? 'दिनांक:' : 'Created:'} {new Date(statusData.createdAt).toLocaleDateString()}</div>
                                         <p style={{ margin: 0, fontSize: '0.95rem', color: '#333', lineHeight: '1.5' }}>
-                                            <strong>Reviewer Note:</strong> {statusData.description}
+                                            <strong>{language === 'hi' ? 'समीक्षक टिप्पणी:' : 'Reviewer Note:'}</strong> {statusData.description}
                                         </p>
                                     </div>
                                 </motion.div>

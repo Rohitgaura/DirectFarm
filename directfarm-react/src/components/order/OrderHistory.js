@@ -4,9 +4,11 @@ import { toast } from 'react-toastify';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
 import RatingModal from '../common/RatingModal';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/OrderHistory.css';
 
 const OrderHistory = () => {
+    const { t } = useLanguage();
     const [orders, setOrders] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState(null);
@@ -131,15 +133,15 @@ const OrderHistory = () => {
                 >
                     <h1>
                         <i className="fas fa-history"></i>
-                        Order History
+                        {t('orders.title')}
                     </h1>
-                    <p>Track your orders and view past purchases</p>
+                    <p>{t('orders.subtitle')}</p>
                 </motion.div>
 
                 {isLoading ? (
                     <div className="loading-container">
                         <i className="fas fa-spinner fa-spin"></i>
-                        <p>Loading orders...</p>
+                        <p>{t('common.loading')}</p>
                     </div>
                 ) : orders.length === 0 ? (
                     <motion.div
@@ -149,8 +151,8 @@ const OrderHistory = () => {
                         transition={{ duration: 0.5 }}
                     >
                         <i className="fas fa-shopping-bag"></i>
-                        <h2>No orders yet</h2>
-                        <p>Start shopping to see your order history here!</p>
+                        <h2>{t('orders.noOrders')}</h2>
+                        <p>{t('orders.subtitle')}</p>
                     </motion.div>
                 ) : (
                     <div className="orders-list">
@@ -164,7 +166,7 @@ const OrderHistory = () => {
                             >
                                 <div className="order-header">
                                     <div className="order-id">
-                                        <span className="label">Order ID:</span>
+                                        <span className="label">{t('orders.orderId')}</span>
                                         <span className="value">#{order._id.slice(-8).toUpperCase()}</span>
                                     </div>
                                     <div className="order-date">
@@ -180,7 +182,7 @@ const OrderHistory = () => {
                                                 <i className="fas fa-leaf"></i>
                                             </div>
                                             <div className="item-details">
-                                                <h4>{item.productId?.name || 'Product'}</h4>
+                                                <h4>{t(`items.${item.productId?.name}`) !== `items.${item.productId?.name}` ? t(`items.${item.productId?.name}`) : (item.productId?.name || 'Product')}</h4>
                                                 <p className="item-quantity">{item.quantity} kg × ₹{item.price}/kg</p>
                                             </div>
                                             <div className="item-total">
@@ -194,24 +196,24 @@ const OrderHistory = () => {
                                     <div className="order-status-actions">
                                         <div className="order-status" style={{ backgroundColor: getStatusColor(order.status) }}>
                                             <i className={`fas ${getStatusIcon(order.status)}`}></i>
-                                            <span>{order.status?.toUpperCase() || 'PENDING'}</span>
+                                            <span>{order.status ? t(`orders.${order.status.toLowerCase()}`) : t('orders.pending')}</span>
                                         </div>
                                         {canRate(order) && (
                                             <button
                                                 className="rate-btn"
                                                 onClick={() => handleRateClick(order)}
                                             >
-                                                <i className="fas fa-star"></i> Rate User
+                                                <i className="fas fa-star"></i> {t('orders.rateUser')}
                                             </button>
                                         )}
                                         {((user?.role === 'buyer' && order.isRatedByBuyer) || (user?.role === 'farmer' && order.isRatedBySeller)) && (
                                             <div className="rated-badge">
-                                                <i className="fas fa-check"></i> Rated
+                                                <i className="fas fa-check"></i> {t('orders.rated')}
                                             </div>
                                         )}
                                     </div>
                                     <div className="order-total">
-                                        <span className="total-label">Total:</span>
+                                        <span className="total-label">{t('orders.total')}</span>
                                         <span className="total-amount">₹{order.totalAmount?.toFixed(2)}</span>
                                     </div>
                                 </div>

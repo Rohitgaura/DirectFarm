@@ -5,6 +5,7 @@ import {
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
 import { toast } from 'react-toastify';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/AdminDashboard.css';
 
 const CATEGORY_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
@@ -29,6 +30,7 @@ const isYesterday = (dateString) => {
 };
 
 const FarmerAnalytics = () => {
+    const { t } = useLanguage();
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('inventory'); // 'inventory', 'sales'
@@ -164,7 +166,7 @@ const FarmerAnalytics = () => {
                             }}
                         >
                             <i className="fas fa-boxes-stacked" style={{ color: '#10b981' }}></i>
-                            Uploaded Crops & Stock
+                            {t('analytics.inventoryTab')}
                         </button>
                         <button
                             onClick={() => setActiveTab('sales')}
@@ -185,7 +187,7 @@ const FarmerAnalytics = () => {
                             }}
                         >
                             <i className="fas fa-chart-line" style={{ color: '#3b82f6' }}></i>
-                            Sales & Income
+                            {t('analytics.salesTab')}
                         </button>
                     </div>
                 </div>
@@ -224,10 +226,10 @@ const FarmerAnalytics = () => {
                         </div>
                         <div>
                             <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                Total Uploaded Crops
+                                {t('analytics.totalCrops')}
                             </span>
                             <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a', lineHeight: 1.2, marginTop: '2px' }}>
-                                {data.totalCrops || 0} Crops
+                                {data.totalCrops || 0}
                             </div>
                             <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: '600' }}>
                                 Across {data.categoryQuantityChart?.length || 1} categories
@@ -262,7 +264,7 @@ const FarmerAnalytics = () => {
                         </div>
                         <div>
                             <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                Total Available Quantity
+                                {t('analytics.totalQuantity')}
                             </span>
                             <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a', lineHeight: 1.2, marginTop: '2px' }}>
                                 {(data.totalStockKg || 0).toLocaleString()} kg
@@ -300,7 +302,7 @@ const FarmerAnalytics = () => {
                         </div>
                         <div>
                             <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                Total Stock Valuation
+                                {t('analytics.totalValuation')}
                             </span>
                             <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a', lineHeight: 1.2, marginTop: '2px' }}>
                                 ₹{(data.totalStockValue || 0).toLocaleString()}
@@ -338,10 +340,10 @@ const FarmerAnalytics = () => {
                         </div>
                         <div>
                             <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                Uploaded Today
+                                {t('analytics.uploadedToday')}
                             </span>
                             <div style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a', lineHeight: 1.2, marginTop: '2px' }}>
-                                {data.uploadedTodayCount || 0} Crops
+                                {data.uploadedTodayCount || 0}
                             </div>
                             <span style={{ fontSize: '0.78rem', color: '#8b5cf6', fontWeight: '600' }}>
                                 +{(data.uploadedTodayKg || 0).toLocaleString()} kg added today

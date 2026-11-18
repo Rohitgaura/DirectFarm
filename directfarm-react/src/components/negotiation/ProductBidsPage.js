@@ -4,9 +4,11 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiService from '../../services/api';
 import ChatModal from '../chat/ChatModal';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/ProductBidsPage.css';
 
 const ProductBidsPage = () => {
+    const { t } = useLanguage();
     const { productId } = useParams();
     const navigate = useNavigate();
 
@@ -209,10 +211,10 @@ const ProductBidsPage = () => {
                 {/* Top Navigation */}
                 <div className="bids-nav-header">
                     <button className="btn-back-link" onClick={() => navigate('/farmer-dashboard')}>
-                        <i className="fas fa-arrow-left"></i> Back to Dashboard
+                        <i className="fas fa-arrow-left"></i> {t('productBids.backToDashboard')}
                     </button>
                     <div className="breadcrumbs">
-                        <span>Farmer Dashboard</span> / <span>Product Bidding</span> / <span className="active">{product.name}</span>
+                        <span>{t('farmerDashboard.title')}</span> / <span>{t('productBids.title')}</span> / <span className="active">{product.name}</span>
                     </div>
                 </div>
 
@@ -340,7 +342,7 @@ const ProductBidsPage = () => {
                             <i className="fas fa-gavel"></i>
                         </div>
                         <div className="kpi-body">
-                            <span className="kpi-title">Total Bids Placed</span>
+                            <span className="kpi-title">{t('productBids.totalBids')}</span>
                             <span className="kpi-number">{stats?.totalBids || bids.length}</span>
                         </div>
                     </div>
@@ -350,7 +352,7 @@ const ProductBidsPage = () => {
                             <i className="fas fa-arrow-trend-up"></i>
                         </div>
                         <div className="kpi-body">
-                            <span className="kpi-title">Highest Bid Rate</span>
+                            <span className="kpi-title">{t('productBids.highestBid')}</span>
                             <span className="kpi-number text-green">
                                 {stats?.highestBid ? `₹${stats.highestBid}/kg` : '—'}
                             </span>
@@ -374,7 +376,7 @@ const ProductBidsPage = () => {
                             <i className="fas fa-scale-balanced"></i>
                         </div>
                         <div className="kpi-body">
-                            <span className="kpi-title">Average Offer</span>
+                            <span className="kpi-title">{t('productBids.averageBid')}</span>
                             <span className="kpi-number">
                                 {stats?.averageBid ? `₹${stats.averageBid}/kg` : '—'}
                             </span>
@@ -399,11 +401,11 @@ const ProductBidsPage = () => {
                     {/* Status Tabs */}
                     <div className="filter-status-tabs">
                         {[
-                            { key: 'all', label: 'All Bids', count: bids.length },
-                            { key: 'pending', label: 'Pending', count: bids.filter(b => b.status === 'pending').length },
-                            { key: 'accepted', label: 'Accepted', count: bids.filter(b => b.status === 'accepted').length },
-                            { key: 'counter_offer', label: 'Counter Offered', count: bids.filter(b => b.status === 'counter_offer').length },
-                            { key: 'rejected', label: 'Declined', count: bids.filter(b => b.status === 'rejected').length },
+                            { key: 'all', label: t('productBids.filterAll'), count: bids.length },
+                            { key: 'pending', label: t('productBids.filterPending'), count: bids.filter(b => b.status === 'pending').length },
+                            { key: 'accepted', label: t('productBids.filterAccepted'), count: bids.filter(b => b.status === 'accepted').length },
+                            { key: 'counter_offer', label: t('productBids.counterOffer'), count: bids.filter(b => b.status === 'counter_offer').length },
+                            { key: 'rejected', label: t('productBids.filterRejected'), count: bids.filter(b => b.status === 'rejected').length },
                         ].map(tab => (
                             <button
                                 key={tab.key}
@@ -551,7 +553,7 @@ const ProductBidsPage = () => {
                                                         onClick={() => handleStatusUpdate(bid.id, 'accepted')}
                                                         title="Accept this offer and confirm order"
                                                     >
-                                                        <i className="fas fa-check"></i> Accept Bid
+                                                        <i className="fas fa-check"></i> {t('productBids.acceptBid')}
                                                     </button>
                                                     <button
                                                         className="btn-action btn-counter"
@@ -562,7 +564,7 @@ const ProductBidsPage = () => {
                                                         }}
                                                         title="Send a counter price to this buyer"
                                                     >
-                                                        <i className="fas fa-handshake"></i> Counter Offer
+                                                        <i className="fas fa-handshake"></i> {t('productBids.counterOffer')}
                                                     </button>
                                                     <button
                                                         className="btn-action btn-decline"
@@ -570,7 +572,7 @@ const ProductBidsPage = () => {
                                                         onClick={() => handleStatusUpdate(bid.id, 'rejected')}
                                                         title="Decline this offer"
                                                     >
-                                                        <i className="fas fa-times"></i> Decline
+                                                        <i className="fas fa-times"></i> {t('productBids.rejectBid')}
                                                     </button>
                                                 </div>
                                             )}
@@ -578,7 +580,7 @@ const ProductBidsPage = () => {
                                             {isCounterOpen && (
                                                 <div className="counter-input-panel">
                                                     <div className="counter-inline-form">
-                                                        <label>Propose Counter Price (₹ / kg):</label>
+                                                        <label>{t('farmerNegotiation.enterCounterPrice')}:</label>
                                                         <div className="input-group">
                                                             <span className="currency-symbol">₹</span>
                                                             <input
@@ -587,7 +589,7 @@ const ProductBidsPage = () => {
                                                                 min="1"
                                                                 value={counterPrice}
                                                                 onChange={(e) => setCounterPrice(e.target.value)}
-                                                                placeholder="Enter price per kg"
+                                                                placeholder={t('productBids.counterOfferPlaceholder')}
                                                                 autoFocus
                                                             />
                                                             <button
@@ -595,13 +597,13 @@ const ProductBidsPage = () => {
                                                                 disabled={submittingAction}
                                                                 onClick={() => handleStatusUpdate(bid.id, 'counter_offer')}
                                                             >
-                                                                Send Counter
+                                                                {t('productBids.sendCounterOffer')}
                                                             </button>
                                                             <button
                                                                 className="btn-cancel-counter"
                                                                 onClick={() => setActiveCounterBidId(null)}
                                                             >
-                                                                Cancel
+                                                                {t('common.cancel')}
                                                             </button>
                                                         </div>
                                                     </div>
@@ -613,7 +615,7 @@ const ProductBidsPage = () => {
                                                 className="btn-chat-buyer"
                                                 onClick={() => handleChatWithBuyer(bid)}
                                             >
-                                                <i className="fas fa-comment-dots"></i> Chat with {buyer.name || 'Buyer'}
+                                                <i className="fas fa-comment-dots"></i> {t('productBids.chatWithBuyer')} ({buyer.name || 'Buyer'})
                                             </button>
                                         </div>
                                     </motion.div>

@@ -1,62 +1,63 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-//import { Link } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/About.css';
 
 const About = () => {
+  const { t } = useLanguage();
   const problems = [
     {
       icon: 'fas fa-coins',
-      title: 'Low Income',
-      description: 'Farmers earn only 30-40% of the final market price due to middlemen exploitation'
+      title: t('about.lowIncome'),
+      description: t('about.lowIncomeDesc')
     },
     {
       icon: 'fas fa-trash',
-      title: 'High Food Wastage',
-      description: 'Up to 40% of produce is wasted due to lack of market access and storage'
+      title: t('about.highWastage'),
+      description: t('about.highWastageDesc')
     },
     {
       icon: 'fas fa-mobile-alt',
-      title: 'Digital Divide',
-      description: 'Limited access to technology and digital literacy among farmers'
+      title: t('about.digitalDivide'),
+      description: t('about.digitalDivideDesc')
     },
     {
       icon: 'fas fa-road',
-      title: 'Poor Infrastructure',
-      description: 'Inadequate transportation and cold storage facilities'
+      title: t('about.poorInfra'),
+      description: t('about.poorInfraDesc')
     }
   ];
 
   const solutions = [
     {
       icon: 'fas fa-globe',
-      title: 'Direct Market Access',
-      description: 'Connect farmers directly with retailers and wholesalers'
+      title: t('about.directAccess'),
+      description: t('about.directAccessDesc')
     },
     {
       icon: 'fas fa-shield-alt',
-      title: 'Transparent Pricing',
-      description: 'Real-time market prices and fair trade practices'
+      title: t('about.transPricing'),
+      description: t('about.transPricingDesc')
     },
     {
       icon: 'fas fa-truck',
-      title: 'Logistics Support',
-      description: 'End-to-end transportation and cold storage solutions'
+      title: t('about.logisticsSupport'),
+      description: t('about.logisticsSupportDesc')
     },
     {
       icon: 'fas fa-chart-line',
-      title: 'Market Intelligence',
-      description: 'Data-driven insights for better crop planning'
+      title: t('about.marketIntel'),
+      description: t('about.marketIntelDesc')
     }
   ];
 
   const techFeatures = [
-    'Mobile-first responsive design',
-    'Real-time price updates',
-    'Secure payment processing',
-    'GPS tracking for logistics',
-    'Multi-language support',
-    'Offline functionality'
+    t('about.features.mobileFirst'),
+    t('about.features.realtimePrice'),
+    t('about.features.securePay'),
+    t('about.features.gpsTracking'),
+    t('about.features.multiLang'),
+    t('about.features.offline')
   ];
 
   const containerVariants = {
@@ -96,14 +97,14 @@ const About = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.2 }}
           >
-            About DirectFarm
+            {t('about.title')}
           </motion.h1>
           <motion.p
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            Empowering farmers through technology and direct market access
+            {t('about.tagline')}
           </motion.p>
         </div>
       </motion.section>
@@ -122,23 +123,10 @@ const About = () => {
               className="story-text"
               variants={itemVariants}
             >
-              <h2>The Story Behind DirectFarm</h2>
-              <p>
-                Farmers in Bihar, India, face significant challenges that have persisted for generations.
-                Despite being the backbone of our food security, they struggle with low income, high
-                food wastage, and limited access to modern markets.
-              </p>
-              <p>
-                The traditional agricultural supply chain involves multiple intermediaries - from local
-                traders to wholesale markets, each taking a significant cut of the farmer's earnings.
-                This leaves farmers with only 30-40% of the final market price, barely enough to cover
-                production costs.
-              </p>
-              <p>
-                Additionally, the lack of proper market access and storage facilities leads to massive
-                food wastage, with up to 40% of produce being lost before reaching consumers. This
-                not only affects farmer income but also contributes to food insecurity.
-              </p>
+              <h2>{t('about.storyTitle')}</h2>
+              <p>{t('about.storyP1')}</p>
+              <p>{t('about.storyP2')}</p>
+              <p>{t('about.storyP3')}</p>
             </motion.div>
             <motion.div
               className="story-image"
@@ -146,7 +134,7 @@ const About = () => {
             >
               <div className="image-placeholder large">
                 <i className="fas fa-users"></i>
-                <p>Farmers & Technology</p>
+                <p>{t('about.farmersTech')}</p>
               </div>
             </motion.div>
           </div>
@@ -166,7 +154,7 @@ const About = () => {
             className="section-title"
             variants={itemVariants}
           >
-            Key Challenges We're Solving
+            {t('about.challengesTitle')}
           </motion.h2>
           <div className="problem-list">
             {problems.map((problem, index) => (
@@ -215,12 +203,8 @@ const About = () => {
               <div className="card-icon">
                 <i className="fas fa-bullseye"></i>
               </div>
-              <h2>Our Mission</h2>
-              <p>
-                To revolutionize agricultural commerce by creating a transparent, efficient, and
-                equitable marketplace that connects farmers directly with buyers, ensuring fair
-                prices and reducing food wastage through technology-driven solutions.
-              </p>
+              <h2>{t('about.ourMission')}</h2>
+              <p>{t('about.missionText')}</p>
             </motion.div>
             <motion.div
               className="vision-card"
@@ -234,12 +218,8 @@ const About = () => {
               <div className="card-icon">
                 <i className="fas fa-eye"></i>
               </div>
-              <h2>Our Vision</h2>
-              <p>
-                To become the leading digital platform that transforms agricultural supply chains
-                across India, empowering millions of farmers with better income opportunities and
-                contributing to national food security.
-              </p>
+              <h2>{t('about.ourVision')}</h2>
+              <p>{t('about.visionText')}</p>
             </motion.div>
           </div>
         </div>
@@ -258,7 +238,7 @@ const About = () => {
             className="section-title"
             variants={itemVariants}
           >
-            Our Solutions
+            {t('about.ourSolutions')}
           </motion.h2>
           <div className="solution-grid">
             {solutions.map((solution, index) => (
@@ -297,12 +277,8 @@ const About = () => {
               className="tech-text"
               variants={itemVariants}
             >
-              <h2>Technology Integration</h2>
-              <p>
-                DirectFarm leverages cutting-edge technology to create a seamless experience for
-                both farmers and buyers. Our platform combines mobile technology, data analytics,
-                and logistics optimization to revolutionize agricultural commerce.
-              </p>
+              <h2>{t('about.techIntegration')}</h2>
+              <p>{t('about.techDesc')}</p>
               <ul className="tech-features">
                 {techFeatures.map((feature, index) => (
                   <motion.li
@@ -324,7 +300,7 @@ const About = () => {
             >
               <div className="image-placeholder large">
                 <i className="fas fa-laptop-code"></i>
-                <p>Technology Platform</p>
+                <p>{t('about.techPlatform')}</p>
               </div>
             </motion.div>
           </div>

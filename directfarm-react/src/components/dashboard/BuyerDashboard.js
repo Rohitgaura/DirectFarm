@@ -11,8 +11,10 @@ import ProductDetailsModal from '../product/ProductDetailsModal';
 import ChatModal from '../chat/ChatModal';
 import StarRating from '../common/StarRating';
 import { PRODUCT_CATEGORIES, CATEGORIES } from '../../constants/productCategories';
+import { useLanguage } from '../../context/LanguageContext';
 
 const BuyerDashboard = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [location, setLocation] = useState({
     state: '',
@@ -502,8 +504,8 @@ const BuyerDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1>Buyer Dashboard</h1>
-          <p>Find fresh produce from local farmers</p>
+          <h1>{t('buyerDashboard.title')}</h1>
+          <p>{t('buyerDashboard.subtitle')}</p>
         </motion.div>
 
         {/* Location Section */}
@@ -515,7 +517,7 @@ const BuyerDashboard = () => {
         >
           <h2>
             <i className="fas fa-map-marker-alt"></i>
-            Location Settings
+            {t('buyerDashboard.locationSettings')}
           </h2>
 
           {location.coordinates ? (
@@ -525,8 +527,8 @@ const BuyerDashboard = () => {
                   <i className="fas fa-check-circle"></i>
                 </div>
                 <div className="status-info">
-                  <h3>Location Active</h3>
-                  <p>Showing products near you</p>
+                  <h3>{t('buyerDashboard.locationActive')}</h3>
+                  <p>{t('buyerDashboard.showingNear')}</p>
                   {locationAddress && (locationAddress.district || locationAddress.state) ? (
                     <div className="address-badge">
                       <i className="fas fa-map-marker-alt"></i>
@@ -548,7 +550,7 @@ const BuyerDashboard = () => {
                 onClick={() => setLocation(prev => ({ ...prev, coordinates: null }))}
               >
                 <i className="fas fa-sync-alt"></i>
-                Refresh Location
+                {t('buyerDashboard.refreshLocation')}
               </button>
             </div>
           ) : (
@@ -556,15 +558,15 @@ const BuyerDashboard = () => {
               <div className="location-icon-large">
                 <i className="fas fa-map-marked-alt"></i>
               </div>
-              <h3>Find Fresh Produce Near You</h3>
-              <p>Select your location to see products from farmers in your area (50km radius).</p>
+              <h3>{t('buyerDashboard.findFreshTitle')}</h3>
+              <p>{t('buyerDashboard.findFreshDesc')}</p>
 
               <button
                 onClick={() => setShowLocationSelector(true)}
                 className="find-products-btn"
               >
                 <i className="fas fa-location-arrow"></i>
-                Select Location
+                {t('buyerDashboard.selectLocationBtn')}
               </button>
             </div>
           )}
@@ -589,14 +591,14 @@ const BuyerDashboard = () => {
           <div className="filter-section">
             <h3>
               <i className="fas fa-filter"></i>
-              Filter Products
+              {t('buyerDashboard.filterProducts')}
             </h3>
 
             <div className="filter-controls">
               <div className="filter-group">
                 <label htmlFor="searchQuery">
                   <i className="fas fa-search"></i>
-                  Search
+                  {t('buyerDashboard.search')}
                 </label>
                 <input
                   type="text"
@@ -604,14 +606,14 @@ const BuyerDashboard = () => {
                   name="searchQuery"
                   value={tempFilters.searchQuery}
                   onChange={handleFilterChange}
-                  placeholder="Search vegetables, farmers..."
+                  placeholder={t('buyerDashboard.searchPlaceholder')}
                 />
               </div>
 
               <div className="filter-group">
                 <label htmlFor="category">
                   <i className="fas fa-layer-group"></i>
-                  Category
+                  {t('buyerDashboard.category')}
                 </label>
                 <select
                   id="category"
@@ -619,9 +621,9 @@ const BuyerDashboard = () => {
                   value={tempFilters.category}
                   onChange={handleFilterChange}
                 >
-                  <option value="">All Categories</option>
+                  <option value="">{t('buyerDashboard.allCategories')}</option>
                   {CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                    <option key={cat} value={cat}>{t(`categories.${cat}`) || cat}</option>
                   ))}
                 </select>
               </div>
@@ -629,7 +631,7 @@ const BuyerDashboard = () => {
               <div className="filter-group">
                 <label htmlFor="vegetableType">
                   <i className="fas fa-seedling"></i>
-                  Product Name
+                  {t('buyerDashboard.itemType')}
                 </label>
                 <select
                   id="vegetableType"
@@ -638,7 +640,7 @@ const BuyerDashboard = () => {
                   onChange={handleFilterChange}
                   disabled={!tempFilters.category}
                 >
-                  <option value="">All Products</option>
+                  <option value="">{t('buyerDashboard.allTypes')}</option>
                   {tempFilters.category && PRODUCT_CATEGORIES[tempFilters.category]?.map(type => (
                     <option key={type} value={type}>{type}</option>
                   ))}
@@ -648,7 +650,7 @@ const BuyerDashboard = () => {
               <div className="filter-group">
                 <label htmlFor="harvestingDate">
                   <i className="fas fa-calendar-alt"></i>
-                  Harvesting Date
+                  {t('buyerDashboard.harvestDate')}
                 </label>
                 <input
                   type="date"
@@ -662,7 +664,7 @@ const BuyerDashboard = () => {
               <div className="filter-group">
                 <label htmlFor="uploadedDate">
                   <i className="fas fa-upload"></i>
-                  Uploaded Date
+                  {t('buyerDashboard.uploadedDate')}
                 </label>
                 <input
                   type="date"
@@ -676,7 +678,7 @@ const BuyerDashboard = () => {
               <div className="filter-group">
                 <label htmlFor="minPrice">
                   <i className="fas fa-rupee-sign"></i>
-                  Min Price (₹/kg)
+                  {t('buyerDashboard.minPrice')}
                 </label>
                 <input
                   type="number"
@@ -692,7 +694,7 @@ const BuyerDashboard = () => {
               <div className="filter-group">
                 <label htmlFor="maxPrice">
                   <i className="fas fa-rupee-sign"></i>
-                  Max Price (₹/kg)
+                  {t('buyerDashboard.maxPrice')}
                 </label>
                 <input
                   type="number"
@@ -708,7 +710,7 @@ const BuyerDashboard = () => {
               <div className="filter-group">
                 <label htmlFor="radius">
                   <i className="fas fa-bullseye"></i>
-                  Radius (km)
+                  {t('buyerDashboard.radius')}
                 </label>
                 <input
                   type="number"
@@ -731,7 +733,7 @@ const BuyerDashboard = () => {
                   className="apply-filters-btn"
                 >
                   <i className="fas fa-check"></i>
-                  Apply Filters
+                  {t('buyerDashboard.applyFilters')}
                 </button>
                 <button
                   type="button"
@@ -739,7 +741,7 @@ const BuyerDashboard = () => {
                   className="clear-filters-btn"
                 >
                   <i className="fas fa-times"></i>
-                  Clear
+                  {t('buyerDashboard.clearFilters')}
                 </button>
               </div>
             </div>
@@ -756,7 +758,7 @@ const BuyerDashboard = () => {
           <div className="results-header">
             <h2>
               <i className="fas fa-shopping-cart"></i>
-              Available Crops ({filteredCrops.length})
+              {t('buyerDashboard.filterProducts')} ({filteredCrops.length})
             </h2>
           </div>
 
@@ -764,8 +766,8 @@ const BuyerDashboard = () => {
             filteredCrops.length === 0 ? (
               <div className="no-results">
                 <i className="fas fa-search"></i>
-                <h3>No crops found</h3>
-                <p>Try adjusting your filters or search criteria</p>
+                <h3>{t('buyerDashboard.noProducts')}</h3>
+                <p>{t('buyerDashboard.noProductsDesc')}</p>
               </div>
             ) : (
               <div className="crops-grid">
@@ -790,7 +792,7 @@ const BuyerDashboard = () => {
                       />
                       <div className="crop-status">
                         <span className={`status ${crop.status?.toLowerCase() || 'available'}`}>
-                          {crop.status || 'Available'}
+                          {crop.status?.toLowerCase() === 'sold' ? t('buyerDashboard.soldOut') : t('buyerDashboard.available')}
                         </span>
                       </div>
                       <div className="view-more-overlay" style={{
@@ -800,7 +802,7 @@ const BuyerDashboard = () => {
                         opacity: 0, transition: 'opacity 0.2s',
                         backdropFilter: 'blur(2px)'
                       }}>
-                        Click to view details
+                        {t('buyerDashboard.clickToViewDetails')}
                       </div>
                       <style>{`
                         .crop-image:hover .view-more-overlay {
@@ -811,7 +813,7 @@ const BuyerDashboard = () => {
 
                     <div className="crop-content">
                       <div className="crop-header">
-                        <h3>{crop.vegetableType}</h3>
+                        <h3>{t(`items.${crop.vegetableType}`) !== `items.${crop.vegetableType}` ? t(`items.${crop.vegetableType}`) : crop.vegetableType}</h3>
                         <div className="farmer-info">
                           <i className="fas fa-user"></i>
                           <span
@@ -838,7 +840,7 @@ const BuyerDashboard = () => {
                         </div>
                         <div className="detail-item total">
                           <i className="fas fa-calculator"></i>
-                          <span>Total: ₹{crop.totalRate}</span>
+                          <span>{t('buyerDashboard.total')} ₹{crop.totalRate}</span>
                         </div>
                       </div>
 
@@ -855,7 +857,7 @@ const BuyerDashboard = () => {
                               crop.location.subdistrict,
                               crop.location.district,
                               crop.location.state
-                            ].filter(Boolean).join(', ') || 'Location not specified'}
+                            ].filter(Boolean).join(', ') || t('buyerDashboard.locationNotSpecified')}
                           </span>
                         </div>
                       )}
@@ -864,13 +866,13 @@ const BuyerDashboard = () => {
                         {crop.harvestingDate && (
                           <div className="date-item">
                             <i className="fas fa-calendar-alt"></i>
-                            <span>Harvested: {formatDate(crop.harvestingDate)}</span>
+                            <span>{t('buyerDashboard.harvested')} {formatDate(crop.harvestingDate)}</span>
                           </div>
                         )}
                         {crop.uploadDate && (
                           <div className="date-item">
                             <i className="fas fa-upload"></i>
-                            <span>Uploaded: {formatDate(crop.uploadDate)}</span>
+                            <span>{t('buyerDashboard.uploaded')} {formatDate(crop.uploadDate)}</span>
                           </div>
                         )}
                       </div>

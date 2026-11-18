@@ -6,8 +6,10 @@ import apiService from '../../services/api';
 import '../../styles/CropsHistory.css';
 
 import authUtils from '../../utils/auth';
+import { useLanguage } from '../../context/LanguageContext';
 
 const CropsHistory = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const [crops, setCrops] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -119,7 +121,7 @@ const CropsHistory = () => {
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                             }}
                         >
-                            All ({crops.length})
+                            {t('farmerDashboard.all')} ({crops.length})
                         </button>
                         <button
                             type="button"
@@ -136,7 +138,7 @@ const CropsHistory = () => {
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                             }}
                         >
-                            🟢 Unsold / Active ({crops.filter(c => c.status !== 'sold').length})
+                            🟢 {t('farmerDashboard.unsold')} ({crops.filter(c => c.status !== 'sold').length})
                         </button>
                         <button
                             type="button"
@@ -153,7 +155,7 @@ const CropsHistory = () => {
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.04)'
                             }}
                         >
-                            🔴 Sold Out ({crops.filter(c => c.status === 'sold').length})
+                            🔴 {t('farmerDashboard.sold')} ({crops.filter(c => c.status === 'sold').length})
                         </button>
                     </div>
                 )}
@@ -161,7 +163,7 @@ const CropsHistory = () => {
                 {isLoading ? (
                     <div className="loading-container">
                         <i className="fas fa-spinner fa-spin"></i>
-                        <p>Loading crops...</p>
+                        <p>{t('common.loading')}</p>
                     </div>
                 ) : crops.length === 0 ? (
                     <motion.div
@@ -171,8 +173,8 @@ const CropsHistory = () => {
                         transition={{ duration: 0.5 }}
                     >
                         <i className="fas fa-seedling"></i>
-                        <h2>No crops uploaded yet</h2>
-                        <p>Start uploading your crops to see them here!</p>
+                        <h2>{t('farmerDashboard.noCrops')}</h2>
+                        <p>{t('farmerDashboard.noCropsDesc')}</p>
                     </motion.div>
                 ) : (
                     <div className="crops-timeline">

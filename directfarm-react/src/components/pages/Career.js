@@ -1,9 +1,50 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/Career.css';
 
 const Career = () => {
-    const jobOpenings = [
+    const { t, language } = useLanguage();
+    const isHi = language === 'hi';
+
+    const jobOpenings = isHi ? [
+        {
+            id: 1,
+            title: 'फुल स्टैक डेवलपर (Full Stack Developer)',
+            department: 'इंजीनियरिंग',
+            location: 'रिमोट / हाइब्रिड',
+            type: 'पूर्णकालिक (Full-time)',
+            description: 'किसानों और खरीदारों को जोड़ने वाले हमारे डिजिटल प्लेटफ़ॉर्म का निर्माण और रख-रखाव करें। React, Node.js और MongoDB के साथ काम करें।',
+            requirements: ['3+ वर्ष का प्रासंगिक अनुभव', 'React और Node.js में गहरी विशेषज्ञता', 'डेटाबेस और एपीआई डिज़ाइन कौशल']
+        },
+        {
+            id: 2,
+            title: 'कृषि विशेषज्ञ (Agricultural Specialist)',
+            department: 'ऑपरेशंस',
+            location: 'फ़ील्ड-आधारित (Field-based)',
+            type: 'पूर्णकालिक (Full-time)',
+            description: 'किसानों के साथ सीधे काम करें, उन्हें प्लेटफ़ॉर्म पर जोड़ें और फसल गुणवत्ता व मूल्य पर मार्गदर्शन प्रदान करें।',
+            requirements: ['कृषि विज्ञान में स्नातक या डिप्लोमा', 'जमीनी फ़ील्ड कार्य का अनुभव', 'उत्कृष्ट क्षेत्रीय संवाद कौशल']
+        },
+        {
+            id: 3,
+            title: 'उत्पाद प्रबंधक (Product Manager)',
+            department: 'प्रोडक्ट',
+            location: 'रिमोट / हाइब्रिड',
+            type: 'पूर्णकालिक (Full-time)',
+            description: 'किसान-खरीदार बाज़ार के लिए उत्पाद रणनीति, उपयोगकर्ता अनुभव और रोडमैप को आकार दें।',
+            requirements: ['5+ वर्ष का प्रोडक्ट मैनेजमेंट अनुभव', 'एग्रीटेक या ई-कॉमर्स पृष्ठभूमि को प्राथमिकता', 'डेटा-संचालित और समस्या-समाधान दृष्टिकोण']
+        },
+        {
+            id: 4,
+            title: 'विपणन प्रबंधक (Marketing Manager)',
+            department: 'मार्केटिंग',
+            location: 'रिमोट (Remote)',
+            type: 'पूर्णकालिक (Full-time)',
+            description: 'किसान और खरीदार समुदायों के विस्तार के लिए डिजिटल और क्षेत्रीय अभियानों का नेतृत्व करें।',
+            requirements: ['डिजिटल मार्केटिंग में सिद्ध अनुभव', 'कंटेंट निर्माण और सोशल मीडिया प्रबंधन', 'ग्रामीण और कृषि बाज़ार की समझ']
+        }
+    ] : [
         {
             id: 1,
             title: 'Full Stack Developer',
@@ -45,33 +86,33 @@ const Career = () => {
     const benefits = [
         {
             icon: 'fa-heart',
-            title: 'Health Insurance',
-            description: 'Comprehensive health coverage for you and your family'
+            title: t('career.benefits.healthTitle'),
+            description: t('career.benefits.healthDesc')
         },
         {
             icon: 'fa-laptop',
-            title: 'Remote Work',
-            description: 'Work from anywhere with flexible hours'
+            title: t('career.benefits.remoteTitle'),
+            description: t('career.benefits.remoteDesc')
         },
         {
             icon: 'fa-graduation-cap',
-            title: 'Learning Budget',
-            description: 'Annual budget for courses and conferences'
+            title: t('career.benefits.learningTitle'),
+            description: t('career.benefits.learningDesc')
         },
         {
             icon: 'fa-users',
-            title: 'Great Team',
-            description: 'Work with passionate people making real impact'
+            title: t('career.benefits.teamTitle'),
+            description: t('career.benefits.teamDesc')
         },
         {
             icon: 'fa-seedling',
-            title: 'Social Impact',
-            description: 'Help empower farmers and transform agriculture'
+            title: t('career.benefits.impactTitle'),
+            description: t('career.benefits.impactDesc')
         },
         {
             icon: 'fa-chart-line',
-            title: 'Growth Opportunities',
-            description: 'Fast-growing startup with career advancement'
+            title: t('career.benefits.growthTitle'),
+            description: t('career.benefits.growthDesc')
         }
     ];
 
@@ -90,14 +131,14 @@ const Career = () => {
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ duration: 0.6, delay: 0.2 }}
                     >
-                        Join Our Mission
+                        {t('career.title')}
                     </motion.h1>
                     <motion.p
                         initial={{ y: -20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ duration: 0.6, delay: 0.4 }}
                     >
-                        Help us revolutionize agriculture and empower farmers across the country
+                        {t('career.subtitle')}
                     </motion.p>
                 </div>
             </motion.section>
@@ -112,7 +153,7 @@ const Career = () => {
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
                     >
-                        Why Join DirectFarm?
+                        {t('career.whyJoinTitle')}
                     </motion.h2>
 
                     <div className="benefits-grid">
@@ -146,7 +187,7 @@ const Career = () => {
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
                     >
-                        Open Positions
+                        {t('career.openPositions')}
                     </motion.h2>
 
                     <div className="jobs-list">
@@ -182,7 +223,7 @@ const Career = () => {
                                 <p className="job-description">{job.description}</p>
 
                                 <div className="job-requirements">
-                                    <h4>Requirements:</h4>
+                                    <h4>{t('career.requirements')}</h4>
                                     <ul>
                                         {job.requirements.map((req, idx) => (
                                             <li key={idx}>
@@ -195,7 +236,7 @@ const Career = () => {
 
                                 <button className="apply-btn">
                                     <i className="fas fa-paper-plane"></i>
-                                    Apply Now
+                                    {t('career.applyNow')}
                                 </button>
                             </motion.div>
                         ))}
@@ -213,11 +254,11 @@ const Career = () => {
                         viewport={{ once: true }}
                         transition={{ duration: 0.6 }}
                     >
-                        <h2>Don't See Your Role?</h2>
-                        <p>We're always looking for talented people. Send us your resume!</p>
+                        <h2>{t('career.dontSeeRole')}</h2>
+                        <p>{t('career.dontSeeRoleDesc')}</p>
                         <a href="mailto:careers@directfarm.com" className="cta-btn">
                             <i className="fas fa-envelope"></i>
-                            Email Your Resume
+                            {t('career.emailResume')}
                         </a>
                     </motion.div>
                 </div>

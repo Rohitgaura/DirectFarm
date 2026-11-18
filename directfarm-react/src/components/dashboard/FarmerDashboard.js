@@ -8,9 +8,11 @@ import authUtils from '../../utils/auth';
 import { PRODUCT_CATEGORIES, CATEGORIES } from '../../constants/productCategories';
 import StarRating from '../common/StarRating';
 import LocationSelector from './LocationSelector';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/FarmerDashboard.css';
 
 const FarmerDashboard = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     category: '',
@@ -839,7 +841,7 @@ const FarmerDashboard = () => {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <i className="fas fa-chart-pie" style={{ color: '#10b981', fontSize: '1.25rem' }}></i>
                 <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: '800' }}>
-                  Live Crop Inventory & Quantity Analytics
+                  {t('farmerDashboard.analyticsTitle')}
                 </h3>
               </div>
               <button
@@ -858,7 +860,7 @@ const FarmerDashboard = () => {
                   gap: '5px'
                 }}
               >
-                <span>View Full Analytics & Charts</span> <i className="fas fa-arrow-right"></i>
+                <span>{t('farmerDashboard.viewFullAnalytics')}</span> <i className="fas fa-arrow-right"></i>
               </button>
             </div>
 
@@ -869,34 +871,34 @@ const FarmerDashboard = () => {
             }}>
               {/* Total Crops */}
               <div style={{ background: '#f8fafc', padding: '0.9rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Active Uploaded Crops</span>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t('farmerDashboard.activeCrops')}</span>
                 <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
-                  {uploadedCrops.length} Crops
+                  {uploadedCrops.length}
                 </div>
-                <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: '600' }}>Listed in marketplace</span>
+                <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: '600' }}>{t('farmerDashboard.listedMarketplace')}</span>
               </div>
 
               {/* Total Quantity */}
               <div style={{ background: '#f8fafc', padding: '0.9rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Total Available Quantity</span>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t('farmerDashboard.totalAvailableQty')}</span>
                 <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
                   {uploadedCrops.reduce((sum, c) => sum + (parseFloat(c.quantity) || 0), 0).toLocaleString()} kg
                 </div>
-                <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: '600' }}>Ready for trade/dispatch</span>
+                <span style={{ fontSize: '0.75rem', color: '#3b82f6', fontWeight: '600' }}>{t('farmerDashboard.readyToTrade')}</span>
               </div>
 
               {/* Total Valuation */}
               <div style={{ background: '#f8fafc', padding: '0.9rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Inventory Valuation</span>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t('farmerDashboard.inventoryValuation')}</span>
                 <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
                   ₹{uploadedCrops.reduce((sum, c) => sum + ((parseFloat(c.quantity) || 0) * (parseFloat(c.ratePerKg) || 0)), 0).toLocaleString()}
                 </div>
-                <span style={{ fontSize: '0.75rem', color: '#d97706', fontWeight: '600' }}>Total estimated value</span>
+                <span style={{ fontSize: '0.75rem', color: '#d97706', fontWeight: '600' }}>Total</span>
               </div>
 
               {/* Uploaded Today */}
               <div style={{ background: '#f8fafc', padding: '0.9rem 1.1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>Uploaded Today</span>
+                <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{t('farmerDashboard.uploadedToday')}</span>
                 {(() => {
                   const today = new Date();
                   const isT = (d) => {
@@ -909,10 +911,10 @@ const FarmerDashboard = () => {
                   return (
                     <>
                       <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
-                        {todayCrops.length} Crops
+                        {todayCrops.length}
                       </div>
                       <span style={{ fontSize: '0.75rem', color: '#8b5cf6', fontWeight: '600' }}>
-                        +{todayQty.toLocaleString()} kg added today
+                        +{todayQty.toLocaleString()} kg
                       </span>
                     </>
                   );
@@ -931,13 +933,13 @@ const FarmerDashboard = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2>{editingCropId ? 'Edit Product' : 'Upload New Crop'}</h2>
+              <h2>{editingCropId ? t('farmerDashboard.editCrop') : t('farmerDashboard.uploadNewCrop')}</h2>
               {editingCropId && (
                 <button
                   onClick={cancelEdit}
                   style={{ background: '#ef4444', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '5px', cursor: 'pointer' }}
                 >
-                  Cancel Edit
+                  {t('farmerDashboard.cancelEdit')}
                 </button>
               )}
             </div>
@@ -946,7 +948,7 @@ const FarmerDashboard = () => {
                 <div className="form-group">
                   <label htmlFor="category">
                     <i className="fas fa-layer-group"></i>
-                    Category
+                    {t('farmerDashboard.category')}
                   </label>
                   <select
                     id="category"
@@ -955,9 +957,9 @@ const FarmerDashboard = () => {
                     onChange={handleChange}
                     className={errors.category ? 'error' : ''}
                   >
-                    <option value="">Select Category</option>
+                    <option value="">{t('farmerDashboard.selectCategory')}</option>
                     {CATEGORIES.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
+                      <option key={cat} value={cat}>{t(`categories.${cat}`) || cat}</option>
                     ))}
                   </select>
                   {errors.category && <span className="error-message">{errors.category}</span>}
@@ -966,7 +968,7 @@ const FarmerDashboard = () => {
                 <div className="form-group">
                   <label htmlFor="vegetableType">
                     <i className="fas fa-seedling"></i>
-                    Product Name
+                    {t('farmerDashboard.cropType')}
                   </label>
                   <select
                     id="vegetableType"
@@ -976,7 +978,7 @@ const FarmerDashboard = () => {
                     className={errors.vegetableType ? 'error' : ''}
                     disabled={!formData.category}
                   >
-                    <option value="">Select Product</option>
+                    <option value="">{t('farmerDashboard.selectType')}</option>
                     {formData.category && PRODUCT_CATEGORIES[formData.category]?.map(type => (
                       <option key={type} value={type}>{type}</option>
                     ))}
@@ -987,7 +989,7 @@ const FarmerDashboard = () => {
                 <div className="form-group">
                   <label htmlFor="quantity">
                     <i className="fas fa-weight"></i>
-                    Quantity (kg)
+                    {t('farmerDashboard.quantityKg')}
                   </label>
                   <input
                     type="number"
@@ -996,7 +998,7 @@ const FarmerDashboard = () => {
                     value={formData.quantity}
                     onChange={handleChange}
                     className={errors.quantity ? 'error' : ''}
-                    placeholder="Enter quantity in kg"
+                    placeholder={t('farmerDashboard.quantityPlaceholder')}
                     step="0.1"
                     min="0"
                   />
@@ -1008,7 +1010,7 @@ const FarmerDashboard = () => {
                 <div className="form-group">
                   <label htmlFor="ratePerKg">
                     <i className="fas fa-rupee-sign"></i>
-                    Rate per kg (₹)
+                    {t('farmerDashboard.pricePerKg')}
                   </label>
                   <input
                     type="number"
@@ -1017,7 +1019,7 @@ const FarmerDashboard = () => {
                     value={formData.ratePerKg}
                     onChange={handleChange}
                     className={errors.ratePerKg ? 'error' : ''}
-                    placeholder="Enter rate per kg"
+                    placeholder={t('farmerDashboard.pricePlaceholder')}
                     step="0.01"
                     min="0"
                   />
@@ -1027,7 +1029,7 @@ const FarmerDashboard = () => {
                 <div className="form-group">
                   <label>
                     <i className="fas fa-calculator"></i>
-                    Total Rate (₹)
+                    Total (₹)
                   </label>
                   <div className="total-rate-display">
                     ₹{calculateTotalRate()}
@@ -1037,7 +1039,7 @@ const FarmerDashboard = () => {
               <div className="form-group">
                 <label htmlFor="harvestingDate">
                   <i className="fas fa-calendar"></i>
-                  Harvesting Date
+                  {t('farmerDashboard.harvestingDate')}
                 </label>
                 <input
                   type="date"
@@ -1055,7 +1057,7 @@ const FarmerDashboard = () => {
               <div className="form-group" style={{ background: '#f8fafc', padding: '1rem 1.2rem', borderRadius: '14px', border: '1px solid #e2e8f0', margin: '0.75rem 0' }}>
                 <label style={{ fontWeight: '700', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', marginBottom: '0.5rem' }}>
                   <i className="fas fa-store" style={{ color: '#3b82f6' }}></i>
-                  Product Listing Status
+                  {t('farmerDashboard.productListingStatus')}
                 </label>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 700, color: '#166534', background: formData.status === 'active' ? '#dcfce7' : 'white', padding: '0.5rem 0.85rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
@@ -1067,7 +1069,7 @@ const FarmerDashboard = () => {
                       onChange={handleChange}
                       style={{ width: '18px', height: '18px', accentColor: '#10b981' }}
                     />
-                    <span>🟢 Active / Unsold (Visible to Buyers)</span>
+                    <span>{t('farmerDashboard.activeUnsoldOption')}</span>
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 700, color: '#991b1b', background: formData.status === 'sold' ? '#fee2e2' : 'white', padding: '0.5rem 0.85rem', borderRadius: '8px', border: '1px solid #fca5a5' }}>
                     <input
@@ -1078,7 +1080,7 @@ const FarmerDashboard = () => {
                       onChange={handleChange}
                       style={{ width: '18px', height: '18px', accentColor: '#ef4444' }}
                     />
-                    <span>🔴 Sold Out (Hidden from Buyers)</span>
+                    <span>{t('farmerDashboard.soldOutOption')}</span>
                   </label>
                 </div>
               </div>
@@ -1093,17 +1095,17 @@ const FarmerDashboard = () => {
               }}>
                 <label style={{ fontWeight: '700', color: '#065f46', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.95rem', margin: '0 0 0.25rem 0' }}>
                   <i className="fas fa-hourglass-half" style={{ color: '#059669' }}></i>
-                  Auto-Remove Listing If Unsold
+                  {t('farmerDashboard.autoRemoveUnsold')}
                 </label>
                 <p style={{ fontSize: '0.8rem', color: '#047857', margin: '0 0 0.85rem 0', lineHeight: '1.4' }}>
-                  Specify after how long this crop will automatically unlist if not completely sold.
+                  {t('farmerDashboard.autoRemoveDesc')}
                 </p>
 
                 <div style={{ display: 'grid', gridTemplateColumns: formData.expiryUnit === 'never' ? '1fr' : '1fr 1fr', gap: '1rem' }}>
                   {formData.expiryUnit !== 'never' && (
                     <div className="form-group" style={{ margin: 0 }}>
                       <label htmlFor="expiryDuration" style={{ fontSize: '0.8rem', color: '#065f46', fontWeight: 600 }}>
-                        Duration Value
+                        {t('farmerDashboard.durationValue')}
                       </label>
                       <input
                         type="number"
@@ -1130,7 +1132,7 @@ const FarmerDashboard = () => {
 
                   <div className="form-group" style={{ margin: 0 }}>
                     <label htmlFor="expiryUnit" style={{ fontSize: '0.8rem', color: '#065f46', fontWeight: 600 }}>
-                      Time Unit & Setting
+                      {t('farmerDashboard.timeUnit')}
                     </label>
                     <select
                       id="expiryUnit"
@@ -1148,9 +1150,9 @@ const FarmerDashboard = () => {
                         color: '#064e3b'
                       }}
                     >
-                      <option value="days">Days (Default)</option>
-                      <option value="hours">Hours</option>
-                      <option value="never">No Auto-Removal (Keep Listed for Grains/Spices)</option>
+                      <option value="days">{t('farmerDashboard.days')}</option>
+                      <option value="hours">{t('farmerDashboard.hours')}</option>
+                      <option value="never">{t('farmerDashboard.noAutoRemoval')}</option>
                     </select>
                   </div>
                 </div>
@@ -1170,9 +1172,9 @@ const FarmerDashboard = () => {
                 }}>
                   <i className="fas fa-clock" style={{ color: '#10b981' }}></i>
                   {formData.expiryUnit === 'never' ? (
-                    <span>🌾 <strong>No Auto-Removal:</strong> Long shelf-life produce (Grains/Seeds/Spices) will stay listed until marked as <strong>Sold Out</strong>.</span>
+                    <span>{t('farmerDashboard.noAutoRemovalNote')}</span>
                   ) : (
-                    <span>Product will auto-remove after <strong>{formData.expiryDuration || '7'} {formData.expiryUnit === 'hours' ? 'Hours' : 'Days'}</strong> if unsold.</span>
+                    <span>{t('farmerDashboard.autoRemoveNote', { duration: formData.expiryDuration || '7', unit: formData.expiryUnit === 'hours' ? t('farmerDashboard.hours') : t('farmerDashboard.days') })}</span>
                   )}
                 </div>
               </div>
@@ -1180,14 +1182,14 @@ const FarmerDashboard = () => {
               <div className="form-group">
                 <label htmlFor="description">
                   <i className="fas fa-align-left"></i>
-                  Description
+                  {t('farmerDashboard.description')}
                 </label>
                 <textarea
                   id="description"
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="Describe your crop (optional)"
+                  placeholder={t('farmerDashboard.descriptionPlaceholder')}
                   rows="3"
                 />
               </div>
@@ -1197,7 +1199,7 @@ const FarmerDashboard = () => {
               <div className="form-group">
                 <label htmlFor="images">
                   <i className="fas fa-images"></i>
-                  Upload Images
+                  {t('farmerDashboard.uploadImages')}
                 </label>
                 <input
                   type="file"
@@ -1230,17 +1232,17 @@ const FarmerDashboard = () => {
                 disabled={isLoading || !location.coordinates}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                title={!location.coordinates ? "Please enable location first" : (editingCropId ? "Update Product" : "Upload Product")}
+                title={!location.coordinates ? "Please enable location first" : (editingCropId ? t('farmerDashboard.editCrop') : t('farmerDashboard.submitCrop'))}
               >
                 {isLoading ? (
                   <>
                     <i className="fas fa-spinner fa-spin"></i>
-                    {editingCropId ? 'Updating...' : 'Uploading...'}
+                    {editingCropId ? t('farmerDashboard.updatingCrop') : t('farmerDashboard.uploadingCrop')}
                   </>
                 ) : (
                   <>
                     <i className={editingCropId ? "fas fa-save" : "fas fa-upload"}></i>
-                    {editingCropId ? 'Update Crop' : 'Upload Crop'}
+                    {editingCropId ? t('farmerDashboard.editCrop') : t('farmerDashboard.submitCrop')}
                   </>
                 )}
               </motion.button>
@@ -1254,7 +1256,7 @@ const FarmerDashboard = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <h2>Your Items</h2>
+            <h2>{t('farmerDashboard.myCropsTitle')}</h2>
             {/* Status Filter Tabs (All, Unsold, Sold Out) */}
             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
               <button
@@ -1271,7 +1273,7 @@ const FarmerDashboard = () => {
                   fontSize: '0.8rem'
                 }}
               >
-                All ({uploadedCrops.length})
+                {t('farmerDashboard.all')} ({uploadedCrops.length})
               </button>
               <button
                 type="button"
@@ -1287,7 +1289,7 @@ const FarmerDashboard = () => {
                   fontSize: '0.8rem'
                 }}
               >
-                🟢 Unsold ({uploadedCrops.filter(c => c.status !== 'sold').length})
+                🟢 {t('farmerDashboard.unsold')} ({uploadedCrops.filter(c => c.status !== 'sold').length})
               </button>
               <button
                 type="button"
@@ -1303,14 +1305,14 @@ const FarmerDashboard = () => {
                   fontSize: '0.8rem'
                 }}
               >
-                🔴 Sold Out ({uploadedCrops.filter(c => c.status === 'sold').length})
+                🔴 {t('farmerDashboard.sold')} ({uploadedCrops.filter(c => c.status === 'sold').length})
               </button>
             </div>
 
             {uploadedCrops.length === 0 ? (
               <div className="no-items">
                 <i className="fas fa-seedling"></i>
-                <p>No crops uploaded yet. Upload your first crop above!</p>
+                <p>{t('farmerDashboard.noCropsDesc')}</p>
               </div>
             ) : (
               <div className="crops-grid">
@@ -1344,20 +1346,20 @@ const FarmerDashboard = () => {
                       )}
                     </div>
                     <div className="crop-info">
-                      <h3>{crop.vegetableType}</h3>
+                      <h3>{t(`items.${crop.vegetableType}`) !== `items.${crop.vegetableType}` ? t(`items.${crop.vegetableType}`) : crop.vegetableType}</h3>
                       <div className="crop-details">
-                        <span className="quantity">Quantity: {crop.quantity} kg</span>
-                        <span className="rate">Rate: ₹{crop.ratePerKg}/kg</span>
-                        <span className="total">Total: ₹{(parseFloat(crop.ratePerKg || 0) * parseFloat(crop.quantity || 0)).toLocaleString()}</span>
+                        <span className="quantity">{t('farmerDashboard.quantityLabel')} {crop.quantity} kg</span>
+                        <span className="rate">{t('farmerDashboard.rateLabel')} ₹{crop.ratePerKg}/kg</span>
+                        <span className="total">{t('farmerDashboard.totalLabel')} ₹{(parseFloat(crop.ratePerKg || 0) * parseFloat(crop.quantity || 0)).toLocaleString()}</span>
                       </div>
                       {crop.description && (
-                        <p className="description">Description: {crop.description}</p>
+                        <p className="description">{t('farmerDashboard.descLabel')} {crop.description}</p>
                       )}
 
                       <div className="crop-meta" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginTop: '0.5rem' }}>
                         <span className="upload-date">
                           <i className="fas fa-calendar"></i>
-                          Uploaded: {formatDate(crop.uploadingDate)}
+                          {t('farmerDashboard.uploadedLabel')} {formatDate(crop.uploadingDate)}
                         </span>
 
                         <span className="expiry-date-pill" style={{
@@ -1373,11 +1375,11 @@ const FarmerDashboard = () => {
                           gap: '0.35rem'
                         }}>
                           <i className="fas fa-hourglass-half" style={{ color: '#d97706' }}></i>
-                          Auto-removes in {crop.expiryDuration || 7} {crop.expiryUnit === 'hours' ? 'Hours' : 'Days'} if unsold
+                          {crop.expiryUnit === 'never' ? t('farmerDashboard.noAutoRemoval') : t('farmerDashboard.autoRemoveNote', { duration: crop.expiryDuration || 7, unit: crop.expiryUnit === 'hours' ? t('farmerDashboard.hours') : t('farmerDashboard.days') })}
                         </span>
 
                         <span className={`status ${(crop.status ?? "").toLowerCase()}`}>
-                          {crop.status ?? "Active"}
+                          {crop.status === 'sold' ? t('farmerDashboard.sold') : t('farmerDashboard.unsold')}
                         </span>
                       </div>
                       <div className="card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
@@ -1401,7 +1403,7 @@ const FarmerDashboard = () => {
                           }}
                         >
                           <i className="fas fa-gavel"></i>
-                          View Bids & Offers
+                          {t('farmerDashboard.viewBidsAndOffers')}
                         </button>
                         <button
                           onClick={() => handleToggleStatus(crop.id || crop._id, crop.status)}
@@ -1422,7 +1424,7 @@ const FarmerDashboard = () => {
                           }}
                         >
                           <i className={`fas fa-${crop.status === 'sold' ? 'check-circle' : 'tag'}`}></i>
-                          {crop.status === 'sold' ? 'Mark as Available (Relist)' : 'Mark as Sold Out'}
+                          {crop.status === 'sold' ? t('farmerDashboard.markAvailable') : t('farmerDashboard.markSoldOut')}
                         </button>
                         <div style={{ display: 'flex', gap: '0.5rem' }}>
                           <button
@@ -1431,7 +1433,7 @@ const FarmerDashboard = () => {
                             style={{ flex: 1, background: '#3b82f6', color: 'white', border: 'none', padding: '0.5rem', borderRadius: '5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
                           >
                             <i className="fas fa-edit"></i>
-                            Edit
+                            {t('farmerDashboard.edit')}
                           </button>
                           <button
                             onClick={() => deleteCrop(crop.id)}
@@ -1439,7 +1441,7 @@ const FarmerDashboard = () => {
                             style={{ flex: 1 }}
                           >
                             <i className="fas fa-trash"></i>
-                            Delete
+                            {t('farmerDashboard.deleteCrop')}
                           </button>
                         </div>
                       </div>

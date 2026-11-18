@@ -7,9 +7,11 @@ import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import FacebookLogin from '@greatsumini/react-facebook-login';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/Auth.css';
 
 const Login = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -420,8 +422,8 @@ const Login = () => {
               <i className="fas fa-seedling"></i>
               <span>DirectFarm</span>
             </motion.div>
-            <h1>Welcome Back</h1>
-            <p>Sign in to your DirectFarm account</p>
+            <h1>{t('auth.welcomeBack')}</h1>
+            <p>{t('auth.signInSubtitle')}</p>
           </div>
           {errors.global && (
             <div className="global-error">
@@ -440,7 +442,7 @@ const Login = () => {
             >
               <label htmlFor="email">
                 <i className="fas fa-envelope"></i>
-                Email Address
+                {t('auth.email')}
               </label>
               <input
                 type="email"
@@ -449,7 +451,7 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleChange}
                 className={errors.email ? 'error' : ''}
-                placeholder="Enter your email"
+                placeholder={t('auth.emailPlaceholder')}
               />
               {errors.email && <span className="error-message">{errors.email}</span>}
             </motion.div>
@@ -462,7 +464,7 @@ const Login = () => {
             >
               <label htmlFor="password">
                 <i className="fas fa-lock"></i>
-                Password
+                {t('auth.password')}
               </label>
               <input
                 type="password"
@@ -471,7 +473,7 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 className={errors.password ? 'error' : ''}
-                placeholder="Enter your password"
+                placeholder={t('auth.passwordPlaceholder')}
               />
               {errors.password && <span className="error-message">{errors.password}</span>}
             </motion.div>
@@ -485,10 +487,10 @@ const Login = () => {
               <label className="checkbox-container">
                 <input type="checkbox" />
                 <span className="checkmark"></span>
-                Remember me
+                {t('auth.rememberMe')}
               </label>
               <Link to="/forgot-password" className="forgot-link">
-                Forgot Password?
+                {t('auth.forgotPassword')}
               </Link>
             </motion.div>
 
@@ -513,7 +515,7 @@ const Login = () => {
               ) : (
                 <>
                   <i className="fas fa-sign-in-alt"></i>
-                  Sign In
+                  {t('auth.signIn')}
                 </>
               )}
             </motion.button>
@@ -526,9 +528,9 @@ const Login = () => {
             transition={{ delay: 0.6 }}
           >
             <p>
-              Don't have an account?{' '}
+              {t('auth.dontHaveAccount')}{' '}
               <Link to="/register" className="auth-link">
-                Sign up here
+                {t('auth.signUpHere')}
               </Link>
             </p>
           </motion.div>
@@ -539,7 +541,7 @@ const Login = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
           >
-            <p>Or continue with</p>
+            <p>{t('auth.orContinueWith')}</p>
             <div className="social-buttons">
               <div className="google-oauth-wrapper">
                 <GoogleLogin
@@ -586,13 +588,13 @@ const Login = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <h2>Complete Your Profile</h2>
-                <p>Please provide additional information to complete registration</p>
+                <h2>{t('auth.completeProfileTitle')}</h2>
+                <p>{t('auth.completeProfileSubtitle')}</p>
                 <form onSubmit={handlePhoneSubmit} className="phone-form">
                   <div className="form-group">
                     <label htmlFor="phone">
                       <i className="fas fa-phone"></i>
-                      Phone Number
+                      {t('auth.phone')}
                     </label>
                     <input
                       type="tel"
@@ -604,14 +606,14 @@ const Login = () => {
                         setPhoneErrors({ ...phoneErrors, phone: '' });
                       }}
                       className={phoneErrors.phone ? 'error' : ''}
-                      placeholder="Enter 10-digit phone number"
+                      placeholder={t('auth.phonePlaceholder')}
                     />
                     {phoneErrors.phone && <span className="error-message">{phoneErrors.phone}</span>}
                   </div>
                   <div className="form-group">
                     <label htmlFor="role">
                       <i className="fas fa-user-tag"></i>
-                      I am a
+                      {t('auth.iAmA')}
                     </label>
                     <select
                       id="role"
@@ -623,9 +625,9 @@ const Login = () => {
                       }}
                       className={phoneErrors.role ? 'error' : ''}
                     >
-                      <option value="">Select your role</option>
-                      <option value="farmer">Farmer</option>
-                      <option value="buyer">Buyer</option>
+                      <option value="">{t('auth.selectRole')}</option>
+                      <option value="farmer">{t('auth.farmer')}</option>
+                      <option value="buyer">{t('auth.buyer')}</option>
                     </select>
                     {phoneErrors.role && <span className="error-message">{phoneErrors.role}</span>}
                   </div>
@@ -635,10 +637,10 @@ const Login = () => {
                       className="btn-cancel"
                       onClick={() => setShowPhoneModal(false)}
                     >
-                      Cancel
+                      {t('auth.cancel')}
                     </button>
                     <button type="submit" className="btn-submit" disabled={isLoading}>
-                      {isLoading ? 'Submitting...' : 'Complete Registration'}
+                      {isLoading ? t('auth.submitting') : t('auth.completeRegistration')}
                     </button>
                   </div>
                 </form>

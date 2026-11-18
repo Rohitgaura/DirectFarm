@@ -3,9 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiService from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/FarmerNegotiationPage.css';
 
 const FarmerNegotiationPage = () => {
+    const { t } = useLanguage();
     const { id } = useParams();
     const navigate = useNavigate();
     const [negotiation, setNegotiation] = useState(null);
@@ -63,7 +65,7 @@ const FarmerNegotiationPage = () => {
         return (
             <div className="loading-container">
                 <div className="spinner"></div>
-                <p>Loading negotiation details...</p>
+                <p>{t('negotiations.loading')}</p>
             </div>
         );
     }
@@ -71,9 +73,9 @@ const FarmerNegotiationPage = () => {
     if (!negotiation) {
         return (
             <div className="error-container">
-                <h2>Negotiation not found</h2>
+                <h2>{t('negotiations.noNegotiations')}</h2>
                 <button onClick={() => navigate('/farmer-dashboard')} className="btn-secondary">
-                    Back to Dashboard
+                    {t('productBids.backToDashboard')}
                 </button>
             </div>
         );
@@ -88,7 +90,7 @@ const FarmerNegotiationPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                 >
                     <div className="card-header">
-                        <h2>Negotiation Request</h2>
+                        <h2>{t('farmerNegotiation.title')}</h2>
                         <span className={`status-badge ${negotiation.status || 'pending'}`}>
                             {(negotiation.status || 'pending').replace('_', ' ')}
                         </span>
@@ -102,31 +104,31 @@ const FarmerNegotiationPage = () => {
                         />
                         <div className="product-info">
                             <h3>{negotiation.productId?.name}</h3>
-                            <p className="original-price">Original Price: ₹{negotiation.productId?.price}/kg</p>
+                            <p className="original-price">{t('farmerNegotiation.originalPrice')} ₹{negotiation.productId?.price}/kg</p>
                         </div>
                     </div>
 
                     <div className="offer-details">
                         <div className="detail-row">
-                            <span className="label">Buyer:</span>
+                            <span className="label">{t('negotiations.farmer')}:</span>
                             <span className="value">{negotiation.buyerId?.name}</span>
                         </div>
                         <div className="detail-row">
-                            <span className="label">Quantity Requested:</span>
+                            <span className="label">{t('farmerNegotiation.quantityRequested')}</span>
                             <span className="value">{negotiation.quantity} kg</span>
                         </div>
                         <div className="detail-row highlight">
-                            <span className="label">Offered Price:</span>
+                            <span className="label">{t('farmerNegotiation.offeredPrice')}</span>
                             <span className="value">₹{negotiation.offeredPrice}/kg</span>
                         </div>
                         <div className="detail-row total">
-                            <span className="label">Total Value:</span>
+                            <span className="label">{t('farmerNegotiation.totalValue')}</span>
                             <span className="value">₹{negotiation.quantity * negotiation.offeredPrice}</span>
                         </div>
 
                         {negotiation.counterOfferPrice && (
                             <div className="detail-row counter">
-                                <span className="label">Your Counter Offer:</span>
+                                <span className="label">{t('farmerNegotiation.counterOffer')}</span>
                                 <span className="value">₹{negotiation.counterOfferPrice}/kg</span>
                             </div>
                         )}
@@ -140,26 +142,26 @@ const FarmerNegotiationPage = () => {
                                         className="btn-accept"
                                         onClick={() => handleAction('accepted')}
                                     >
-                                        <i className="fas fa-check"></i> Accept Offer
+                                        <i className="fas fa-check"></i> {t('farmerNegotiation.accept')}
                                     </button>
                                     <button
                                         className="btn-counter"
                                         onClick={() => setShowCounterInput(true)}
                                     >
-                                        <i className="fas fa-exchange-alt"></i> Counter Offer
+                                        <i className="fas fa-exchange-alt"></i> {t('farmerNegotiation.counter')}
                                     </button>
                                     <button
                                         className="btn-decline"
                                         onClick={() => handleAction('rejected')}
                                     >
-                                        <i className="fas fa-times"></i> Decline
+                                        <i className="fas fa-times"></i> {t('farmerNegotiation.reject')}
                                     </button>
                                 </>
                             ) : (
                                 <div className="counter-input-group">
                                     <input
                                         type="number"
-                                        placeholder="Enter your price per kg"
+                                        placeholder={t('farmerNegotiation.enterCounterPrice')}
                                         value={counterPrice}
                                         onChange={(e) => setCounterPrice(e.target.value)}
                                         autoFocus
@@ -169,13 +171,13 @@ const FarmerNegotiationPage = () => {
                                             className="btn-submit-counter"
                                             onClick={() => handleAction('counter_offer')}
                                         >
-                                            Send Offer
+                                            {t('farmerNegotiation.sendCounter')}
                                         </button>
                                         <button
                                             className="btn-cancel"
                                             onClick={() => setShowCounterInput(false)}
                                         >
-                                            Cancel
+                                            {t('common.cancel')}
                                         </button>
                                     </div>
                                 </div>

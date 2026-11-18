@@ -3,8 +3,10 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import apiService from '../../services/api';
 import StarRating from '../common/StarRating';
+import { useLanguage } from '../../context/LanguageContext';
 
 const TopRatedFarmers = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const [farmers, setFarmers] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -56,7 +58,7 @@ const TopRatedFarmers = () => {
                     viewport={{ once: true }}
                     style={{ textAlign: 'center', marginBottom: '3rem', color: '#2c3e50', fontSize: '2.5rem' }}
                 >
-                    Top Rated Farmers
+                    {t('home.topRatedFarmers')}
                 </motion.h2>
 
                 <motion.div
@@ -112,7 +114,7 @@ const TopRatedFarmers = () => {
                             </div>
 
                             <p style={{ color: '#666', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                                {farmer.totalRatings} reviews
+                                {farmer.totalRatings} {t('home.reviews')}
                             </p>
 
                             {farmer.farmName && (

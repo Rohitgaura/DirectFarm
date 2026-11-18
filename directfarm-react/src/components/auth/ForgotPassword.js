@@ -3,9 +3,11 @@ import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import apiService from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/Auth.css';
 
 const ForgotPassword = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const [step, setStep] = useState(1); // 1: Email, 2: OTP & New Password, 3: Success
     const [email, setEmail] = useState('');
@@ -100,13 +102,13 @@ const ForgotPassword = () => {
                             <span>DirectFarm</span>
                         </motion.div>
                         <h1>
-                            {step === 1 ? 'Forgot Password?' : step === 2 ? 'Reset Password' : 'Success!'}
+                            {step === 1 ? t('auth.forgotPassword') : step === 2 ? t('auth.forgotPasswordTitle') : 'Success!'}
                         </h1>
                         <p>
                             {step === 1
-                                ? 'Enter your email to receive an OTP'
+                                ? t('auth.forgotPasswordSubtitle')
                                 : step === 2
-                                    ? 'Enter the OTP sent to your email'
+                                    ? t('auth.verifyEmailSubtitle')
                                     : 'Your password has been updated'}
                         </p>
                     </div>
@@ -123,21 +125,21 @@ const ForgotPassword = () => {
                             <div className="form-group">
                                 <label htmlFor="email">
                                     <i className="fas fa-envelope"></i>
-                                    Email Address
+                                    {t('auth.email')}
                                 </label>
                                 <input
                                     type="email"
                                     id="email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Enter your email"
+                                    placeholder={t('auth.emailPlaceholder')}
                                     className={errors.email ? 'error' : ''}
                                 />
                                 {errors.email && <span className="error-message">{errors.email}</span>}
                             </div>
 
                             <button type="submit" className="auth-submit" disabled={isLoading}>
-                                {isLoading ? 'Sending OTP...' : 'Send OTP'}
+                                {isLoading ? t('common.loading') : t('auth.sendResetLink')}
                             </button>
 
                             <div className="auth-footer">

@@ -5,6 +5,7 @@ import apiService from '../../services/api'; // ✅ Import apiService
 import socketService from '../../services/socket'; // ✅ Import socketService
 import syncManager from '../../services/sync'; // ✅ Import syncManager
 import authUtils from '../../utils/auth';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/Navbar.css';
 import ChatModal from '../chat/ChatModal';
 // toast removed as it is unused
@@ -13,6 +14,7 @@ import ChatModal from '../chat/ChatModal';
 const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { language, setLanguage, t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -346,27 +348,27 @@ const Navbar = () => {
 
   // ✅ Navigation Items
   const navItems = [
-    { path: '/', label: 'Home', sectionId: 'home' },
+    { path: '/', label: t('nav.home'), sectionId: 'home' },
   ];
 
   if (user?.role === 'farmer') {
-    navItems.push({ path: '/farmer-dashboard', label: 'Dashboard' });
+    navItems.push({ path: '/farmer-dashboard', label: t('nav.dashboard') });
   } else if (user?.role === 'buyer') {
-    navItems.push({ path: '/buyer-dashboard', label: 'Browse Products' });
+    navItems.push({ path: '/buyer-dashboard', label: t('nav.browseProducts') });
   }
 
   navItems.push(
-    { path: '/about', label: 'About Us' },
-    { path: '/social-impact', label: 'Social Impact' }
+    { path: '/about', label: t('nav.about') },
+    { path: '/social-impact', label: t('nav.socialImpact') }
   );
 
   // Add Career link only for non-logged-in users
   if (!user) {
-    navItems.push({ path: '/career', label: 'Careers' });
+    navItems.push({ path: '/career', label: t('nav.career') });
   }
 
   navItems.push(
-    { path: '/help', label: 'Help' }
+    { path: '/help', label: t('nav.help') }
   );
 
   // ✅ Ripple Effect
@@ -398,6 +400,46 @@ const Navbar = () => {
 
   return (
     <nav className="navbar" onClick={createRipple}>
+      {/* Top Utility Bar for Language Preference */}
+      <div className="navbar-top-bar">
+        <div className="nav-top-container">
+          <div className="top-bar-left">
+            <span className="top-bar-icon">🌾</span>
+            <span className="top-bar-tagline">{t('topBar.tagline')}</span>
+          </div>
+          <div className="top-bar-right">
+            <div className="top-bar-lang-wrapper">
+              <i className="fas fa-globe lang-globe-icon"></i>
+              <span className="lang-prompt-label">{t('topBar.chooseLanguage')}:</span>
+              <div className="lang-pill-group">
+                <button
+                  type="button"
+                  className={`lang-pill ${language === 'hi' ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLanguage('hi');
+                  }}
+                  title="हिंदी में देखें"
+                >
+                  <span className="flag-icon">🇮🇳</span> {t('topBar.hindi')}
+                </button>
+                <button
+                  type="button"
+                  className={`lang-pill ${language === 'en' ? 'active' : ''}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setLanguage('en');
+                  }}
+                  title="View in English"
+                >
+                  {t('topBar.english')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="nav-container">
         {/* Logo */}
         <div className="nav-logo" onClick={(e) => { e.stopPropagation(); handleNavigation('/'); }} style={{ cursor: 'pointer' }}>
@@ -407,6 +449,30 @@ const Navbar = () => {
 
         {/* Menu */}
         <ul className={`nav-menu ${menuOpen ? 'active' : ''}`}>
+          {/* Mobile Language Selector inside drawer */}
+          <li className="mobile-lang-item">
+            <div className="mobile-lang-container">
+              <span className="mobile-lang-label">
+                <i className="fas fa-globe"></i> {t('topBar.chooseLanguage')}:
+              </span>
+              <div className="mobile-lang-buttons">
+                <button
+                  type="button"
+                  className={`mobile-lang-btn ${language === 'hi' ? 'active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); setLanguage('hi'); }}
+                >
+                  🇮🇳 {t('topBar.hindi')}
+                </button>
+                <button
+                  type="button"
+                  className={`mobile-lang-btn ${language === 'en' ? 'active' : ''}`}
+                  onClick={(e) => { e.stopPropagation(); setLanguage('en'); }}
+                >
+                  {t('topBar.english')}
+                </button>
+              </div>
+            </div>
+          </li>
           {navItems.map((item) => (
             <li key={item.label}>
               {item.sectionId ? (
@@ -480,14 +546,14 @@ const Navbar = () => {
                       background: '#f8fafc'
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontWeight: '700', fontSize: '0.92rem', color: '#0f172a' }}>Notifications</span>
+                        <span style={{ fontWeight: '700', fontSize: '0.92rem', color: '#0f172a' }}>{t('nav.notifications')}</span>
                         {unreadCount > 0 ? (
                           <span style={{ background: '#ef4444', color: 'white', fontSize: '0.72rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
-                            {unreadCount} new
+                            {unreadCount} {t('nav.newBadge')}
                           </span>
                         ) : (
                           <span style={{ color: '#10b981', fontSize: '0.75rem', fontWeight: '600' }}>
-                            ✓ All read
+                            {t('nav.read')}
                           </span>
                         )}
                       </div>
@@ -508,7 +574,7 @@ const Navbar = () => {
                             borderRadius: '4px'
                           }}
                         >
-                          Mark all read
+                          {t('nav.markAllRead')}
                         </button>
                       )}
                     </div>
@@ -537,7 +603,7 @@ const Navbar = () => {
                             transition: 'all 0.15s ease'
                           }}
                         >
-                          🔝 Unread First
+                          {t('nav.unreadFirst')}
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setNotifFilter('all'); }}
@@ -551,7 +617,7 @@ const Navbar = () => {
                             cursor: 'pointer'
                           }}
                         >
-                          All ({notifications.length})
+                          {t('nav.all')} ({notifications.length})
                         </button>
                         {unreadCount > 0 && (
                           <button
@@ -566,7 +632,7 @@ const Navbar = () => {
                               cursor: 'pointer'
                             }}
                           >
-                            Unread ({unreadCount})
+                            {t('nav.unread')} ({unreadCount})
                           </button>
                         )}
                       </div>
@@ -575,7 +641,7 @@ const Navbar = () => {
                     {displayedNotifications.length === 0 ? (
                       <div className="no-notifications" style={{ padding: '24px 16px', textAlign: 'center', color: '#64748b', fontSize: '0.9rem' }}>
                         <i className="fas fa-bell-slash" style={{ fontSize: '1.5rem', color: '#cbd5e1', marginBottom: '8px', display: 'block' }}></i>
-                        {notifFilter === 'unread' ? 'No unread notifications' : 'No notifications'}
+                        {notifFilter === 'unread' ? t('nav.noUnread') : t('nav.noNotifications')}
                       </div>
                     ) : (
                       displayedNotifications.slice(0, 6).map(notification => (
@@ -657,7 +723,7 @@ const Navbar = () => {
                               {new Date(notification.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </span>
                             <span style={{ fontSize: '0.72rem', color: notification.read ? '#10b981' : '#3b82f6', fontWeight: '600' }}>
-                              {notification.read ? '✓ Read' : '● New'}
+                              {notification.read ? t('nav.read') : t('nav.new')}
                             </span>
                           </div>
                         </div>
@@ -679,7 +745,7 @@ const Navbar = () => {
                           background: '#f8f9fa'
                         }}
                       >
-                        View All Notifications
+                        {t('nav.viewAllNotifications')}
                       </div>
                     )}
                   </div>
@@ -720,7 +786,7 @@ const Navbar = () => {
                       onClick={() => handleLinkClick('/profile')}
                     >
                       <i className="fas fa-user"></i>
-                      <span>Profile</span>
+                      <span>{t('nav.profile')}</span>
                     </div>
 
                     <div
@@ -728,7 +794,7 @@ const Navbar = () => {
                       onClick={() => handleLinkClick('/messages')}
                     >
                       <i className="fas fa-comments"></i>
-                      <span>Messages</span>
+                      <span>{t('nav.messages')}</span>
                     </div>
 
                     {user.role === 'buyer' && (
@@ -737,7 +803,7 @@ const Navbar = () => {
                         onClick={() => handleLinkClick('/cart')}
                       >
                         <i className="fas fa-shopping-cart"></i>
-                        My Cart
+                        {t('nav.cart')}
                       </div>
                     )}
                     {user.role === 'buyer' ? (
@@ -747,28 +813,28 @@ const Navbar = () => {
                           onClick={() => handleLinkClick('/buyer-dashboard')}
                         >
                           <i className="fas fa-tachometer-alt"></i>
-                          Dashboard
+                          {t('nav.dashboard')}
                         </div>
                         <div
                           className="dropdown-item"
                           onClick={() => handleLinkClick('/buyer-analytics')}
                         >
                           <i className="fas fa-chart-pie"></i>
-                          Analytics
+                          {t('nav.analytics')}
                         </div>
                         <div
                           className="dropdown-item"
                           onClick={() => handleLinkClick('/orders')}
                         >
                           <i className="fas fa-box"></i>
-                          My Orders
+                          {t('nav.orders')}
                         </div>
                         <div
                           className="dropdown-item"
                           onClick={() => handleLinkClick('/negotiations')}
                         >
                           <i className="fas fa-handshake"></i>
-                          Negotiations
+                          {t('nav.negotiations')}
                         </div>
                       </>
                     ) : user.role === 'farmer' ? (
@@ -778,21 +844,21 @@ const Navbar = () => {
                           onClick={() => handleLinkClick('/farmer-dashboard')}
                         >
                           <i className="fas fa-tachometer-alt"></i>
-                          Dashboard
+                          {t('nav.dashboard')}
                         </div>
                         <div
                           className="dropdown-item"
                           onClick={() => handleLinkClick('/farmer-analytics')}
                         >
                           <i className="fas fa-chart-line"></i>
-                          Analytics
+                          {t('nav.analytics')}
                         </div>
                         <div
                           className="dropdown-item"
                           onClick={() => handleLinkClick('/crops-history')}
                         >
                           <i className="fas fa-seedling"></i>
-                          My Crops
+                          {t('nav.myCrops')}
                         </div>
                       </>
                     ) : user.role === 'admin' ? (
@@ -801,7 +867,7 @@ const Navbar = () => {
                         onClick={() => handleLinkClick('/admin-dashboard')}
                       >
                         <i className="fas fa-tachometer-alt"></i>
-                        Admin Dashboard
+                        {t('nav.adminDashboard')}
                       </div>
                     ) : null}
                     <div className="dropdown-divider"></div>
@@ -813,7 +879,7 @@ const Navbar = () => {
                       }}
                     >
                       <i className="fas fa-sign-out-alt"></i>
-                      Logout
+                      {t('nav.logout')}
                     </button>
                   </div>
                 )}
@@ -822,10 +888,10 @@ const Navbar = () => {
           ) : (
             <>
               <button onClick={(e) => { e.stopPropagation(); handleNavigation('/login'); }} className="nav-btn nav-btn-login">
-                <i className="fas fa-sign-in-alt"></i> Login
+                <i className="fas fa-sign-in-alt"></i> {t('nav.login')}
               </button>
               <button onClick={(e) => { e.stopPropagation(); handleNavigation('/register'); }} className="nav-btn nav-btn-register">
-                <i className="fas fa-user-plus"></i> Register
+                <i className="fas fa-user-plus"></i> {t('nav.register')}
               </button>
             </>
           )}

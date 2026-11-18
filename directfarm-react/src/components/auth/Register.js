@@ -4,10 +4,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import apiService from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/Auth.css';
 import '../../styles/RegistrationConfirmation.css';
 
 const Register = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -60,42 +62,42 @@ const Register = () => {
     const newErrors = {};
 
     if (!formData.firstName) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = t('auth.firstNameRequired');
     }
 
     if (!formData.lastName) {
-      newErrors.lastName = 'Last name is required';
+      newErrors.lastName = t('auth.lastNameRequired');
     }
 
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('auth.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = t('auth.emailInvalid');
     }
 
     if (!formData.phone) {
-      newErrors.phone = 'Phone number is required';
+      newErrors.phone = t('auth.phoneRequired');
     } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
-      newErrors.phone = 'Phone number must be 10 digits';
+      newErrors.phone = t('auth.phoneInvalid');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('auth.passwordRequired');
     } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+      newErrors.password = t('auth.passwordMinLength');
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = t('auth.confirmPasswordRequired');
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('auth.passwordsDoNotMatch');
     }
 
     if (formData.userType === 'farmer') {
       if (!formData.experienceYears) {
-        newErrors.experienceYears = 'Experience years is required for farmers';
+        newErrors.experienceYears = t('auth.experienceRequired');
       } else if (parseInt(formData.experienceYears) < 0 || parseInt(formData.experienceYears) > 50) {
-        newErrors.experienceYears = 'Experience years must be between 0 and 50';
+        newErrors.experienceYears = t('auth.experienceInvalid');
       }
     }
 
@@ -103,7 +105,7 @@ const Register = () => {
 
     if (Object.keys(newErrors).length > 0) {
       const errorMessages = Object.values(newErrors).join(', ');
-      toast.error(`Please fix the following errors: ${errorMessages}`, {
+      toast.error(`${t('auth.fixErrors')} ${errorMessages}`, {
         position: "top-right",
         autoClose: 2000,
         hideProgressBar: false,
@@ -161,7 +163,7 @@ const Register = () => {
         setShowConfirmation(false);
         setShowOtpVerification(true);
         setResendCooldown(60);
-        toast.success('Verification code sent to your email!', {
+        toast.success(t('auth.codeSentSuccess'), {
           position: "top-right",
           autoClose: 3000,
         });
@@ -169,10 +171,10 @@ const Register = () => {
       }
     } catch (error) {
       console.error('Registration initiation failed:', error);
-      let errorMessage = 'Failed to send verification code. Please try again.';
+      let errorMessage = t('auth.codeSendFailed');
       if (error.message) errorMessage = error.message;
-      if (errorMessage.includes('already exists')) {
-        toast.error('Email already registered. Please use a different email or try logging in.', {
+      if (errorMessage.includes('already exists') || errorMessage.includes('already registered')) {
+        toast.error(t('auth.emailAlreadyExists'), {
           position: "top-right", autoClose: 3000,
         });
       } else {
@@ -217,7 +219,7 @@ const Register = () => {
   const handleVerifyOtp = useCallback(async () => {
     const otp = otpDigits.join('');
     if (otp.length !== 6) {
-      setOtpError('Please enter all 6 digits');
+      setOtpError(t('auth.enterAllDigits'));
       return;
     }
 
@@ -232,19 +234,19 @@ const Register = () => {
 
       if (response.success) {
         setEmailVerified(true);
-        toast.success('Email verified successfully! 🎉', {
+        toast.success(t('auth.verifiedSuccess'), {
           position: "top-right", autoClose: 2000,
         });
       }
     } catch (error) {
       console.error('OTP verification failed:', error);
-      setOtpError(error.message || 'Invalid OTP. Please try again.');
+      setOtpError(error.message || t('auth.invalidOtp'));
       setOtpDigits(['', '', '', '', '', '']);
       otpInputRefs.current[0]?.focus();
     } finally {
       setIsVerifying(false);
     }
-  }, [otpDigits, registrationId]);
+  }, [otpDigits, registrationId, t]);
 
   // Auto-verify when all 6 digits are entered
   useEffect(() => {
@@ -256,7 +258,7 @@ const Register = () => {
   // Step 3: Confirm Registration
   const handleConfirmRegistration = async () => {
     if (!emailVerified) {
-      toast.error('Please verify your email first', { position: "top-right" });
+      toast.error(t('auth.verifyEmailFirst'), { position: "top-right" });
       return;
     }
 
@@ -266,7 +268,7 @@ const Register = () => {
       const response = await apiService.confirmRegistration(registrationId);
 
       if (response.success) {
-        toast.success('🎉 Registration successful! Welcome to DirectFarm!', {
+        toast.success(t('auth.registrationSuccess'), {
           position: "top-right",
           autoClose: 2000,
         });
@@ -274,7 +276,7 @@ const Register = () => {
       }
     } catch (error) {
       console.error('Registration confirmation failed:', error);
-      toast.error(error.message || 'Registration failed. Please try again.', {
+      toast.error(error.message || t('auth.registrationFailed'), {
         position: "top-right", autoClose: 3000,
       });
     } finally {
@@ -294,18 +296,18 @@ const Register = () => {
         setEmailVerified(false);
         setOtpError('');
         otpInputRefs.current[0]?.focus();
-        toast.success('New verification code sent!', {
+        toast.success(t('auth.newCodeSent'), {
           position: "top-right", autoClose: 2000,
         });
       }
     } catch (error) {
       console.error('Resend OTP failed:', error);
       if (error.message?.includes('expired') || error.message?.includes('not found')) {
-        toast.error('Registration expired. Please start over.', { position: "top-right" });
+        toast.error(t('auth.registrationExpired'), { position: "top-right" });
         setShowOtpVerification(false);
         setShowConfirmation(false);
       } else {
-        toast.error(error.message || 'Failed to resend code', { position: "top-right" });
+        toast.error(error.message || t('auth.failedResendCode'), { position: "top-right" });
       }
     }
   };
@@ -332,8 +334,8 @@ const Register = () => {
               <i className="fas fa-seedling"></i>
               <span>DirectFarm</span>
             </motion.div>
-            <h1>{showOtpVerification ? 'Verify Your Email' : 'Join DirectFarm'}</h1>
-            <p>{showOtpVerification ? 'Enter the verification code sent to your email' : 'Create your account and start your journey'}</p>
+            <h1>{showOtpVerification ? t('auth.verifyEmailTitle') : t('auth.joinDirectFarm')}</h1>
+            <p>{showOtpVerification ? t('auth.verifyEmailSubtitle') : t('auth.registerSubtitle')}</p>
           </div>
 
           <AnimatePresence mode="wait">
@@ -357,11 +359,11 @@ const Register = () => {
                   <div className={`otp-icon-circle ${emailVerified ? 'verified' : ''}`}>
                     <i className={emailVerified ? 'fas fa-check' : 'fas fa-envelope'}></i>
                   </div>
-                  <h3>{emailVerified ? 'Email Verified!' : 'Check Your Email'}</h3>
+                  <h3>{emailVerified ? t('auth.emailVerified') : t('auth.checkYourEmail')}</h3>
                   <p>
                     {emailVerified
-                      ? 'Your email has been successfully verified'
-                      : <>We sent a 6-digit code to <strong>{maskedEmail}</strong></>
+                      ? t('auth.emailVerifiedDesc')
+                      : <>{t('auth.sentCodeTo')} <strong>{maskedEmail}</strong></>
                     }
                   </p>
                 </motion.div>
@@ -410,16 +412,16 @@ const Register = () => {
                         >
                           <i className="fas fa-spinner"></i>
                         </motion.div>
-                        <span>Verifying...</span>
+                        <span>{t('auth.verifying')}</span>
                       </div>
                     )}
 
                     {/* Resend OTP */}
                     <div className="otp-resend-section">
-                      <p>Didn't receive the code?</p>
+                      <p>{t('auth.didntReceiveCode')}</p>
                       {resendCooldown > 0 ? (
                         <span className="resend-timer">
-                          Resend in <strong>{resendCooldown}s</strong>
+                          {t('auth.resendIn').replace('{seconds}', resendCooldown)}
                         </span>
                       ) : (
                         <button
@@ -427,7 +429,7 @@ const Register = () => {
                           className="resend-btn"
                           onClick={handleResendOtp}
                         >
-                          <i className="fas fa-redo"></i> Resend Code
+                          <i className="fas fa-redo"></i> {t('auth.resendCode')}
                         </button>
                       )}
                     </div>
@@ -461,7 +463,7 @@ const Register = () => {
                     whileTap={{ scale: 0.98 }}
                   >
                     <i className="fas fa-arrow-left"></i>
-                    Back
+                    {t('auth.back')}
                   </motion.button>
                   <motion.button
                     type="button"
@@ -474,12 +476,12 @@ const Register = () => {
                     {isLoading ? (
                       <>
                         <i className="fas fa-spinner fa-spin"></i>
-                        Creating Account...
+                        {t('auth.creatingAccount')}
                       </>
                     ) : (
                       <>
                         <i className="fas fa-check-circle"></i>
-                        Complete Registration
+                        {t('auth.completeRegistration')}
                       </>
                     )}
                   </motion.button>
@@ -487,7 +489,7 @@ const Register = () => {
 
                 {/* Timer info */}
                 <p className="otp-timer-info">
-                  <i className="fas fa-clock"></i> Verification code expires in 10 minutes
+                  <i className="fas fa-clock"></i> {t('auth.otpExpiresIn')}
                 </p>
               </motion.div>
 
@@ -502,8 +504,8 @@ const Register = () => {
                 transition={{ duration: 0.5 }}
               >
                 <div className="confirmation-header">
-                  <h2>Review Your Information</h2>
-                  <p>Please confirm your details before we verify your email</p>
+                  <h2>{t('auth.reviewInfo')}</h2>
+                  <p>{t('auth.reviewSubtitle')}</p>
                 </div>
 
                 {/* Role Badge */}
@@ -514,31 +516,40 @@ const Register = () => {
                   transition={{ duration: 0.5, delay: 0.2 }}
                 >
                   <i className={formData.userType === 'farmer' ? 'fas fa-tractor' : 'fas fa-shopping-cart'}></i>
-                  <h3>Registering as {formData.userType === 'farmer' ? 'Farmer' : 'Buyer'}</h3>
-                  <p>{formData.userType === 'farmer' ? 'Sell your produce directly' : 'Buy fresh from farmers'}</p>
+                  <h3>
+                    {t('auth.registeringAs')}{' '}
+                    {formData.userType === 'farmer'
+                      ? t('auth.farmer')
+                      : formData.userType === 'wholesaler'
+                      ? t('auth.wholesaler')
+                      : formData.userType === 'logistics'
+                      ? t('auth.logistics')
+                      : t('auth.buyer')}
+                  </h3>
+                  <p>{formData.userType === 'farmer' ? t('auth.sellProduceDirectly') : t('auth.buyFreshFromFarmers')}</p>
                 </motion.div>
 
                 {/* User Details */}
                 <div className="confirmation-details">
                   <div className="detail-section">
-                    <h4><i className="fas fa-user"></i> Personal Information</h4>
+                    <h4><i className="fas fa-user"></i> {t('auth.personalInfo')}</h4>
                     <div className="detail-grid">
                       <div className="detail-item">
-                        <span className="detail-label">Name:</span>
+                        <span className="detail-label">{t('auth.nameLabel')}</span>
                         <span className="detail-value">{formData.firstName} {formData.lastName}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="detail-label">Email:</span>
+                        <span className="detail-label">{t('auth.emailLabel')}</span>
                         <span className="detail-value">{formData.email}</span>
                       </div>
                       <div className="detail-item">
-                        <span className="detail-label">Phone:</span>
+                        <span className="detail-label">{t('auth.phoneLabel')}</span>
                         <span className="detail-value">{formData.phone}</span>
                       </div>
                       {formData.userType === 'farmer' && formData.experienceYears && (
                         <div className="detail-item">
-                          <span className="detail-label">Experience:</span>
-                          <span className="detail-value">{formData.experienceYears} years</span>
+                          <span className="detail-label">{t('auth.experienceLabel')}</span>
+                          <span className="detail-value">{formData.experienceYears} {t('auth.years')}</span>
                         </div>
                       )}
                     </div>
@@ -554,8 +565,8 @@ const Register = () => {
                 >
                   <i className="fas fa-shield-alt"></i>
                   <div>
-                    <strong>Email Verification Required</strong>
-                    <p>We'll send a verification code to <strong>{formData.email}</strong> to confirm your identity.</p>
+                    <strong>{t('auth.emailVerificationRequired')}</strong>
+                    <p>{t('auth.verificationNoticeDesc')} <strong>{formData.email}</strong> {t('auth.verificationNoticeDescTo')}</p>
                   </div>
                 </motion.div>
 
@@ -569,7 +580,7 @@ const Register = () => {
                     whileTap={{ scale: 0.98 }}
                   >
                     <i className="fas fa-arrow-left"></i>
-                    Back to Edit
+                    {t('auth.backToEdit')}
                   </motion.button>
                   <motion.button
                     type="button"
@@ -582,12 +593,12 @@ const Register = () => {
                     {isLoading ? (
                       <>
                         <i className="fas fa-spinner fa-spin"></i>
-                        Sending Code...
+                        {t('auth.sendingCode')}
                       </>
                     ) : (
                       <>
                         <i className="fas fa-paper-plane"></i>
-                        Send Verification Code
+                        {t('auth.sendVerificationCode')}
                       </>
                     )}
                   </motion.button>
@@ -614,7 +625,7 @@ const Register = () => {
                   >
                     <label htmlFor="firstName">
                       <i className="fas fa-user"></i>
-                      First Name
+                      {t('auth.firstName')}
                     </label>
                     <input
                       type="text"
@@ -623,7 +634,7 @@ const Register = () => {
                       value={formData.firstName}
                       onChange={handleChange}
                       className={errors.firstName ? 'error' : ''}
-                      placeholder="Enter your first name"
+                      placeholder={t('auth.firstNamePlaceholder')}
                     />
                     {errors.firstName && <span className="error-message">{errors.firstName}</span>}
                   </motion.div>
@@ -636,7 +647,7 @@ const Register = () => {
                   >
                     <label htmlFor="lastName">
                       <i className="fas fa-user"></i>
-                      Last Name
+                      {t('auth.lastName')}
                     </label>
                     <input
                       type="text"
@@ -645,7 +656,7 @@ const Register = () => {
                       value={formData.lastName}
                       onChange={handleChange}
                       className={errors.lastName ? 'error' : ''}
-                      placeholder="Enter your last name"
+                      placeholder={t('auth.lastNamePlaceholder')}
                     />
                     {errors.lastName && <span className="error-message">{errors.lastName}</span>}
                   </motion.div>
@@ -659,7 +670,7 @@ const Register = () => {
                 >
                   <label htmlFor="email">
                     <i className="fas fa-envelope"></i>
-                    Email Address
+                    {t('auth.email')}
                   </label>
                   <div className="email-input-container">
                     <input
@@ -669,7 +680,7 @@ const Register = () => {
                       value={formData.email}
                       onChange={handleChange}
                       className={`${errors.email ? 'error' : ''} ${formData.email && !errors.email ? 'valid' : ''}`}
-                      placeholder="Enter your email"
+                      placeholder={t('auth.emailPlaceholder')}
                     />
                     {formData.email && !errors.email && (
                       <i className="fas fa-check-circle email-valid-icon"></i>
@@ -681,7 +692,7 @@ const Register = () => {
                   {errors.email && <span className="error-message">{errors.email}</span>}
                   {formData.email && !errors.email && (
                     <span className="success-message">
-                      <i className="fas fa-check"></i> Email is available
+                      <i className="fas fa-check"></i> {t('auth.emailAvailable')}
                     </span>
                   )}
                 </motion.div>
@@ -694,7 +705,7 @@ const Register = () => {
                 >
                   <label htmlFor="phone">
                     <i className="fas fa-phone"></i>
-                    Phone Number
+                    {t('auth.phone')}
                   </label>
                   <input
                     type="tel"
@@ -703,7 +714,7 @@ const Register = () => {
                     value={formData.phone}
                     onChange={handleChange}
                     className={errors.phone ? 'error' : ''}
-                    placeholder="Enter your phone number"
+                    placeholder={t('auth.phonePlaceholder')}
                   />
                   {errors.phone && <span className="error-message">{errors.phone}</span>}
                 </motion.div>
@@ -716,7 +727,7 @@ const Register = () => {
                 >
                   <label htmlFor="userType">
                     <i className="fas fa-users"></i>
-                    I am a
+                    {t('auth.iAmA')}
                   </label>
                   <select
                     id="userType"
@@ -724,10 +735,10 @@ const Register = () => {
                     value={formData.userType}
                     onChange={handleChange}
                   >
-                    <option value="farmer">Farmer</option>
-                    <option value="buyer">Buyer/Retailer</option>
-                    <option value="wholesaler">Wholesaler</option>
-                    <option value="logistics">Logistics Partner</option>
+                    <option value="farmer">{t('auth.farmer')}</option>
+                    <option value="buyer">{t('auth.buyer')}</option>
+                    <option value="wholesaler">{t('auth.wholesaler')}</option>
+                    <option value="logistics">{t('auth.logistics')}</option>
                   </select>
                 </motion.div>
 
@@ -741,7 +752,7 @@ const Register = () => {
                   >
                     <label htmlFor="experienceYears">
                       <i className="fas fa-calendar-alt"></i>
-                      Years of Farming Experience
+                      {t('auth.experienceYears')}
                     </label>
                     <input
                       type="number"
@@ -750,7 +761,7 @@ const Register = () => {
                       value={formData.experienceYears}
                       onChange={handleChange}
                       className={errors.experienceYears ? 'error' : ''}
-                      placeholder="Enter years of farming experience"
+                      placeholder={t('auth.experienceYearsPlaceholder')}
                       min="0"
                       max="50"
                     />
@@ -766,7 +777,7 @@ const Register = () => {
                 >
                   <label htmlFor="password">
                     <i className="fas fa-lock"></i>
-                    Password
+                    {t('auth.password')}
                   </label>
                   <input
                     type="password"
@@ -775,7 +786,7 @@ const Register = () => {
                     value={formData.password}
                     onChange={handleChange}
                     className={errors.password ? 'error' : ''}
-                    placeholder="Create a strong password"
+                    placeholder={t('auth.passwordPlaceholderRegister')}
                   />
                   {errors.password && <span className="error-message">{errors.password}</span>}
                 </motion.div>
@@ -788,7 +799,7 @@ const Register = () => {
                 >
                   <label htmlFor="confirmPassword">
                     <i className="fas fa-lock"></i>
-                    Confirm Password
+                    {t('auth.confirmPassword')}
                   </label>
                   <input
                     type="password"
@@ -797,7 +808,7 @@ const Register = () => {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     className={errors.confirmPassword ? 'error' : ''}
-                    placeholder="Confirm your password"
+                    placeholder={t('auth.confirmPasswordPlaceholder')}
                   />
                   {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
                 </motion.div>
@@ -811,9 +822,9 @@ const Register = () => {
                   <label className="checkbox-container">
                     <input type="checkbox" required />
                     <span className="checkmark"></span>
-                    I agree to the{' '}
-                    <Link to="/terms" className="terms-link">Terms of Service</Link> and{' '}
-                    <Link to="/privacy" className="terms-link">Privacy Policy</Link>
+                    {t('auth.agreeTerms')}{' '}
+                    <Link to="/terms-conditions" className="terms-link">{t('auth.termsOfService')}</Link> {t('auth.and')}{' '}
+                    <Link to="/privacy-policy" className="terms-link">{t('auth.privacyPolicy')}</Link>
                   </label>
                 </motion.div>
 
@@ -838,7 +849,7 @@ const Register = () => {
                   ) : (
                     <>
                       <i className="fas fa-user-plus"></i>
-                      Create Account
+                      {t('auth.createAccount')}
                     </>
                   )}
                 </motion.button>
@@ -853,9 +864,9 @@ const Register = () => {
             transition={{ delay: 1.1 }}
           >
             <p>
-              Already have an account?{' '}
+              {t('auth.alreadyHaveAccount')}{' '}
               <Link to="/login" className="auth-link">
-                Sign in here
+                {t('auth.signInHere')}
               </Link>
             </p>
           </motion.div>
@@ -866,7 +877,7 @@ const Register = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2 }}
           >
-            <p>Or sign up with</p>
+            <p>{t('auth.orSignUpWith')}</p>
             <div className="social-buttons">
               <motion.button
                 className="social-btn google"
@@ -874,7 +885,7 @@ const Register = () => {
                 whileTap={{ scale: 0.95 }}
               >
                 <i className="fab fa-google"></i>
-                Google
+                {t('auth.google')}
               </motion.button>
               <motion.button
                 className="social-btn facebook"
@@ -882,7 +893,7 @@ const Register = () => {
                 whileTap={{ scale: 0.95 }}
               >
                 <i className="fab fa-facebook-f"></i>
-                Facebook
+                {t('auth.facebook')}
               </motion.button>
             </div>
           </motion.div>

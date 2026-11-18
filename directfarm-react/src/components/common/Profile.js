@@ -4,9 +4,11 @@ import { toast } from 'react-toastify';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
 import StarRating from '../common/StarRating';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/Profile.css';
 
 const Profile = () => {
+    const { t } = useLanguage();
     const [user, setUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({
@@ -140,12 +142,12 @@ const Profile = () => {
                         <div className="card-header">
                             <h2>
                                 <i className="fas fa-user-circle"></i>
-                                Personal Information
+                                {t('profile.personalInfo')}
                             </h2>
                             {!isEditing && (
                                 <button onClick={() => setIsEditing(true)} className="edit-btn">
                                     <i className="fas fa-edit"></i>
-                                    Edit Profile
+                                    {t('farmerDashboard.edit')}
                                 </button>
                             )}
                         </div>
@@ -155,7 +157,7 @@ const Profile = () => {
                                 <div className="form-group">
                                     <label htmlFor="name">
                                         <i className="fas fa-user"></i>
-                                        Full Name
+                                        {t('profile.name')}
                                     </label>
                                     <input
                                         type="text"
@@ -170,7 +172,7 @@ const Profile = () => {
                                 <div className="form-group">
                                     <label htmlFor="email">
                                         <i className="fas fa-envelope"></i>
-                                        Email Address
+                                        {t('profile.email')}
                                     </label>
                                     <input
                                         type="email"
@@ -185,7 +187,7 @@ const Profile = () => {
                                 <div className="form-group">
                                     <label htmlFor="phone">
                                         <i className="fas fa-phone"></i>
-                                        Phone Number
+                                        {t('profile.phone')}
                                     </label>
                                     <input
                                         type="tel"
@@ -199,7 +201,7 @@ const Profile = () => {
                                 <div className="form-group">
                                     <label htmlFor="address">
                                         <i className="fas fa-map-marker-alt"></i>
-                                        Address
+                                        {t('profile.address')}
                                     </label>
                                     <textarea
                                         id="address"
@@ -213,7 +215,7 @@ const Profile = () => {
                                 <div className="form-group">
                                     <label htmlFor="role">
                                         <i className="fas fa-briefcase"></i>
-                                        Role
+                                        {t('profile.role')}
                                     </label>
                                     <input
                                         type="text"
@@ -223,7 +225,6 @@ const Profile = () => {
                                         disabled
                                         className="disabled-input"
                                     />
-                                    <small>Role cannot be changed</small>
                                 </div>
 
                                 <div className="form-actions">
@@ -231,18 +232,18 @@ const Profile = () => {
                                         {isLoading ? (
                                             <>
                                                 <i className="fas fa-spinner fa-spin"></i>
-                                                Saving...
+                                                {t('common.loading')}
                                             </>
                                         ) : (
                                             <>
                                                 <i className="fas fa-save"></i>
-                                                Save Changes
+                                                {t('profile.saveChanges')}
                                             </>
                                         )}
                                     </button>
                                     <button type="button" onClick={handleCancel} className="cancel-btn" disabled={isLoading}>
                                         <i className="fas fa-times"></i>
-                                        Cancel
+                                        {t('common.cancel')}
                                     </button>
                                 </div>
                             </form>
@@ -251,52 +252,52 @@ const Profile = () => {
                                 <div className="info-item">
                                     <div className="info-label">
                                         <i className="fas fa-user"></i>
-                                        Full Name
+                                        {t('auth.fullName')}
                                     </div>
-                                    <div className="info-value">{user.name || 'Not provided'}</div>
+                                    <div className="info-value">{user.name || '—'}</div>
                                 </div>
 
                                 <div className="info-item">
                                     <div className="info-label">
                                         <i className="fas fa-envelope"></i>
-                                        Email Address
+                                        {t('auth.email')}
                                     </div>
-                                    <div className="info-value">{user.email || 'Not provided'}</div>
+                                    <div className="info-value">{user.email || '—'}</div>
                                 </div>
 
                                 <div className="info-item">
                                     <div className="info-label">
                                         <i className="fas fa-phone"></i>
-                                        Phone Number
+                                        {t('auth.phone')}
                                     </div>
-                                    <div className="info-value">{user.phone || 'Not provided'}</div>
+                                    <div className="info-value">{user.phone || '—'}</div>
                                 </div>
 
                                 <div className="info-item">
                                     <div className="info-label">
                                         <i className="fas fa-map-marker-alt"></i>
-                                        Address
+                                        {t('profile.address')}
                                     </div>
-                                    <div className="info-value">{user.address || 'Not provided'}</div>
+                                    <div className="info-value">{user.address || '—'}</div>
                                 </div>
 
                                 <div className="info-item">
                                     <div className="info-label">
                                         <i className="fas fa-briefcase"></i>
-                                        Role
+                                        {t('auth.role')}
                                     </div>
-                                    <div className="info-value role-badge">{user.role?.toUpperCase() || 'USER'}</div>
+                                    <div className="info-value role-badge">{user.role ? (user.role === 'farmer' ? t('auth.farmer') : t('auth.buyer')) : 'USER'}</div>
                                 </div>
 
                                 <div className="info-item">
                                     <div className="info-label">
                                         <i className="fas fa-star"></i>
-                                        Rating
+                                        {t('rating.orderRating')}
                                     </div>
                                     <div className="info-value" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                         <StarRating rating={user.averageRating || 0} readOnly size="1.2rem" />
                                         <span style={{ color: '#666', fontSize: '0.9rem' }}>
-                                            ({user.totalRatings || 0} reviews)
+                                            ({user.totalRatings || 0} {t('home.reviews')})
                                         </span>
                                     </div>
                                 </div>

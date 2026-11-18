@@ -30,6 +30,7 @@ import ChatHistory from './components/chat/ChatHistory';
 import AdminDashboard from './components/admin/AdminDashboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Footer from './components/common/Footer';
+import { LanguageProvider } from './context/LanguageContext';
 import './App.css';
 import GuestRoute from './components/auth/GuestRoute';
 import FarmerAnalytics from './components/dashboard/FarmerAnalytics';
@@ -207,7 +208,9 @@ function AppContent() {
           }
         />
         <Route path="/terms-conditions" element={<TermsConditions />} />
+        <Route path="/terms" element={<TermsConditions />} />
         <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/refund-policy" element={<RefundPolicy />} />
         <Route path="/delivery-policy" element={<DeliveryPolicy />} />
         <Route path="/data-protection-policy" element={<DataProtectionPolicy />} />
@@ -223,7 +226,9 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AppContent />
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
     </Router>
   );
 }

@@ -1,13 +1,18 @@
 const { google } = require('googleapis');
 
 const sendEmail = async (options) => {
+    const clientId = process.env.GMAIL_CLIENT_ID?.trim();
+    const clientSecret = process.env.GMAIL_CLIENT_SECRET_KEY?.trim();
+    const refreshToken = process.env.GMAIL_REFRESH_TOKEN?.trim();
+    const senderEmail = process.env.GMAIL_USER?.trim();
+
     const oauth2Client = new google.auth.OAuth2(
-        process.env.GMAIL_CLIENT_ID,
-        process.env.GMAIL_CLIENT_SECRET_KEY
+        clientId,
+        clientSecret
     );
 
     oauth2Client.setCredentials({
-        refresh_token: process.env.GMAIL_REFRESH_TOKEN
+        refresh_token: refreshToken
     });
 
     const gmail = google.gmail({
@@ -16,7 +21,7 @@ const sendEmail = async (options) => {
     });
 
     const email = [
-        `From: ${process.env.GMAIL_USER}`,
+        `From: ${senderEmail}`,
         `To: ${options.email}`,
         `Subject: ${options.subject}`,
         'MIME-Version: 1.0',

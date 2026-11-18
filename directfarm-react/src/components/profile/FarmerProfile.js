@@ -7,10 +7,12 @@ import authUtils from '../../utils/auth';
 import StarRating from '../common/StarRating';
 import ProductDetailsModal from '../product/ProductDetailsModal';
 import ChatModal from '../chat/ChatModal';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/BuyerDashboard.css';
 import '../../styles/FarmerProfile.css';
 
 const FarmerProfile = () => {
+    const { t } = useLanguage();
     const { id } = useParams();
     const navigate = useNavigate();
     const [farmer, setFarmer] = useState(null);
@@ -398,9 +400,9 @@ const FarmerProfile = () => {
                     {/* Date-wise Upload Badge on Image Corner */}
                     <div className={`product-date-badge ${uploadedToday ? 'today-glow' : (uploadedYesterday ? 'yesterday' : 'regular')}`}>
                         {uploadedToday ? (
-                            <span><i className="fas fa-sparkles"></i> 🌱 Uploaded Today</span>
+                            <span><i className="fas fa-sparkles"></i> {t('farmerProfile.uploadedToday')}</span>
                         ) : uploadedYesterday ? (
-                            <span><i className="fas fa-history"></i> Yesterday</span>
+                            <span><i className="fas fa-history"></i> {t('farmerProfile.yesterday')}</span>
                         ) : (
                             <span><i className="fas fa-calendar-alt"></i> {new Date(product.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' })}</span>
                         )}
@@ -417,15 +419,15 @@ const FarmerProfile = () => {
                     )}
 
                     <div className="card-hover-overlay">
-                        <span><i className="fas fa-expand-arrows-alt"></i> View Full Details & Gallery</span>
+                        <span><i className="fas fa-expand-arrows-alt"></i> {t('farmerProfile.viewFullDetails')}</span>
                     </div>
                 </div>
 
                 <div className="product-info">
                     <div className="product-header">
                         <div>
-                            <h3>{product.name}</h3>
-                            <span className="product-category-tag">{product.category || 'Vegetables'}</span>
+                            <h3>{t(`items.${product.name}`) !== `items.${product.name}` ? t(`items.${product.name}`) : product.name}</h3>
+                            <span className="product-category-tag">{t(`categories.${product.category}`) || product.category || 'Vegetables'}</span>
                         </div>
                         <span className="price">₹{product.pricePerKg || product.ratePerKg || product.price}/kg</span>
                     </div>
@@ -438,7 +440,7 @@ const FarmerProfile = () => {
                         <div className="meta-row">
                             <span>
                                 <i className="fas fa-clock" style={{ color: '#3b82f6' }}></i>
-                                Uploaded: <strong>{new Date(product.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong>
+                                {t('buyerDashboard.uploaded')} <strong>{new Date(product.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong>
                             </span>
                         </div>
 
@@ -446,7 +448,7 @@ const FarmerProfile = () => {
                             <div className="meta-row">
                                 <span>
                                     <i className="fas fa-seedling" style={{ color: '#10b981' }}></i>
-                                    Harvested: {new Date(product.harvestingDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    {t('buyerDashboard.harvested')} {new Date(product.harvestingDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </span>
                             </div>
                         )}
@@ -479,7 +481,7 @@ const FarmerProfile = () => {
                             onMouseOver={(e) => e.currentTarget.style.background = '#2563eb'}
                             onMouseOut={(e) => e.currentTarget.style.background = '#3b82f6'}
                         >
-                            <i className="fas fa-gavel"></i> View Bids
+                            <i className="fas fa-gavel"></i> {t('farmerProfile.viewBids')}
                         </button>
 
                         {/* Make Offer / Bid Button for Buyers */}
@@ -502,7 +504,7 @@ const FarmerProfile = () => {
                                     cursor: 'pointer'
                                 }}
                             >
-                                <i className="fas fa-handshake"></i> Offer
+                                <i className="fas fa-handshake"></i> {t('farmerProfile.makeOffer')}
                             </button>
                         )}
                     </div>
@@ -522,8 +524,8 @@ const FarmerProfile = () => {
     if (error || !farmer) {
         return (
             <div className="dashboard-container" style={{ textAlign: 'center', padding: '4rem' }}>
-                <h2>Farmer not found</h2>
-                <button className="btn btn-primary" onClick={() => navigate(-1)}>Go Back</button>
+                <h2>{t('farmerProfile.farmerNotFound')}</h2>
+                <button className="btn btn-primary" onClick={() => navigate(-1)}>{t('farmerProfile.back')}</button>
             </div>
         );
     }
@@ -536,7 +538,7 @@ const FarmerProfile = () => {
                     onClick={() => navigate(-1)}
                     style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#334155', borderColor: '#cbd5e1', background: '#ffffff' }}
                 >
-                    <i className="fas fa-arrow-left"></i> Back
+                    <i className="fas fa-arrow-left"></i> {t('farmerProfile.back')}
                 </button>
 
                 {/* Farmer Header Profile Card */}
@@ -561,7 +563,7 @@ const FarmerProfile = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
                         <StarRating rating={farmer.averageRating || 0} readOnly size="1.2rem" />
                         <span style={{ color: '#64748b', fontWeight: '600' }}>
-                            ({farmer.totalRatings || 0} customer reviews)
+                            {t('farmerProfile.customerReviews', { count: farmer.totalRatings || 0 })}
                         </span>
                     </div>
 
@@ -569,8 +571,8 @@ const FarmerProfile = () => {
                         {farmer.address && (
                             <span><i className="fas fa-map-marker-alt" style={{ marginRight: '0.4rem', color: '#ef4444' }}></i>{farmer.address}</span>
                         )}
-                        <span><i className="fas fa-calendar-alt" style={{ marginRight: '0.4rem', color: '#3b82f6' }}></i>Member since {new Date(farmer.createdAt).getFullYear()}</span>
-                        <span><i className="fas fa-seedling" style={{ marginRight: '0.4rem', color: '#10b981' }}></i>{displayProducts.length} Available Crops</span>
+                        <span><i className="fas fa-calendar-alt" style={{ marginRight: '0.4rem', color: '#3b82f6' }}></i>{t('farmerProfile.memberSince', { year: new Date(farmer.createdAt).getFullYear() })}</span>
+                        <span><i className="fas fa-seedling" style={{ marginRight: '0.4rem', color: '#10b981' }}></i>{t('farmerProfile.availableCrops', { count: displayProducts.length })}</span>
                     </div>
                 </motion.div>
 
@@ -593,10 +595,10 @@ const FarmerProfile = () => {
                     }}>
                         <div>
                             <h2 style={{ margin: '0 0 0.25rem 0', fontSize: '1.4rem', color: '#0f172a', fontWeight: '800' }}>
-                                Available Unsold Produce ({displayProducts.length})
+                                {t('farmerProfile.availableProduceTitle', { count: displayProducts.length })}
                             </h2>
                             <p style={{ margin: 0, color: '#64748b', fontSize: '0.88rem' }}>
-                                View all freshly available unsold crops with live order and bidding access
+                                {t('farmerProfile.availableProduceSubtitle')}
                             </p>
                         </div>
 

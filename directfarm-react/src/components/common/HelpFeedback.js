@@ -4,10 +4,12 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/HelpFeedback.css';
 import { ComplaintTrackingModal } from './ComplaintTrackingModal';
 
 const HelpFeedback = () => {
+  const { t, language } = useLanguage();
   const [user, setUser] = useState(null);
   const [formData, setFormData] = useState({
     type: 'feedback',
@@ -18,6 +20,21 @@ const HelpFeedback = () => {
     priority: 'medium',
     name: ''
   });
+
+  const getTabLabel = (type) => {
+    if (type === 'feedback') return t('help.feedbackTab');
+    if (type === 'complaint') return t('help.complaintTab');
+    if (type === 'suggestion') return t('help.suggestionTab');
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
+  const getPriorityLabel = (p) => {
+    if (p === 'low') return t('help.lowPriority');
+    if (p === 'medium') return t('help.mediumPriority');
+    if (p === 'high') return t('help.highPriority');
+    if (p === 'urgent') return t('help.urgentPriority');
+    return p.charAt(0).toUpperCase() + p.slice(1);
+  };
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -48,23 +65,23 @@ const HelpFeedback = () => {
     const newErrors = {};
 
     if (!formData.subject.trim()) {
-      newErrors.subject = 'Subject is required';
+      newErrors.subject = t('help.errors.subjectRequired');
     }
 
     if (!formData.message.trim()) {
-      newErrors.message = 'Message is required';
+      newErrors.message = t('help.errors.messageRequired');
     } else if (formData.message.trim().length < 10) {
-      newErrors.message = 'Message must be at least 10 characters';
+      newErrors.message = t('help.errors.messageLength');
     }
 
     if (!user) {
       if (!formData.email.trim()) {
-        newErrors.email = 'Email is required';
+        newErrors.email = t('help.errors.emailRequired');
       } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-        newErrors.email = 'Email is invalid';
+        newErrors.email = t('help.errors.emailInvalid');
       }
       if (!formData.phone.trim()) {
-        newErrors.phone = 'Phone number is required';
+        newErrors.phone = t('help.errors.phoneRequired');
       }
     }
 
@@ -76,7 +93,7 @@ const HelpFeedback = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      toast.error('Please fix the form errors before submitting');
+      toast.error(t('help.errors.fixErrors'));
       return;
     }
 
@@ -103,9 +120,9 @@ const HelpFeedback = () => {
 
         if (formData.type === 'complaint' && response.requestId) {
           setLastRequestId(response.requestId);
-          toast.success(`Complaint Submitted! Request ID: ${response.requestId}`);
+          toast.success(`${t('help.complaintSubmitted')} ID: ${response.requestId}`);
         } else {
-          toast.success('Thank you for your feedback!');
+          toast.success(t('help.thankYouFeedback'));
         }
 
         // Reset form after delay (longer delay if there is a request ID to read)
@@ -123,12 +140,12 @@ const HelpFeedback = () => {
           });
         }, 8000);
       } else {
-        throw new Error(response.message || 'Submission failed');
+        throw new Error(response.message || t('help.errors.submitFailed'));
       }
 
     } catch (error) {
       console.error('Error submitting form:', error);
-      toast.error(error.message || 'Failed to submit. Please try again.');
+      toast.error(error.message || t('help.errors.submitFailed'));
     } finally {
       setIsSubmitting(false);
     }
@@ -146,15 +163,15 @@ const HelpFeedback = () => {
           <div>
             <h1>
               <i className="fas fa-headset"></i>
-              Help & Feedback
+              {t('help.title')}
             </h1>
-            <p>We'd love to hear from you! Send us your feedback, complaints, or suggestions.</p>
+            <p>{t('help.subtitle')}</p>
           </div>
           <button
             className="btn btn-outline-primary"
             onClick={() => setIsTrackingModalOpen(true)}
           >
-            Track Complaint Status
+            {t('help.trackComplaintBtn')}
           </button>
         </div>
 
@@ -168,16 +185,16 @@ const HelpFeedback = () => {
               <div className="success-icon">
                 <i className="fas fa-check-circle"></i>
               </div>
-              <h2>{lastRequestId ? 'Complaint Submitted!' : 'Feedback Received!'}</h2>
+              <h2>{lastRequestId ? t('help.complaintSubmitted') : t('help.feedbackReceived')}</h2>
 
               {lastRequestId && (
                 <div className="alert alert-info my-3">
-                  <strong>Your Request ID is: {lastRequestId}</strong>
-                  <p className="mb-0 mt-1 small">Please save this ID to track your complaint status.</p>
+                  <strong>{t('help.requestIdIs')} {lastRequestId}</strong>
+                  <p className="mb-0 mt-1 small">{t('help.saveRequestId')}</p>
                 </div>
               )}
 
-              <p>{lastRequestId ? 'We will process your complaint shortly.' : 'Thank you for helping us improve DirectFarm. We will review your message shortly.'}</p>
+              <p>{lastRequestId ? t('help.processComplaintSoon') : t('help.thankYouFeedback')}</p>
 
               <button
                 className="submit-another-btn"
@@ -195,7 +212,7 @@ const HelpFeedback = () => {
                   });
                 }}
               >
-                Submit Another
+                {t('help.submitAnother')}
               </button>
             </motion.div>
           ) : (
@@ -208,14 +225,14 @@ const HelpFeedback = () => {
                     onClick={() => setFormData(prev => ({ ...prev, type }))}
                   >
                     <i className={`fas fa-${type === 'feedback' ? 'comment-alt' : type === 'complaint' ? 'exclamation-circle' : 'lightbulb'}`}></i>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                    {getTabLabel(type)}
                   </button>
                 ))}
               </div>
 
               <form onSubmit={handleSubmit} className="feedback-form">
                 <div className="form-group full-width">
-                  <label htmlFor="priority">Priority Level</label>
+                  <label htmlFor="priority">{t('help.priorityLevel')}</label>
                   <div className="priority-options">
                     {['low', 'medium', 'high', 'urgent'].map(p => (
                       <div
@@ -223,14 +240,14 @@ const HelpFeedback = () => {
                         className={`priority-chip ${formData.priority === p ? 'selected' : ''} ${p}`}
                         onClick={() => setFormData(prev => ({ ...prev, priority: p }))}
                       >
-                        {p.charAt(0).toUpperCase() + p.slice(1)}
+                        {getPriorityLabel(p)}
                       </div>
                     ))}
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="subject">Subject</label>
+                  <label htmlFor="subject">{t('help.subject')}</label>
                   <input
                     type="text"
                     id="subject"
@@ -238,7 +255,11 @@ const HelpFeedback = () => {
                     value={formData.subject}
                     onChange={handleChange}
                     className={errors.subject ? 'error' : ''}
-                    placeholder={`Enter ${formData.type} subject`}
+                    placeholder={
+                      language === 'hi'
+                        ? (formData.type === 'complaint' ? 'शिकायत का विषय दर्ज करें' : formData.type === 'suggestion' ? 'सुझाव का विषय दर्ज करें' : 'प्रतिक्रिया का विषय दर्ज करें')
+                        : `Enter ${formData.type} subject`
+                    }
                   />
                   {errors.subject && <span className="error-message">{errors.subject}</span>}
                 </div>
@@ -247,18 +268,18 @@ const HelpFeedback = () => {
                 {!user && (
                   <div className="guest-info-grid">
                     <div className="form-group">
-                      <label htmlFor="name">Your Name</label>
+                      <label htmlFor="name">{t('help.yourName')}</label>
                       <input
                         type="text"
                         id="name"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        placeholder="Enter your name"
+                        placeholder={t('help.namePlaceholder')}
                       />
                     </div>
                     <div className="form-group">
-                      <label htmlFor="email">Email <span className="required">*</span></label>
+                      <label htmlFor="email">{t('help.email')} <span className="required">*</span></label>
                       <input
                         type="email"
                         id="email"
@@ -266,12 +287,12 @@ const HelpFeedback = () => {
                         value={formData.email}
                         onChange={handleChange}
                         className={errors.email ? 'error' : ''}
-                        placeholder="Enter your email"
+                        placeholder={t('help.emailPlaceholder')}
                       />
                       {errors.email && <span className="error-message">{errors.email}</span>}
                     </div>
                     <div className="form-group">
-                      <label htmlFor="phone">Phone <span className="required">*</span></label>
+                      <label htmlFor="phone">{t('help.phone')} <span className="required">*</span></label>
                       <input
                         type="tel"
                         id="phone"
@@ -279,7 +300,7 @@ const HelpFeedback = () => {
                         value={formData.phone}
                         onChange={handleChange}
                         className={errors.phone ? 'error' : ''}
-                        placeholder="Enter your phone number"
+                        placeholder={t('help.phonePlaceholder')}
                       />
                       {errors.phone && <span className="error-message">{errors.phone}</span>}
                     </div>
@@ -287,14 +308,18 @@ const HelpFeedback = () => {
                 )}
 
                 <div className="form-group full-width">
-                  <label htmlFor="message">Message</label>
+                  <label htmlFor="message">{t('help.message')}</label>
                   <textarea
                     id="message"
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
                     className={errors.message ? 'error' : ''}
-                    placeholder={`Please describe your ${formData.type} in detail...`}
+                    placeholder={
+                      language === 'hi'
+                        ? (formData.type === 'complaint' ? 'कृपया अपनी शिकायत का विस्तार से वर्णन करें...' : formData.type === 'suggestion' ? 'कृपया अपने सुझाव का विस्तार से वर्णन करें...' : 'कृपया अपनी प्रतिक्रिया का विस्तार से वर्णन करें...')
+                        : `Please describe your ${formData.type} in detail...`
+                    }
                     rows="5"
                   />
                   {errors.message && <span className="error-message">{errors.message}</span>}
@@ -310,11 +335,11 @@ const HelpFeedback = () => {
                   >
                     {isSubmitting ? (
                       <>
-                        <i className="fas fa-spinner fa-spin"></i> Sending...
+                        <i className="fas fa-spinner fa-spin"></i> {t('help.sending')}
                       </>
                     ) : (
                       <>
-                        <i className="fas fa-paper-plane"></i> Submit
+                        <i className="fas fa-paper-plane"></i> {t('help.submit')}
                       </>
                     )}
                   </motion.button>
@@ -327,14 +352,14 @@ const HelpFeedback = () => {
             <div className="contact-card">
               <i className="fas fa-envelope"></i>
               <div>
-                <h4>Email Support</h4>
+                <h4>{t('help.emailSupport')}</h4>
                 <p>support@directfarm.com</p>
               </div>
             </div>
             <div className="contact-card">
               <i className="fas fa-phone-alt"></i>
               <div>
-                <h4>Phone Support</h4>
+                <h4>{t('help.phoneSupport')}</h4>
                 <p>+91 98765 43210</p>
               </div>
             </div>

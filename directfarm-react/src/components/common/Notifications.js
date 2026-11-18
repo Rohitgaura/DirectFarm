@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/BuyerDashboard.css';
 
 const Notifications = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -140,7 +142,7 @@ const Notifications = () => {
                                 gap: '0.4rem'
                             }}
                         >
-                            <i className="fas fa-check-double"></i> Mark All as Read
+                            <i className="fas fa-check-double"></i> {t('nav.markAllRead')}
                         </button>
                     )}
                 </div>
@@ -178,7 +180,7 @@ const Notifications = () => {
                                     transition: 'all 0.2s ease'
                                 }}
                             >
-                                <i className="fas fa-arrow-up-wide-short"></i> Unread on Top
+                                <i className="fas fa-arrow-up-wide-short"></i> {t('nav.unreadFirst')}
                             </button>
 
                             <button
@@ -194,7 +196,7 @@ const Notifications = () => {
                                     cursor: 'pointer'
                                 }}
                             >
-                                All ({notifications.length})
+                                {t('nav.all')} ({notifications.length})
                             </button>
 
                             {unreadCount > 0 && (
@@ -211,13 +213,13 @@ const Notifications = () => {
                                         cursor: 'pointer'
                                     }}
                                 >
-                                    Unread ({unreadCount})
+                                    {t('nav.unread')} ({unreadCount})
                                 </button>
                             )}
                         </div>
 
                         <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-                            Showing <strong>{displayedNotifications.length}</strong> items
+                            {displayedNotifications.length}
                         </div>
                     </div>
                 )}
@@ -227,7 +229,7 @@ const Notifications = () => {
                         <div className="no-results" style={{ background: 'white', padding: '3rem 1.5rem', borderRadius: '16px', border: '1px dashed #cbd5e1', textAlign: 'center' }}>
                             <i className="fas fa-bell-slash" style={{ fontSize: '3rem', color: '#cbd5e1', marginBottom: '1rem', display: 'block' }}></i>
                             <h3 style={{ margin: '0 0 0.5rem 0', color: '#334155' }}>
-                                {filterMode === 'unread' ? 'No Unread Notifications' : 'No Notifications'}
+                                {filterMode === 'unread' ? t('nav.noUnread') : t('nav.noNotifications')}
                             </h3>
                             <p style={{ margin: 0, color: '#64748b' }}>You're all caught up!</p>
                         </div>

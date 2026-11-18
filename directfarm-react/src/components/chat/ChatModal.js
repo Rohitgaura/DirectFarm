@@ -5,9 +5,11 @@ import apiService from '../../services/api';
 import socketService from '../../services/socket';
 import localDB from '../../services/db';
 import syncManager from '../../services/sync';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/ChatModal.css';
 
 const ChatModal = ({ isOpen, onClose, farmer, product, currentUser }) => {
+    const { t } = useLanguage();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -198,11 +200,11 @@ const ChatModal = ({ isOpen, onClose, farmer, product, currentUser }) => {
         yesterday.setDate(yesterday.getDate() - 1);
 
         if (date.toDateString() === today.toDateString()) {
-            return 'Today';
+            return t('chat.today');
         } else if (date.toDateString() === yesterday.toDateString()) {
-            return 'Yesterday';
+            return t('chat.yesterday');
         } else {
-            return date.toLocaleDateString('en-US', {
+            return date.toLocaleDateString([], {
                 month: 'short',
                 day: 'numeric'
             });
@@ -255,7 +257,7 @@ const ChatModal = ({ isOpen, onClose, farmer, product, currentUser }) => {
                             </div>
                             <div>
                                 <h3>{farmer.name}</h3>
-                                {product && <p className="product-context">About: {product.vegetableType}</p>}
+                                {product && <p className="product-context">{t('chat.about')} {product.vegetableType || product.name}</p>}
                             </div>
                         </div>
                         <button className="close-chat-btn" onClick={onClose}>
@@ -268,13 +270,13 @@ const ChatModal = ({ isOpen, onClose, farmer, product, currentUser }) => {
                         {isLoading && messages.length === 0 ? (
                             <div className="chat-loading">
                                 <i className="fas fa-spinner fa-spin"></i>
-                                <p>Loading conversation...</p>
+                                <p>{t('chat.loadingConversation')}</p>
                             </div>
                         ) : messages.length === 0 ? (
                             <div className="no-messages">
                                 <i className="fas fa-comments"></i>
-                                <p>No messages yet</p>
-                                <span>Start the conversation!</span>
+                                <p>{t('chat.noMessages')}</p>
+                                <span>{t('chat.startConversation')}</span>
                             </div>
                         ) : (
                             <>
@@ -315,7 +317,7 @@ const ChatModal = ({ isOpen, onClose, farmer, product, currentUser }) => {
                             type="text"
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
-                            placeholder="Type a message..."
+                            placeholder={t('chat.typeMessage')}
                             disabled={isSending}
                             autoFocus
                         />

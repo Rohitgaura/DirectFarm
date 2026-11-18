@@ -4,9 +4,11 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import authUtils from '../../utils/auth';
 import apiService from '../../services/api';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/NegotiationHistory.css';
 
 const NegotiationHistory = () => {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [negotiations, setNegotiations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -88,8 +90,8 @@ const NegotiationHistory = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
-        <h1>Negotiation History</h1>
-        <p>Track your offers and their status</p>
+        <h1>{t('negotiations.title')}</h1>
+        <p>{t('negotiations.subtitle')}</p>
       </motion.div>
 
       <div className="negotiations-container">
@@ -101,8 +103,8 @@ const NegotiationHistory = () => {
             transition={{ duration: 0.5 }}
           >
             <i className="fas fa-handshake-slash"></i>
-            <h3>No negotiations yet</h3>
-            <p>Make an offer on a product to start negotiating!</p>
+            <h3>{t('negotiations.noNegotiations')}</h3>
+            <p>{t('negotiations.subtitle')}</p>
           </motion.div>
         ) : (
           <div className="negotiations-list">
@@ -139,28 +141,28 @@ const NegotiationHistory = () => {
 
                 <div className="card-body">
                   <div className="info-group">
-                    <label>Farmer</label>
+                    <label>{t('negotiations.farmer')}</label>
                     <div className="value">
                       <i className="fas fa-user"></i>
                       {negotiation.farmerId?.name || 'Unknown Farmer'}
                     </div>
                   </div>
                   <div className="info-group">
-                    <label>Quantity</label>
+                    <label>{t('negotiations.quantity')}</label>
                     <div className="value">
                       <i className="fas fa-weight"></i>
                       {negotiation.quantity} kg
                     </div>
                   </div>
                   <div className="info-group">
-                    <label>Offered Price</label>
+                    <label>{t('negotiations.offeredPrice')}</label>
                     <div className="value">
                       <i className="fas fa-tag"></i>
                       ₹{negotiation.offeredPrice}/kg
                     </div>
                   </div>
                   <div className="info-group total">
-                    <label>Total Value</label>
+                    <label>{t('negotiations.totalValue')}</label>
                     <div className="value">
                       ₹{(negotiation.quantity * negotiation.offeredPrice).toFixed(2)}
                     </div>
@@ -177,7 +179,7 @@ const NegotiationHistory = () => {
                       whileTap={{ scale: 0.98 }}
                     >
                       <i className="fas fa-trash-alt"></i>
-                      Delete Request
+                      {t('negotiations.deleteRequest')}
                     </motion.button>
                   )}
 
@@ -214,7 +216,7 @@ const NegotiationHistory = () => {
                       }}
                     >
                       <i className="fas fa-credit-card"></i>
-                      Pay Now
+                      {t('negotiations.payNow')}
                     </motion.button>
                   )}
                 </div>

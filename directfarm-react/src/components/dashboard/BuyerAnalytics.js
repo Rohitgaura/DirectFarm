@@ -4,9 +4,11 @@ import {
 } from 'recharts';
 import apiService from '../../services/api';
 import { toast } from 'react-toastify';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/AdminDashboard.css'; // Reuse basic styles
 
 const BuyerAnalytics = () => {
+    const { t } = useLanguage();
     const [data, setData] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -31,7 +33,7 @@ const BuyerAnalytics = () => {
     if (isLoading) {
         return (
             <div className="analytics-loading">
-                <i className="fas fa-spinner fa-spin"></i> Loading Analytics...
+                <i className="fas fa-spinner fa-spin"></i> {t('common.loading')}
             </div>
         );
     }
@@ -43,20 +45,20 @@ const BuyerAnalytics = () => {
     return (
         <div className="dashboard-page">
             <div className="analytics-container">
-                <h2 className="analytics-title">My Spending Analytics</h2>
+                <h2 className="analytics-title">{t('analytics.buyerTitle')}</h2>
 
                 <div className="stats-summary-cards">
                     <div className="stat-card">
                         <div className="stat-icon revenue"><i className="fas fa-wallet"></i></div>
                         <div className="stat-info">
-                            <h3>Total Spent (6 Months)</h3>
+                            <h3>{t('analytics.totalSpent')}</h3>
                             <p>₹{data.totalSpent?.toLocaleString() || 0}</p>
                         </div>
                     </div>
                     <div className="stat-card">
                         <div className="stat-icon users"><i className="fas fa-piggy-bank"></i></div>
                         <div className="stat-info">
-                            <h3>Estimated Savings</h3>
+                            <h3>{t('analytics.estimatedSavings')}</h3>
                             <p>₹{data.totalSaved?.toLocaleString() || 0}</p>
                         </div>
                     </div>
@@ -65,7 +67,7 @@ const BuyerAnalytics = () => {
                 <div className="charts-grid">
                     {/* Spending Trend */}
                     <div className="chart-card full-width">
-                        <h3>Monthly Spending Trend</h3>
+                        <h3>{t('analytics.spendingTrend')}</h3>
                         <div className="chart-wrapper">
                             <ResponsiveContainer width="100%" height={300}>
                                 <BarChart data={data.spendingChart}>
@@ -82,7 +84,7 @@ const BuyerAnalytics = () => {
 
                     {/* Category Distribution (Mock) */}
                     <div className="chart-card">
-                        <h3>Spending by Category</h3>
+                        <h3>{t('analytics.spendingByCategory')}</h3>
                         <div className="chart-wrapper">
                             <ResponsiveContainer width="100%" height={300}>
                                 <PieChart>

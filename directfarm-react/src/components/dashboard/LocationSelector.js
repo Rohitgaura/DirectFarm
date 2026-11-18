@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import apiService from '../../services/api';
 import { toast } from 'react-toastify';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/LocationSelector.css';
 
 const LocationSelector = ({ onLocationSelect, onClose }) => {
+    const { t } = useLanguage();
     const [mode, setMode] = useState('initial'); // initial, manual
     const [loading, setLoading] = useState(false);
 
@@ -161,8 +163,8 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
             >
-                <h2>Select Your Location</h2>
-                <p>Choose how you want to find products near you</p>
+                <h2>{t('locationSelector.title')}</h2>
+                <p>{t('locationSelector.subtitle')}</p>
 
                 {mode === 'initial' ? (
                     <div className="selector-options">
@@ -172,68 +174,68 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
                             disabled={loading}
                         >
                             {loading ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-location-arrow"></i>}
-                            Use Current Location
+                            {t('locationSelector.useCurrentLocation')}
                         </button>
                         <div className="divider">
-                            <span>OR</span>
+                            <span>{t('locationSelector.or')}</span>
                         </div>
                         <button
                             className="selector-btn secondary"
                             onClick={() => setMode('manual')}
                         >
                             <i className="fas fa-map-marked-alt"></i>
-                            Select Manually
+                            {t('locationSelector.selectManually')}
                         </button>
                     </div>
                 ) : (
                     <form onSubmit={handleManualSubmit} className="manual-form">
                         <div className="form-group">
-                            <label>State</label>
+                            <label>{t('locationSelector.state')}</label>
                             <select
                                 value={selectedLocation.state}
                                 onChange={handleStateChange}
                                 required
                             >
-                                <option value="">Select State</option>
+                                <option value="">{t('locationSelector.selectState')}</option>
                                 {states.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                         </div>
 
                         <div className="form-group">
-                            <label>District</label>
+                            <label>{t('locationSelector.district')}</label>
                             <select
                                 value={selectedLocation.district}
                                 onChange={handleDistrictChange}
                                 required
                                 disabled={!selectedLocation.state}
                             >
-                                <option value="">Select District</option>
+                                <option value="">{t('locationSelector.selectDistrict')}</option>
                                 {districts.map(d => <option key={d} value={d}>{d}</option>)}
                             </select>
                         </div>
 
                         <div className="form-group">
-                            <label>Subdistrict</label>
+                            <label>{t('locationSelector.subdistrict')}</label>
                             <select
                                 value={selectedLocation.subdistrict}
                                 onChange={handleSubdistrictChange}
                                 required
                                 disabled={!selectedLocation.district}
                             >
-                                <option value="">Select Subdistrict</option>
+                                <option value="">{t('locationSelector.selectSubdistrict')}</option>
                                 {subdistricts.map(s => <option key={s} value={s}>{s}</option>)}
                             </select>
                         </div>
 
                         <div className="form-group">
-                            <label>Village</label>
+                            <label>{t('locationSelector.village')}</label>
                             <select
                                 value={selectedLocation.village}
                                 onChange={handleVillageChange}
                                 required
                                 disabled={!selectedLocation.subdistrict}
                             >
-                                <option value="">Select Village</option>
+                                <option value="">{t('locationSelector.selectVillage')}</option>
                                 {villages.map(v => <option key={v} value={v}>{v}</option>)}
                             </select>
                         </div>
@@ -244,14 +246,14 @@ const LocationSelector = ({ onLocationSelect, onClose }) => {
                                 className="back-btn"
                                 onClick={() => setMode('initial')}
                             >
-                                Back
+                                {t('locationSelector.back')}
                             </button>
                             <button
                                 type="submit"
                                 className="submit-btn"
                                 disabled={loading}
                             >
-                                {loading ? 'Processing...' : 'Find Products'}
+                                {loading ? t('common.loading') : t('locationSelector.findProducts')}
                             </button>
                         </div>
                     </form>

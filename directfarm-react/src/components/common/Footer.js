@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import socketService from '../../services/socket';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/Footer.css';
 
 const Footer = () => {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [liveUsers, setLiveUsers] = useState(1);
@@ -74,7 +76,7 @@ const Footer = () => {
         <div className="footer-content">
           <div className="footer-section">
             <h3>DirectFarm</h3>
-            <p>Empowering farmers through technology and direct market access.</p>
+            <p>{t('footer.tagline')}</p>
             <div className="social-links">
               <a href="https://facebook.com" target="_blank" rel="noopener noreferrer"><i className="fab fa-facebook"></i></a>
               <a href="https://twitter.com" target="_blank" rel="noopener noreferrer"><i className="fab fa-twitter"></i></a>
@@ -83,36 +85,36 @@ const Footer = () => {
             </div>
           </div>
           <div className="footer-section">
-            <h4>Quick Links</h4>
+            <h4>{t('footer.quickLinks')}</h4>
             <ul>
-              <li><button onClick={() => handleQuickLink('/', 'home')} className="footer-link">Home</button></li>
-              <li><button onClick={() => handleQuickLink('/', 'highlights')} className="footer-link">Highlights</button></li>
-              <li><button onClick={() => handleQuickLink('/', 'about-summary')} className="footer-link">About Summary</button></li>
-              <li><button onClick={() => handleQuickLink('/', 'impact')} className="footer-link">Our Impact</button></li>
-              <li><button onClick={() => handleQuickLink('/career', null)} className="footer-link">Careers</button></li>
+              <li><button onClick={() => handleQuickLink('/', 'home')} className="footer-link">{t('footer.home')}</button></li>
+              <li><button onClick={() => handleQuickLink('/', 'highlights')} className="footer-link">{t('footer.highlights')}</button></li>
+              <li><button onClick={() => handleQuickLink('/', 'about-summary')} className="footer-link">{t('footer.aboutSummary')}</button></li>
+              <li><button onClick={() => handleQuickLink('/', 'impact')} className="footer-link">{t('footer.ourImpact')}</button></li>
+              <li><button onClick={() => handleQuickLink('/career', null)} className="footer-link">{t('footer.careers')}</button></li>
             </ul>
           </div>
           <div className="footer-section">
-            <h4>Contact</h4>
+            <h4>{t('footer.contact')}</h4>
             <p><i className="fas fa-envelope"></i> info@directfarm.com</p>
             <p><i className="fas fa-phone"></i> +91 98765 43210</p>
-            <p><i className="fas fa-map-marker-alt"></i> Patna, Bihar, India</p>
+            <p><i className="fas fa-map-marker-alt"></i> {t('footer.address')}</p>
           </div>
           <div className="footer-section">
-            <h4>Policies</h4>
+            <h4>{t('footer.policies')}</h4>
             <ul>
-              <li><button onClick={() => handleQuickLink('/terms-conditions', null)} className="footer-link">Terms & Conditions</button></li>
-              <li><button onClick={() => handleQuickLink('/privacy-policy', null)} className="footer-link">Privacy Policy</button></li>
-              <li><button onClick={() => handleQuickLink('/refund-policy', null)} className="footer-link">Refund Policy</button></li>
-              <li><button onClick={() => handleQuickLink('/delivery-policy', null)} className="footer-link">Delivery Policy</button></li>
-              <li><button onClick={() => handleQuickLink('/data-protection-policy', null)} className="footer-link">Data Protection</button></li>
-              <li><button onClick={() => handleQuickLink('/seller-verification-policy', null)} className="footer-link">Seller Verification</button></li>
-              <li><button onClick={() => handleQuickLink('/disclaimer-policy', null)} className="footer-link">Disclaimer</button></li>
+              <li><button onClick={() => handleQuickLink('/terms-conditions', null)} className="footer-link">{t('footer.termsConditions')}</button></li>
+              <li><button onClick={() => handleQuickLink('/privacy-policy', null)} className="footer-link">{t('footer.privacyPolicy')}</button></li>
+              <li><button onClick={() => handleQuickLink('/refund-policy', null)} className="footer-link">{t('footer.refundPolicy')}</button></li>
+              <li><button onClick={() => handleQuickLink('/delivery-policy', null)} className="footer-link">{t('footer.deliveryPolicy')}</button></li>
+              <li><button onClick={() => handleQuickLink('/data-protection-policy', null)} className="footer-link">{t('footer.dataProtection')}</button></li>
+              <li><button onClick={() => handleQuickLink('/seller-verification-policy', null)} className="footer-link">{t('footer.sellerVerification')}</button></li>
+              <li><button onClick={() => handleQuickLink('/disclaimer-policy', null)} className="footer-link">{t('footer.disclaimer')}</button></li>
             </ul>
           </div>
         </div>
         <div className="footer-bottom">
-          <p>&copy; 2024 DirectFarm. All rights reserved.</p>
+          <p>&copy; 2024 DirectFarm. {t('footer.rights')}</p>
           <div className="live-users-footer">
             <span className="live-pulse-dot"></span>
             <span className="live-users-text">

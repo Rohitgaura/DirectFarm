@@ -4,9 +4,11 @@ import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/Checkout.css';
 
 const Checkout = () => {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -105,8 +107,8 @@ const Checkout = () => {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                 >
-                    <h1>Checkout</h1>
-                    <p>Complete your order</p>
+                    <h1>{t('checkout.title')}</h1>
+                    <p>{t('checkout.shippingAddress')}</p>
                 </motion.div>
 
                 <div className="checkout-content">
@@ -118,21 +120,21 @@ const Checkout = () => {
                     >
                         <form onSubmit={handleSubmit} className="checkout-form">
                             <div className="form-section">
-                                <h2><i className="fas fa-map-marker-alt"></i> Shipping Address</h2>
+                                <h2><i className="fas fa-map-marker-alt"></i> {t('checkout.shippingAddress')}</h2>
                                 <div className="form-group">
-                                    <label>Street Address</label>
+                                    <label>{t('auth.street')}</label>
                                     <input
                                         type="text"
                                         name="street"
                                         value={formData.street}
                                         onChange={handleInputChange}
                                         required
-                                        placeholder="House No, Street Name"
+                                        placeholder={t('auth.streetPlaceholder')}
                                     />
                                 </div>
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label>City</label>
+                                        <label>{t('auth.city')}</label>
                                         <input
                                             type="text"
                                             name="city"
@@ -142,7 +144,7 @@ const Checkout = () => {
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label>State</label>
+                                        <label>{t('auth.state')}</label>
                                         <input
                                             type="text"
                                             name="state"
@@ -154,7 +156,7 @@ const Checkout = () => {
                                 </div>
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label>Pincode</label>
+                                        <label>{t('auth.pincode')}</label>
                                         <input
                                             type="text"
                                             name="pincode"
@@ -166,7 +168,7 @@ const Checkout = () => {
                                         />
                                     </div>
                                     <div className="form-group">
-                                        <label>Phone Number</label>
+                                        <label>{t('auth.phone')}</label>
                                         <input
                                             type="tel"
                                             name="phone"
@@ -181,7 +183,7 @@ const Checkout = () => {
                             </div>
 
                             <div className="form-section">
-                                <h2><i className="fas fa-credit-card"></i> Payment Method</h2>
+                                <h2><i className="fas fa-credit-card"></i> {t('checkout.paymentMethod')}</h2>
                                 <div className="payment-options">
                                     <label className={`payment-option ${formData.paymentMethod === 'cod' ? 'selected' : ''}`}>
                                         <input
@@ -193,7 +195,7 @@ const Checkout = () => {
                                         />
                                         <div className="option-content">
                                             <i className="fas fa-money-bill-wave"></i>
-                                            <span>Cash on Delivery</span>
+                                            <span>{t('checkout.cod')}</span>
                                         </div>
                                     </label>
                                     <label className={`payment-option ${formData.paymentMethod === 'online' ? 'selected' : ''}`}>
@@ -206,28 +208,28 @@ const Checkout = () => {
                                         />
                                         <div className="option-content">
                                             <i className="fas fa-globe"></i>
-                                            <span>Online Payment (UPI/Card)</span>
+                                            <span>{t('checkout.online')}</span>
                                         </div>
                                     </label>
                                 </div>
                             </div>
 
                             <div className="form-section">
-                                <h2><i className="fas fa-sticky-note"></i> Order Notes (Optional)</h2>
+                                <h2><i className="fas fa-sticky-note"></i> {t('checkout.orderNotes')}</h2>
                                 <textarea
                                     name="notes"
                                     value={formData.notes}
                                     onChange={handleInputChange}
-                                    placeholder="Any special instructions for delivery..."
+                                    placeholder={t('checkout.orderNotesPlaceholder')}
                                     rows="3"
                                 ></textarea>
                             </div>
 
                             <button type="submit" className="place-order-btn" disabled={loading}>
                                 {loading ? (
-                                    <><i className="fas fa-spinner fa-spin"></i> Processing...</>
+                                    <><i className="fas fa-spinner fa-spin"></i> {t('checkout.processing')}</>
                                 ) : (
-                                    <><i className="fas fa-check-circle"></i> Confirm Order</>
+                                    <><i className="fas fa-check-circle"></i> {t('checkout.confirmOrder')}</>
                                 )}
                             </button>
                         </form>
@@ -240,12 +242,12 @@ const Checkout = () => {
                         transition={{ delay: 0.4 }}
                     >
                         <div className="order-summary-card">
-                            <h2>Order Summary</h2>
+                            <h2>{t('checkout.orderSummary')}</h2>
                             <div className="summary-items">
                                 {cartItems.map(item => (
                                     <div key={item.productId} className="summary-item">
                                         <div className="item-info">
-                                            <span className="item-name">{item.vegetableType}</span>
+                                            <span className="item-name">{t(`items.${item.vegetableType}`) !== `items.${item.vegetableType}` ? t(`items.${item.vegetableType}`) : item.vegetableType}</span>
                                             <span className="item-qty">x {item.quantity} kg</span>
                                         </div>
                                         <span className="item-price">₹{item.totalPrice}</span>
@@ -255,16 +257,16 @@ const Checkout = () => {
                             <div className="summary-divider"></div>
                             <div className="summary-totals">
                                 <div className="total-row">
-                                    <span>Subtotal</span>
+                                    <span>{t('cart.subtotal')}</span>
                                     <span>₹{calculateTotal()}</span>
                                 </div>
                                 <div className="total-row">
-                                    <span>Shipping</span>
-                                    <span>{calculateShipping() === 0 ? <span className="free">FREE</span> : `₹${calculateShipping()}`}</span>
+                                    <span>{t('cart.deliveryCharge')}</span>
+                                    <span>{calculateShipping() === 0 ? <span className="free">{t('cart.freeDelivery')}</span> : `₹${calculateShipping()}`}</span>
                                 </div>
                                 <div className="summary-divider"></div>
                                 <div className="total-row final-total">
-                                    <span>Total Amount</span>
+                                    <span>{t('cart.grandTotal')}</span>
                                     <span>₹{calculateFinalTotal()}</span>
                                 </div>
                             </div>

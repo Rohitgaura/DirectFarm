@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom';
 import apiService from '../../services/api';
 import authUtils from '../../utils/auth';
 import AnimatedCounter from '../common/AnimatedCounter';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/Home.css';
 
 const Home = () => {
+  const { t } = useLanguage();
   const [user, setUser] = useState(null);
   const [liveStats, setLiveStats] = useState(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -109,23 +111,23 @@ const Home = () => {
   const highlights = [
     {
       icon: 'fas fa-coins',
-      title: 'Fair Prices for Farmers',
-      description: 'Eliminate middlemen and get direct market prices for your produce'
+      title: t('home.fairPricesTitle'),
+      description: t('home.fairPricesDesc')
     },
     {
       icon: 'fas fa-globe',
-      title: 'Direct Market Access',
-      description: 'Connect directly with retailers and wholesalers across the country'
+      title: t('home.marketAccessTitle'),
+      description: t('home.marketAccessDesc')
     },
     {
       icon: 'fas fa-shield-alt',
-      title: 'Transparent & Secure Payments',
-      description: 'Secure payment processing with real-time tracking and transparency'
+      title: t('home.securePaymentsTitle'),
+      description: t('home.securePaymentsDesc')
     },
     {
       icon: 'fas fa-truck',
-      title: 'Logistics & Cold Storage',
-      description: 'End-to-end logistics support including transportation and cold storage'
+      title: t('home.logisticsTitle'),
+      description: t('home.logisticsDesc')
     }
   ];
 
@@ -134,18 +136,18 @@ const Home = () => {
     if (!liveStats) {
       // Fallback to hardcoded values if API failed
       return [
-        { icon: 'fas fa-users', value: 1000, suffix: '+', title: 'Farmers Connected', description: 'Growing network across Bihar and neighboring states', color: '#4CAF50' },
-        { icon: 'fas fa-store', value: 500, suffix: '+', title: 'Active Buyers', description: 'Retailers and wholesalers on the platform', color: '#2196F3' },
-        { icon: 'fas fa-seedling', value: 2000, suffix: '+', title: 'Products Listed', description: 'Fresh produce available for direct purchase', color: '#FF9800' },
-        { icon: 'fas fa-shopping-bag', value: 5000, suffix: '+', title: 'Orders Completed', description: 'Successful transactions on the platform', color: '#E91E63' },
+        { icon: 'fas fa-users', value: 1000, suffix: '+', title: t('home.farmersConnected'), description: t('home.farmersDesc'), color: '#4CAF50' },
+        { icon: 'fas fa-store', value: 500, suffix: '+', title: t('home.activeBuyers'), description: t('home.buyersDesc'), color: '#2196F3' },
+        { icon: 'fas fa-seedling', value: 2000, suffix: '+', title: t('home.productsListed'), description: t('home.productsDesc'), color: '#FF9800' },
+        { icon: 'fas fa-shopping-bag', value: 5000, suffix: '+', title: t('home.ordersCompleted'), description: t('home.ordersDesc'), color: '#E91E63' },
       ];
     }
 
     return [
-      { icon: 'fas fa-users', value: liveStats.totalFarmers, suffix: '+', title: 'Farmers Connected', description: 'Growing network across Bihar and neighboring states', color: '#4CAF50' },
-      { icon: 'fas fa-store', value: liveStats.totalBuyers, suffix: '+', title: 'Active Buyers', description: 'Retailers and wholesalers on the platform', color: '#2196F3' },
-      { icon: 'fas fa-seedling', value: liveStats.totalProducts, suffix: '+', title: 'Products Listed', description: 'Fresh produce available for direct purchase', color: '#FF9800' },
-      { icon: 'fas fa-shopping-bag', value: liveStats.totalOrders, suffix: '+', title: 'Orders Completed', description: 'Successful transactions on the platform', color: '#E91E63' },
+      { icon: 'fas fa-users', value: liveStats.totalFarmers, suffix: '+', title: t('home.farmersConnected'), description: t('home.farmersDesc'), color: '#4CAF50' },
+      { icon: 'fas fa-store', value: liveStats.totalBuyers, suffix: '+', title: t('home.activeBuyers'), description: t('home.buyersDesc'), color: '#2196F3' },
+      { icon: 'fas fa-seedling', value: liveStats.totalProducts, suffix: '+', title: t('home.productsListed'), description: t('home.productsDesc'), color: '#FF9800' },
+      { icon: 'fas fa-shopping-bag', value: liveStats.totalOrders, suffix: '+', title: t('home.ordersCompleted'), description: t('home.ordersDesc'), color: '#E91E63' },
     ];
   };
 
@@ -193,7 +195,7 @@ const Home = () => {
               animate={{ scale: 1 }}
               transition={{ duration: 0.8, delay: 0.5 }}
             >
-              Empowering Farmers, Connecting Retailers
+              {t('home.heroTitle')}
             </motion.h1>
 
             <motion.p
@@ -202,7 +204,7 @@ const Home = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.8 }}
             >
-              A digital platform that connects farmers directly to retailers, wholesalers, and bulk buyers, ensuring fair trade, transparency, and improved farmer income.
+              {t('home.heroSubtitle')}
             </motion.p>
 
             <motion.div
@@ -220,28 +222,28 @@ const Home = () => {
                     transition={{ duration: 0.5 }}
                     className="welcome-card"
                   >
-                    <h3>Welcome back, {user.name}!</h3>
-                    <p>You're logged in as a <strong>{user.role}</strong></p>
+                    <h3>{t('home.welcomeBack', { name: user.name })}</h3>
+                    <p>{t('home.loggedInAs', { role: t(`common.${user.role}`) || user.role })}</p>
 
                     {user.role === 'farmer' ? (
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Link to="/farmer-dashboard" className="btn btn-primary">
                           <i className="fas fa-tachometer-alt"></i>
-                          Go to Dashboard
+                          {t('home.goToDashboard')}
                         </Link>
                       </motion.div>
                     ) : user.role === 'admin' ? (
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Link to="/admin-dashboard" className="btn btn-primary">
                           <i className="fas fa-tachometer-alt"></i>
-                          Admin Dashboard
+                          {t('home.adminDashboard')}
                         </Link>
                       </motion.div>
                     ) : (
                       <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                         <Link to="/buyer-dashboard" className="btn btn-primary">
                           <i className="fas fa-shopping-cart"></i>
-                          Browse Products
+                          {t('home.browseProducts')}
                         </Link>
                       </motion.div>
                     )}
@@ -253,21 +255,21 @@ const Home = () => {
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Link to="/register" className="btn btn-primary">
                       <i className="fas fa-user-farmer"></i>
-                      Join as Farmer
+                      {t('home.joinFarmer')}
                     </Link>
                   </motion.div>
 
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Link to="/register" className="btn btn-secondary">
                       <i className="fas fa-store"></i>
-                      Join as Buyer
+                      {t('home.joinBuyer')}
                     </Link>
                   </motion.div>
 
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Link to="/login" className="btn btn-outline">
                       <i className="fas fa-sign-in-alt"></i>
-                      Login
+                      {t('home.login')}
                     </Link>
                   </motion.div>
                 </>
@@ -288,7 +290,7 @@ const Home = () => {
       >
         <div className="container">
           <motion.h2 className="section-title" variants={itemVariants}>
-            Why Choose DirectFarm?
+            {t('home.whyChoose')}
           </motion.h2>
           <div className="highlights-grid">
             {highlights.map((highlight, index) => (
@@ -321,26 +323,18 @@ const Home = () => {
         <div className="container">
           <div className="about-content">
             <motion.div className="about-text" variants={itemVariants}>
-              <h2>About DirectFarm</h2>
-              <p>
-                Farmers in Bihar face significant challenges including low income due to middlemen exploitation,
-                high food wastage from lack of market access, and limited digital literacy. DirectFarm addresses
-                these issues by creating a transparent, efficient, and equitable marketplace that connects farmers
-                directly with buyers.
-              </p>
-              <p>
-                Our platform eliminates intermediaries, provides fair pricing, and ensures faster sales cycles,
-                resulting in increased farmer income and reduced food wastage.
-              </p>
+              <h2>{t('home.aboutTitle')}</h2>
+              <p>{t('home.aboutP1')}</p>
+              <p>{t('home.aboutP2')}</p>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link to="/about" className="btn btn-outline">Learn More</Link>
+                <Link to="/about" className="btn btn-outline">{t('home.learnMore')}</Link>
               </motion.div>
             </motion.div>
 
             <motion.div className="about-image" variants={itemVariants}>
               <div className="image-placeholder">
                 <i className="fas fa-users"></i>
-                <p>Farmers & Technology</p>
+                <p>{t('home.farmersTech')}</p>
               </div>
             </motion.div>
           </div>
@@ -358,7 +352,7 @@ const Home = () => {
       >
         <div className="container">
           <motion.h2 className="section-title" variants={itemVariants}>
-            Our Impact
+            {t('home.ourImpact')}
           </motion.h2>
           <div className="impact-grid live-stats-grid">
             {statsLoading ? (

@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import '../../styles/ProductDetailsModal.css';
 
 import authUtils from '../../utils/auth';
+import { useLanguage } from '../../context/LanguageContext';
 
 const ProductDetailsModal = ({ isOpen, onClose, product, onTalkToFarmer, onAddToCart, onMakeOffer }) => {
+    const { t } = useLanguage();
     const [selectedImageIndex, setSelectedImageIndex] = useState(0);
     const [quantity, setQuantity] = useState(1);
 
@@ -179,22 +181,22 @@ const ProductDetailsModal = ({ isOpen, onClose, product, onTalkToFarmer, onAddTo
 
                             <div className="details-grid">
                                 <div className="detail-item">
-                                    <span className="label"><i className="fas fa-boxes"></i> In Stock</span>
+                                    <span className="label"><i className="fas fa-boxes"></i> {t('productDetails.inStock')}</span>
                                     <span className="value">{availableQty} kg</span>
                                 </div>
                                 <div className="detail-item">
-                                    <span className="label"><i className="fas fa-tag"></i> Category</span>
-                                    <span className="value">{product.category || 'General'}</span>
+                                    <span className="label"><i className="fas fa-tag"></i> {t('productDetails.category')}</span>
+                                    <span className="value">{t(`categories.${product.category}`) || product.category || 'General'}</span>
                                 </div>
                                 {product.harvestingDate && (
                                     <div className="detail-item">
-                                        <span className="label"><i className="fas fa-calendar-check"></i> Harvest Date</span>
+                                        <span className="label"><i className="fas fa-calendar-check"></i> {t('productDetails.harvestDate')}</span>
                                         <span className="value">{new Date(product.harvestingDate).toLocaleDateString()}</span>
                                     </div>
                                 )}
                                 {product.shelfLife && (
                                     <div className="detail-item">
-                                        <span className="label"><i className="fas fa-hourglass-half"></i> Shelf Life</span>
+                                        <span className="label"><i className="fas fa-hourglass-half"></i> {t('productDetails.shelfLife')}</span>
                                         <span className="value">{product.shelfLife}</span>
                                     </div>
                                 )}
@@ -209,7 +211,7 @@ const ProductDetailsModal = ({ isOpen, onClose, product, onTalkToFarmer, onAddTo
 
                             {product.description && (
                                 <div className="description">
-                                    <h3><i className="fas fa-align-left" style={{ marginRight: '0.5rem', color: '#10b981' }}></i>Description</h3>
+                                    <h3><i className="fas fa-align-left" style={{ marginRight: '0.5rem', color: '#10b981' }}></i>{t('productDetails.description')}</h3>
                                     <p>{product.description}</p>
                                 </div>
                             )}
@@ -227,17 +229,17 @@ const ProductDetailsModal = ({ isOpen, onClose, product, onTalkToFarmer, onAddTo
                                 }}>
                                     <div style={{ color: '#047857', fontWeight: 800, fontSize: '1.05rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
                                         <i className="fas fa-user-check" style={{ color: '#10b981' }}></i>
-                                        This is your listed crop
+                                        {t('productDetails.ownerBannerTitle')}
                                     </div>
                                     <p style={{ color: '#065f46', fontSize: '0.85rem', margin: '0.4rem 0 0 0', lineHeight: 1.4 }}>
-                                        Buyers can view details and submit offers for this produce. You can manage status, edit details, and review received bids directly from your Farmer Dashboard.
+                                        {t('productDetails.ownerBannerDesc')}
                                     </p>
                                 </div>
                             ) : (
                                 <>
                                     {/* Quantity Selection */}
                                     <div className="quantity-selection">
-                                        <label><i className="fas fa-balance-scale"></i> Purchase Quantity</label>
+                                        <label><i className="fas fa-balance-scale"></i> {t('productDetails.purchaseQuantity')}</label>
                                         <div className="quantity-control-wrapper">
                                             <div className="quantity-controls">
                                                 <button
@@ -270,7 +272,7 @@ const ProductDetailsModal = ({ isOpen, onClose, product, onTalkToFarmer, onAddTo
                                                     <i className="fas fa-plus"></i>
                                                 </button>
                                             </div>
-                                            <span className="qty-unit">kg (Total: ₹{(price * quantity).toFixed(2)})</span>
+                                            <span className="qty-unit">kg ({t('productDetails.totalAmount')} ₹{(price * quantity).toFixed(2)})</span>
                                         </div>
                                     </div>
 
@@ -279,12 +281,12 @@ const ProductDetailsModal = ({ isOpen, onClose, product, onTalkToFarmer, onAddTo
                                         <div className="action-row">
                                             {onTalkToFarmer && (
                                                 <button className="btn-chat" onClick={handleTalkClick}>
-                                                    <i className="fas fa-comment-dots"></i> Chat with Farmer
+                                                    <i className="fas fa-comment-dots"></i> {t('buyerDashboard.talkToFarmer')}
                                                 </button>
                                             )}
                                             {onMakeOffer && (
                                                 <button className="btn-offer" onClick={handleOfferClick}>
-                                                    <i className="fas fa-handshake"></i> Make an Offer
+                                                    <i className="fas fa-handshake"></i> {t('buyerDashboard.makeOffer')}
                                                 </button>
                                             )}
                                         </div>
@@ -294,7 +296,7 @@ const ProductDetailsModal = ({ isOpen, onClose, product, onTalkToFarmer, onAddTo
                                                 onClick={handleAddToCartClick}
                                                 disabled={availableQty <= 0}
                                             >
-                                                <i className="fas fa-cart-plus"></i> Add to Cart • ₹{(price * quantity).toFixed(2)}
+                                                <i className="fas fa-cart-plus"></i> {t('buyerDashboard.addToCart')} • ₹{(price * quantity).toFixed(2)}
                                             </button>
                                         )}
                                     </div>

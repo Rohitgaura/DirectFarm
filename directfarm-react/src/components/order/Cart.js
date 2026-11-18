@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'react-toastify';
+import { useLanguage } from '../../context/LanguageContext';
 import '../../styles/Cart.css';
 
 const Cart = () => {
+    const { t } = useLanguage();
     const [cartItems, setCartItems] = useState([]);
     const navigate = useNavigate();
 
@@ -69,9 +71,9 @@ const Cart = () => {
                 >
                     <h1>
                         <i className="fas fa-shopping-cart"></i>
-                        My Shopping Cart
+                        {t('cart.title')}
                     </h1>
-                    <p>{cartItems.length} {cartItems.length === 1 ? 'item' : 'items'} in your cart</p>
+                    <p>{t('cart.itemsCount', { count: cartItems.length })}</p>
                 </motion.div>
 
                 {cartItems.length === 0 ? (
@@ -82,11 +84,11 @@ const Cart = () => {
                         transition={{ duration: 0.5 }}
                     >
                         <i className="fas fa-shopping-basket"></i>
-                        <h2>Your cart is empty</h2>
-                        <p>Add some fresh produce from local farmers!</p>
+                        <h2>{t('cart.emptyTitle')}</h2>
+                        <p>{t('cart.emptySubtitle')}</p>
                         <button onClick={() => navigate('/buyer-dashboard')} className="browse-btn">
                             <i className="fas fa-leaf"></i>
-                            Browse Products
+                            {t('cart.browseProducts')}
                         </button>
                     </motion.div>
                 ) : (
@@ -110,7 +112,7 @@ const Cart = () => {
                                             <i className="fas fa-seedling"></i>
                                         </div>
                                         <div className="item-details">
-                                            <h3>{item.vegetableType}</h3>
+                                            <h3>{t(`items.${item.vegetableType}`) !== `items.${item.vegetableType}` ? t(`items.${item.vegetableType}`) : item.vegetableType}</h3>
                                             <p className="farmer-name">
                                                 <i className="fas fa-user"></i>
                                                 {item.farmerName}
@@ -137,7 +139,7 @@ const Cart = () => {
                                         </div>
 
                                         <div className="item-total">
-                                            <span className="total-label">Total:</span>
+                                            <span className="total-label">{t('cart.total')}:</span>
                                             <span className="total-price">₹{item.totalPrice}</span>
                                         </div>
 
@@ -161,16 +163,16 @@ const Cart = () => {
                         >
                             <div className="summary-content">
                                 <div className="summary-row">
-                                    <span>Subtotal:</span>
+                                    <span>{t('cart.subtotal')}:</span>
                                     <span>₹{calculateTotal()}</span>
                                 </div>
                                 <div className="summary-row">
-                                    <span>Delivery:</span>
-                                    <span className="free-delivery">FREE</span>
+                                    <span>{t('cart.deliveryCharge')}:</span>
+                                    <span className="free-delivery">{t('cart.freeDelivery')}</span>
                                 </div>
                                 <div className="summary-divider"></div>
                                 <div className="summary-row total-row">
-                                    <span>Total Amount:</span>
+                                    <span>{t('cart.grandTotal')}:</span>
                                     <span className="total-amount">₹{calculateTotal()}</span>
                                 </div>
                             </div>
@@ -178,11 +180,11 @@ const Cart = () => {
                             <div className="summary-actions">
                                 <button onClick={() => navigate('/checkout')} className="pay-btn">
                                     <i className="fas fa-shopping-bag"></i>
-                                    Place Order
+                                    {t('cart.proceedToCheckout')}
                                 </button>
                                 <button onClick={clearCart} className="clear-cart-btn">
                                     <i className="fas fa-trash"></i>
-                                    Clear Cart
+                                    {t('cart.clearCart')}
                                 </button>
                             </div>
                         </motion.div>
