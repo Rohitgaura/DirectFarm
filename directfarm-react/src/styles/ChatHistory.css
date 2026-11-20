@@ -2,7 +2,7 @@
 .chat-history-page {
     min-height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 95px 0 2rem 0;
+    padding: 140px 0 3rem 0;
 }
 
 .chat-history-container {

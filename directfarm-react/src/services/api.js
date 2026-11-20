@@ -679,6 +679,20 @@ class ApiService {
 
 
   // Rating Methods
+  async submitRating(data) {
+    return this.request('/ratings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getUserRatings(userId) {
+    return this.request(`/ratings/user/${userId}`);
+  }
+
+  async getTopRatedUsers(role) {
+    return this.request(`/ratings/top-rated?role=${role}`);
+  }
 
   // Feedback Methods
   async submitFeedback(data) {

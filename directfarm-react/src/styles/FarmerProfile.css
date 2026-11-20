@@ -1,333 +1,404 @@
-/* Farmer Profile Styles */
-.farmer-profile-header {
-    background: white;
-    padding: 2.25rem;
-    border-radius: 20px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
-    margin-bottom: 1.75rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    border: 1px solid #f1f5f9;
-}
+/* =========================================================
+   Farmer Profile Sleek Light Theme Styles
+   DirectFarm Modern Light Profile Layout
+   ========================================================= */
 
-.farmer-avatar {
-    width: 100px;
-    height: 100px;
-    background: #ecfdf5;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 3.25rem;
-    color: #10b981;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
-}
-
-.products-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
-    gap: 1.75rem;
-}
-
-.product-card {
-    background: white;
-    border-radius: 18px;
-    overflow: hidden;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
-    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-    border: 1px solid #e2e8f0;
-    display: flex;
-    flex-direction: column;
-    cursor: pointer;
-    position: relative;
-}
-
-.product-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 16px 30px rgba(0, 0, 0, 0.09);
-    border-color: #cbd5e1;
-}
-
-.product-image {
-    position: relative;
-    height: 220px;
-    width: 100%;
-    overflow: hidden;
+.farmer-profile-page-wrapper {
+    min-height: 100vh;
     background: #f8fafc;
+    padding: 130px 1rem 4rem 1rem;
+    color: #0f172a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-sizing: border-box;
 }
 
-.product-image img {
+.farmer-profile-container {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+/* Back Navigation Button */
+.farmer-profile-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    padding: 0.55rem 1.15rem;
+    border-radius: 9999px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+}
+
+.farmer-profile-back-btn:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #cbd5e1;
+    transform: translateX(-2px);
+}
+
+/* Main Profile Card Container */
+.farmer-profile-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 2.25rem 2.25rem 2.5rem 2.25rem;
+    box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.06), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+}
+
+/* Header Row: Avatar + Info */
+.farmer-profile-header-row {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+}
+
+.farmer-avatar-container {
+    width: 76px;
+    height: 76px;
+    border-radius: 14px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #ecfdf5;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.farmer-avatar-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
-    transition: transform 0.4s ease;
 }
 
-.product-card:hover .product-image img {
-    transform: scale(1.05);
-}
-
-.no-image {
-    width: 100%;
-    height: 100%;
+.farmer-header-info {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 3rem;
-    color: #cbd5e1;
-    background: #f1f5f9;
+    flex-direction: column;
+    gap: 0.2rem;
 }
 
-/* Date-wise Upload Badges */
-.product-date-badge {
-    position: absolute;
-    top: 0.85rem;
-    left: 0.85rem;
-    backdrop-filter: blur(8px);
-    padding: 0.35rem 0.75rem;
-    border-radius: 20px;
-    font-size: 0.78rem;
+.farmer-name {
+    margin: 0;
+    font-size: 1.35rem;
     font-weight: 700;
-    letter-spacing: 0.2px;
-    z-index: 2;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-}
-
-.product-date-badge.today-glow {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    color: #ffffff;
-    border: 1.5px solid #a7f3d0;
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.55);
-    animation: pulseGlow 2.5s infinite;
-}
-
-@keyframes pulseGlow {
-    0% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-    }
-    70% {
-        box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
-    }
-}
-
-.product-date-badge.yesterday {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    color: #ffffff;
-    border: 1.5px solid #bfdbfe;
-}
-
-.product-date-badge.regular {
-    background: rgba(15, 23, 42, 0.75);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-.product-stock-badge {
-    position: absolute;
-    top: 0.85rem;
-    right: 0.85rem;
-    background: rgba(15, 23, 42, 0.82);
-    backdrop-filter: blur(4px);
-    color: #ffffff;
-    padding: 0.3rem 0.7rem;
-    border-radius: 20px;
-    font-size: 0.76rem;
-    font-weight: 700;
-    z-index: 2;
-}
-
-.photo-count-badge {
-    position: absolute;
-    bottom: 0.85rem;
-    right: 0.85rem;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(4px);
-    color: white;
-    padding: 0.25rem 0.65rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-    z-index: 2;
-}
-
-.card-hover-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.35);
-    backdrop-filter: blur(2px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.2s ease;
-    z-index: 3;
-}
-
-.card-hover-overlay span {
-    background: #ffffff;
     color: #0f172a;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+}
+
+.farmer-verified-badge {
+    color: #059669;
+    font-size: 0.86rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.farmer-location-subtitle {
+    color: #64748b;
     font-size: 0.85rem;
-    font-weight: 700;
+    margin-top: 1px;
+}
+
+.farmer-rating-summary-line {
     display: flex;
     align-items: center;
-    gap: 0.4rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transform: translateY(6px);
-    transition: transform 0.2s ease;
+    gap: 6px;
+    font-size: 0.88rem;
+    margin-top: 2px;
 }
 
-.product-card:hover .card-hover-overlay {
-    opacity: 1;
+.farmer-rating-summary-line .star-icon {
+    color: #f59e0b;
+    font-size: 0.95rem;
 }
 
-.product-card:hover .card-hover-overlay span {
+.farmer-rating-summary-line .rating-score {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+.farmer-rating-summary-line .reviews-count {
+    color: #64748b;
+}
+
+/* KPI Stats Row (Products, Average Rating, Reviews) */
+.farmer-kpi-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    text-align: left;
+    margin: 1.75rem 0 1.5rem 0;
+    padding: 0.25rem 0;
+    gap: 1rem;
+}
+
+.farmer-kpi-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.kpi-number {
+    font-size: 1.65rem;
+    font-weight: 700;
+    line-height: 1.15;
+}
+
+.kpi-number.kpi-green {
+    color: #10b981;
+}
+
+.kpi-number.kpi-dark {
+    color: #0f172a;
+}
+
+.kpi-label {
+    color: #64748b;
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+/* Full Width Pill CTA Button: Chat with Farmer */
+.chat-with-farmer-btn {
+    width: 100%;
+    background: #0f172a;
+    color: #ffffff;
+    border: none;
+    padding: 0.85rem 1.5rem;
+    border-radius: 9999px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15);
+}
+
+.chat-with-farmer-btn:hover {
+    background: #1e293b;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(15, 23, 42, 0.25);
+}
+
+.chat-with-farmer-btn:active {
     transform: translateY(0);
 }
 
-.product-info {
-    padding: 1.25rem;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+/* Products Section */
+.farmer-products-section {
+    margin-top: 1.5rem;
 }
 
-.product-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.5rem;
-    gap: 0.5rem;
-}
-
-.product-header h3 {
-    margin: 0;
+.section-heading {
     font-size: 1.15rem;
-    color: #1e293b;
     font-weight: 700;
-    line-height: 1.3;
+    color: #0f172a;
+    margin: 0 0 1.25rem 0;
+    letter-spacing: -0.01em;
 }
 
-.product-category-tag {
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #10b981;
-    background: #ecfdf5;
-    padding: 2px 8px;
-    border-radius: 6px;
-    display: inline-block;
-    margin-top: 3px;
+.farmer-products-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.15rem;
 }
 
-.price {
-    font-weight: 800;
-    color: #10b981;
-    font-size: 1.2rem;
-    white-space: nowrap;
+.farmer-crop-card {
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    border-radius: 16px;
 }
 
-.description {
-    color: #64748b;
-    font-size: 0.88rem;
-    margin-bottom: 0.85rem;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    -webkit-box-orient: vertical;
+.farmer-crop-card:hover {
+    transform: translateY(-4px);
+}
+
+.crop-img-box {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: 16px;
     overflow: hidden;
-    flex: 1;
-}
-
-.product-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-    font-size: 0.84rem;
-    color: #64748b;
-    border-top: 1px solid #f1f5f9;
-    padding-top: 0.75rem;
-    margin-bottom: 0.5rem;
-}
-
-.meta-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.meta-row span {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-/* Date Group Section Styles */
-.date-group-section {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-}
-
-.date-group-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.85rem 1.25rem;
-    border-radius: 14px;
-    background: #ffffff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    border: 1px solid #e2e8f0;
-}
-
-.date-group-header.today {
-    background: #ecfdf5;
-    border-color: #a7f3d0;
-}
-
-.date-group-header.yesterday {
-    background: #eff6ff;
-    border-color: #bfdbfe;
-}
-
-.date-group-header.earlier {
     background: #f8fafc;
-    border-color: #e2e8f0;
+    border: 1px solid #e2e8f0;
+    position: relative;
 }
 
-.date-group-icon {
-    font-size: 1.3rem;
+.crop-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease;
 }
 
-.date-group-count-badge {
-    font-size: 0.8rem;
-    font-weight: 700;
-    padding: 3px 10px;
-    border-radius: 12px;
+.farmer-crop-card:hover .crop-img {
+    transform: scale(1.05);
 }
 
-.date-group-count-badge.today {
-    background: #10b981;
-    color: #ffffff;
+.crop-info {
+    margin-top: 0.65rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-.date-group-count-badge.yesterday {
-    background: #3b82f6;
-    color: #ffffff;
+.crop-title {
+    color: #0f172a;
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.25;
 }
 
-.date-group-count-badge.earlier {
-    background: #64748b;
-    color: #ffffff;
+.crop-price {
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+/* Customer Reviews Section */
+.farmer-reviews-section {
+    margin-top: 2.25rem;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 2rem;
+}
+
+.reviews-rating-overview {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.big-rating-number {
+    font-size: 2.6rem;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1;
+}
+
+.overview-stars-col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.gold-stars-row {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.based-on-text {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+/* Reviews List */
+.reviews-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.review-item {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.review-item:first-child {
+    border-top: 1px solid #f1f5f9;
+}
+
+.review-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.35rem;
+}
+
+.reviewer-name {
+    color: #0f172a;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.review-date {
+    color: #94a3b8;
+    font-size: 0.82rem;
+}
+
+.review-stars {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.review-text {
+    color: #334155;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0 0 0.75rem 0;
+}
+
+.purchased-badge {
+    display: inline-block;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    border-radius: 9999px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    padding: 0.3rem 0.85rem;
+}
+
+.illustrative-disclaimer {
+    color: #94a3b8;
+    font-size: 0.78rem;
+    margin-top: 1.5rem;
+    text-align: left;
+    margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .farmer-profile-page-wrapper {
+        padding: 110px 0.75rem 3rem 0.75rem;
+    }
+
+    .farmer-profile-card {
+        padding: 1.5rem 1.25rem;
+        border-radius: 20px;
+    }
+
+    .farmer-avatar-container {
+        width: 66px;
+        height: 66px;
+    }
+
+    .farmer-name {
+        font-size: 1.2rem;
+    }
+
+    .kpi-number {
+        font-size: 1.35rem;
+    }
+
+    .farmer-products-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.85rem;
+    }
 }

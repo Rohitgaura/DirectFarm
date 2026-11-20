@@ -123,7 +123,7 @@ const FarmerAnalytics = () => {
 
     if (isLoading) {
         return (
-            <div className="analytics-loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '1rem', paddingTop: '100px' }}>
+            <div className="analytics-loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '1rem', paddingTop: '140px' }}>
                 <i className="fas fa-spinner fa-spin" style={{ fontSize: '2.5rem', color: '#10b981' }}></i>
                 <p style={{ color: '#64748b', fontWeight: '600' }}>{t('analytics.loadingAnalytics')}</p>
             </div>
@@ -133,7 +133,7 @@ const FarmerAnalytics = () => {
     if (!data) return null;
 
     return (
-        <div className="dashboard-page" style={{ minHeight: '90vh', background: '#f8fafc', padding: '100px 1.5rem 3rem 1.5rem' }}>
+        <div className="dashboard-page" style={{ minHeight: '90vh', background: '#f8fafc', padding: '140px 1.5rem 3rem 1.5rem' }}>
             <div className="analytics-container" style={{ maxWidth: '1200px', margin: '0 auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>

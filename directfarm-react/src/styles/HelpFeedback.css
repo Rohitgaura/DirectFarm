@@ -1,7 +1,7 @@
 /* Help & Feedback Page Styles */
 .help-page-container {
   min-height: 100vh;
-  padding: 100px 20px 40px;
+  padding: 140px 20px 40px;
   background: linear-gradient(135deg, #f0f2f5 0%, #e6e9f0 100%);
   display: flex;
   justify-content: center;
@@ -417,7 +417,7 @@
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .help-page-container {
-    padding: 80px 15px 30px;
+    padding: 125px 15px 30px;
   }
 
   .content-body {

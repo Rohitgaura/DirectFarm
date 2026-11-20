@@ -12,7 +12,7 @@
     justify-content: center;
     text-align: center;
     color: white;
-    padding: 120px 2rem 4rem 2rem;
+    padding: 140px 2rem 4rem 2rem;
     position: relative;
     overflow: hidden;
 }
@@ -322,7 +322,7 @@
 
 @media (max-width: 480px) {
     .career-hero {
-        padding: 100px 1rem 3rem 1rem;
+        padding: 125px 1rem 3rem 1rem;
     }
 
     .career-hero h1 {

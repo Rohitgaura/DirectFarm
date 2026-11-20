@@ -2,7 +2,7 @@
 .crops-history-page {
     min-height: 100vh;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    padding: 80px 0 2rem 0;
+    padding: 140px 0 3rem 0;
 }
 
 .crops-history-container {
@@ -267,7 +267,7 @@
 
 @media (max-width: 480px) {
     .crops-history-page {
-        padding: 80px 0.5rem 1rem 0.5rem;
+        padding: 125px 0.5rem 1rem 0.5rem;
     }
 
     .crops-history-header h1 {

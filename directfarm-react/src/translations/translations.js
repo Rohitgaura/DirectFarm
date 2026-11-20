@@ -79,7 +79,7 @@ const translations = {
     "reviews": "समीक्षाएं"
   },
   "auth": {
-    "welcomeBack": "वापसी पर स्वागत है",
+    "welcomeBack": "आपका फिर से स्वागत है!",
     "signInSubtitle": "अपने DirectFarm खाते में साइन इन करें",
     "email": "ईमेल पता",
     "emailPlaceholder": "अपना ईमेल दर्ज करें",

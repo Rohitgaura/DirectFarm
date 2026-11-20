@@ -117,7 +117,7 @@ const Notifications = () => {
     }
 
     return (
-        <div className="buyer-dashboard" style={{ minHeight: '85vh', background: '#f8fafc', padding: '2rem 1rem' }}>
+        <div className="buyer-dashboard" style={{ minHeight: '85vh', background: '#f8fafc', padding: '140px 1rem 3rem 1rem' }}>
             <div className="dashboard-container" style={{ maxWidth: '850px', margin: '0 auto' }}>
                 <div className="dashboard-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>

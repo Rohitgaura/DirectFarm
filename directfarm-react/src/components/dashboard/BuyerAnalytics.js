@@ -32,7 +32,7 @@ const BuyerAnalytics = () => {
 
     if (isLoading) {
         return (
-            <div className="analytics-loading">
+            <div className="analytics-loading" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '1rem', paddingTop: '140px' }}>
                 <i className="fas fa-spinner fa-spin"></i> {t('common.loading')}
             </div>
         );
@@ -43,7 +43,7 @@ const BuyerAnalytics = () => {
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
     return (
-        <div className="dashboard-page">
+        <div className="dashboard-page" style={{ minHeight: '90vh', background: '#f8fafc', padding: '140px 1.5rem 3rem 1.5rem' }}>
             <div className="analytics-container">
                 <h2 className="analytics-title">{t('analytics.buyerTitle')}</h2>
 
