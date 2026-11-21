@@ -19,6 +19,7 @@ const Login = () => {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [oauthData, setOauthData] = useState(null);
   const [phoneFormData, setPhoneFormData] = useState({
@@ -466,15 +467,26 @@ const Login = () => {
                 <i className="fas fa-lock"></i>
                 {t('auth.password')}
               </label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={errors.password ? 'error' : ''}
-                placeholder={t('auth.passwordPlaceholder')}
-              />
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={errors.password ? 'error' : ''}
+                  placeholder={t('auth.passwordPlaceholder')}
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  tabIndex="-1"
+                >
+                  <i className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
+                </button>
+              </div>
               {errors.password && <span className="error-message">{errors.password}</span>}
             </motion.div>
 

@@ -24,6 +24,8 @@ const Register = () => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // OTP Verification State
   const [showOtpVerification, setShowOtpVerification] = useState(false);
@@ -779,15 +781,26 @@ const Register = () => {
                     <i className="fas fa-lock"></i>
                     {t('auth.password')}
                   </label>
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className={errors.password ? 'error' : ''}
-                    placeholder={t('auth.passwordPlaceholderRegister')}
-                  />
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      id="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className={errors.password ? 'error' : ''}
+                      placeholder={t('auth.passwordPlaceholderRegister')}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      tabIndex="-1"
+                    >
+                      <i className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
+                    </button>
+                  </div>
                   {errors.password && <span className="error-message">{errors.password}</span>}
                 </motion.div>
 
@@ -801,15 +814,26 @@ const Register = () => {
                     <i className="fas fa-lock"></i>
                     {t('auth.confirmPassword')}
                   </label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className={errors.confirmPassword ? 'error' : ''}
-                    placeholder={t('auth.confirmPasswordPlaceholder')}
-                  />
+                  <div className="password-input-wrapper">
+                    <input
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      className={errors.confirmPassword ? 'error' : ''}
+                      placeholder={t('auth.confirmPasswordPlaceholder')}
+                    />
+                    <button
+                      type="button"
+                      className="password-toggle-btn"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                      tabIndex="-1"
+                    >
+                      <i className={showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
+                    </button>
+                  </div>
                   {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
                 </motion.div>
 

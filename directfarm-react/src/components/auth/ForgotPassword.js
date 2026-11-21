@@ -18,6 +18,8 @@ const ForgotPassword = () => {
     });
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const handleEmailSubmit = async (e) => {
         e.preventDefault();
@@ -172,14 +174,25 @@ const ForgotPassword = () => {
                                     <i className="fas fa-lock"></i>
                                     New Password
                                 </label>
-                                <input
-                                    type="password"
-                                    id="password"
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                    placeholder="Enter new password"
-                                    className={errors.password ? 'error' : ''}
-                                />
+                                <div className="password-input-wrapper">
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        id="password"
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                        placeholder="Enter new password"
+                                        className={errors.password ? 'error' : ''}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="password-toggle-btn"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        tabIndex="-1"
+                                    >
+                                        <i className={showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
+                                    </button>
+                                </div>
                                 {errors.password && <span className="error-message">{errors.password}</span>}
                             </div>
 
@@ -188,14 +201,25 @@ const ForgotPassword = () => {
                                     <i className="fas fa-lock"></i>
                                     Confirm New Password
                                 </label>
-                                <input
-                                    type="password"
-                                    id="confirmPassword"
-                                    value={formData.confirmPassword}
-                                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                                    placeholder="Confirm new password"
-                                    className={errors.confirmPassword ? 'error' : ''}
-                                />
+                                <div className="password-input-wrapper">
+                                    <input
+                                        type={showConfirmPassword ? 'text' : 'password'}
+                                        id="confirmPassword"
+                                        value={formData.confirmPassword}
+                                        onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                        placeholder="Confirm new password"
+                                        className={errors.confirmPassword ? 'error' : ''}
+                                    />
+                                    <button
+                                        type="button"
+                                        className="password-toggle-btn"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                                        tabIndex="-1"
+                                    >
+                                        <i className={showConfirmPassword ? 'fas fa-eye-slash' : 'fas fa-eye'}></i>
+                                    </button>
+                                </div>
                                 {errors.confirmPassword && <span className="error-message">{errors.confirmPassword}</span>}
                             </div>
 
